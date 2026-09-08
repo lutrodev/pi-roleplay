@@ -3,7 +3,11 @@
   color: var(--text); background: var(--canvas); font-synthesis: none; text-rendering: optimizeLegibility;
   --canvas: #fcfcfc; --surface: #ffffff; --sidebar: #f6f6f7; --text: #242427; --muted: #6c6c73;
   --border: #e8e8eb; --soft: #f0f0f2; --hover: #eaeaec; --accent: #29292e; --accent-hover: #454549; --on-accent: #ffffff;
-  --danger: #ad343b; --danger-soft: #fff0f0; --dialogue: var(--dialogue-light, #ad4f08); --overlay: #18181b52;
+  --success: #277553; --success-soft: #edf7f0; --success-border: #bddcc9;
+  --warning: #8a5a16; --warning-soft: #fff6e6; --warning-border: #ecd7ad;
+  --info: #315fa8; --info-soft: #edf4fe; --info-border: #c7d8f1;
+  --danger: #ad343b; --danger-soft: #fff0f0; --danger-border: #f0c5c8;
+  --dialogue: var(--dialogue-light, #ad4f08); --overlay: #18181b52;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   --reading-font: var(--font-sans); --reading-size: 16px; --reading-leading: 1.85; --reading-width: 640px;
   --serif: "Songti SC", "Noto Serif CJK SC", "STSong", Georgia, serif;
@@ -12,7 +16,11 @@
 :root[data-theme="dark"] {
   color-scheme: dark; --canvas: #19191b; --surface: #232326; --sidebar: #141416; --text: #eeedf0; --muted: #a2a2ac;
   --border: #37373d; --soft: #2d2d32; --hover: #3a3a3f; --accent: #ededf0; --accent-hover: #ffffff; --on-accent: #202024;
-  --danger: #ffadb0; --danger-soft: #44282c; --dialogue: var(--dialogue-dark, #fdba74); --overlay: #09090b80;
+  --success: #7acda4; --success-soft: #20372c; --success-border: #365842;
+  --warning: #edc17b; --warning-soft: #3b3021; --warning-border: #625035;
+  --info: #a5c7fa; --info-soft: #25344c; --info-border: #3b5379;
+  --danger: #ffadb0; --danger-soft: #44282c; --danger-border: #6d3c44;
+  --dialogue: var(--dialogue-dark, #fdba74); --overlay: #09090b80;
 }
 * { box-sizing: border-box; }
 html, body, #root { width: 100%; height: 100%; margin: 0; }

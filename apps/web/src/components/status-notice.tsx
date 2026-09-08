@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
-import { CheckCircle2, ChevronRight, CircleAlert, CirclePause, Info, LoaderCircle, type LucideIcon } from 'lucide-react'
+import { CheckCircle2, ChevronRight, CircleAlert, CirclePause, Info, LoaderCircle, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { uiT, useUiLanguage } from '../lib/i18n.ts'
 
-type NoticeTone = 'info' | 'error' | 'paused' | 'busy' | 'success'
-const icons: Record<NoticeTone, LucideIcon> = { info: Info, error: CircleAlert, paused: CirclePause, busy: LoaderCircle, success: CheckCircle2 }
+type NoticeTone = 'info' | 'warning' | 'error' | 'paused' | 'busy' | 'success'
+const icons: Record<NoticeTone, LucideIcon> = { info: Info, warning: TriangleAlert, error: CircleAlert, paused: CirclePause, busy: LoaderCircle, success: CheckCircle2 }
 
 /** Shared feedback for fields, panels and conversation states. */
 export function StatusNotice({ title, tone = 'info', icon, children, details, collapseDetails = false, actions, compact = false, className = '' }: {

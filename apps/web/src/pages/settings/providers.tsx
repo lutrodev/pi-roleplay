@@ -3,7 +3,7 @@ import { ConnectionLogo } from './models/service-logo.tsx'
 import { SettingRow, SettingsGroup } from '../../components/settings-layout.tsx'
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { CheckCircle2, Circle, CircleAlert, Plus, Search, Settings2 } from 'lucide-react'
+import { CheckCircle2, Circle, CircleAlert, Plus, Search, Settings2, TriangleAlert } from 'lucide-react'
 import type { ModelRoute } from '../../../../../packages/rp-core/src/types.ts'
 import type { ModelCheck } from '../../../../../apps/server/src/services/model-inspection.ts'
 import { CancelButton, EditorForm } from '../../components/form-guard.tsx'
@@ -49,8 +49,8 @@ export function ProviderManager({ value, onDefault }: { value: ModelRoute | null
   </section>
 }
 function ModelState({ model }: { model: CatalogModel }) {
-  const status = !model.configured ? 'missing' : model.check?.status ?? 'untested', Icon = status === 'passed' ? CheckCircle2 : status === 'failed' || status === 'missing' ? CircleAlert : Circle
-  return <span className={'model-state model-state-' + status} title={model.check ? uiT(model.check.message) : undefined}><Icon size={13} />{uiT(status === 'passed' ? '测试通过' : status === 'failed' ? '测试失败' : status === 'missing' ? '缺少密钥' : '未测试')}</span>
+  const status = !model.configured ? 'missing' : model.check?.status ?? 'untested', Icon = status === 'passed' ? CheckCircle2 : status === 'failed' ? CircleAlert : status === 'missing' ? TriangleAlert : Circle
+  return <span className={'model-state model-state-' + status} title={model.check ? uiT(model.check.message) : undefined}><Icon size={13} aria-hidden="true" />{uiT(status === 'passed' ? '测试通过' : status === 'failed' ? '测试失败' : status === 'missing' ? '缺少密钥' : '未测试')}</span>
 }
 function DefaultModelEditor({ value, initial, onSave, done }: { value: ModelRoute | null; initial?: ModelRoute; onSave: (route: ModelRoute | null) => Promise<void>; done: () => void }) {
   const [route, setRoute] = useState(initial ?? value), action = useAction(), dirty = JSON.stringify(route) !== JSON.stringify(value)
