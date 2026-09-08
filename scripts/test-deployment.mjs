@@ -20,8 +20,7 @@ const provider = createServer(async (request, response) => {
   requests.push(body)
   assert.equal(request.headers.authorization, 'Bearer synthetic-deployment-key')
   let text = '', call
-  if (names.includes('emit_reply_options')) call = { name: 'emit_reply_options', args: { options: ['沿海岸走向灯塔。', '留在码头检查旧船。'] } }
-  else if (names.includes('rp_write_turn')) {
+  if (names.includes('rp_write_turn')) {
     const currentInput = body.messages.findLastIndex(message => message.role === 'user')
     const performed = body.messages.slice(currentInput + 1).flatMap(message => (message.tool_calls ?? []).map(item => item.function.name))
     if (last?.role === 'user' && JSON.stringify(last.content).includes('DEPLOY_HOLD')) {
@@ -30,7 +29,7 @@ const provider = createServer(async (request, response) => {
       waiting = false
       if (response.destroyed) return
     }
-    if (performed.includes('rp_write_turn')) call = { name: 'rp_commit_turn', args: { narrative, runSummary: '修好的船已经归还。' } }
+    if (performed.includes('rp_write_turn')) call = { name: 'rp_commit_turn', args: { narrative, runSummary: '修好的船已经归还。', ...(!JSON.stringify(body.messages.filter(message => message.role === 'system')).includes('Reply options are disabled.') ? { extensions: { 'rp.reply-options': { options: ['沿海岸走向灯塔。', '留在码头检查旧船。'] } } } : {}) } }
     else if (performed.includes('bash')) call = { name: 'rp_write_turn', args: { action: 'write' } }
     else call = { name: 'bash', args: { command: 'printf "VPS 工作文件\\n" > vps.txt; id -u; test ! -e /data/app.sqlite && test ! -e /run/secrets/session_key && test ! -e /var/run/docker.sock && printf "private-files-absent\\n"; printf "%s\\n" "${RP_MODEL_API_KEY-unset}"; (printf bad > /inputs/forbidden) 2>/dev/null || printf "inputs-read-only\\n"; cat vps.txt' } }
   } else text = narrative
@@ -157,7 +156,7 @@ try {
   const suggestionSnapshot = (await source.api(`/stories/${suggestionStory.id}`)).story
   assert.equal(suggestionSnapshot.messages.at(-1).text, narrative)
   assert.deepEqual(suggestionSnapshot.replyOptions[suggestionSnapshot.messages.at(-1).id], ['沿海岸走向灯塔。', '留在码头检查旧船。'])
-  assert.equal(requests.filter(request => request.tools?.some(tool => tool.function.name === 'emit_reply_options')).length, 1)
+  assert.equal(requests.filter(request => request.tools?.some(tool => tool.function.name === 'emit_reply_options')).length, 0)
   await source.api('/settings', 'PUT', { expectedRevision: enabledSuggestions.revision, preferences: savedPreferences.preferences })
 
   const holding = (await source.api('/stories', 'POST', { title: '中断测试', profile: { runtime: { executionMode: 'agent' } } }, 201)).story

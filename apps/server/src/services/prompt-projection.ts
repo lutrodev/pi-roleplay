@@ -11,7 +11,7 @@ export async function promptProjection(preferences: Preferences, skills: SkillSe
   const writer = catalog.writer.route.kind === 'fixed' ? catalog.writer.route : main
   const enabledSkills = preferences.skills ? await skills.snapshot(disabledSkillNames(preferences.disabledSkills)) : undefined
   const instructions = enabledSkills ? new SkillSession(enabledSkills).parentInstructions : undefined
-  const common = { identity: preferences.identity, stateEnabled: true }
+  const common = { identity: preferences.identity, stateEnabled: true, replyOptions: preferences.replyOptionsEnabled ? preferences.replyOptions : undefined }
   const role = (id: string, label: string, role: PromptRole, model: ModelRoute | null | undefined, extra: { taskInstructions?: string; skillInstructions?: string } = {}) => ({
     id, label, role, model: model ?? null,
     sections: systemPromptSections({ ...common, role, model: model?.model, ...extra }),

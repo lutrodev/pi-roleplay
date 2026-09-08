@@ -21,7 +21,6 @@ import { registerWriterHistory } from './http/writer-history.ts'
 import { registerToolSettings } from './http/tool-settings.ts'
 import { SubagentService } from './services/subagent-service.ts'
 import { SkillService } from './services/skill-service.ts'
-import { ReplyOptionsService } from './services/reply-options-service.ts'
 import { SummaryService } from './services/summary-service.ts'
 import { ModelRegistry } from './runtime/models.ts'
 import { ModelCatalogService } from './services/model-catalog-service.ts'
@@ -85,7 +84,6 @@ export async function createServer(config: ServerConfig, dependencies: { logger?
     summaries = summaryService
     const inputs = new InputQueueService(service)
     const executor = new RunExecutor(stories, contexts, turns, models, files, summaryService, inputs)
-    const optionsService = new ReplyOptionsService(models)
     settings.snapshot(); subagents.snapshot(); assets.ensureDefaults()
     queue = new RunQueue(stories, async (runId, signal) => {
       const prefs = settings.snapshot().preferences
@@ -101,10 +99,9 @@ export async function createServer(config: ServerConfig, dependencies: { logger?
         identity: prefs.identity, writerHistory: capturedWriterHistory,
       })
       const resources = await factory.prepare(runId, signal)
-      if (prefs.replyOptionsEnabled) resources.replyOptions = (commit, context, journal) => optionsService.generate({
-        commit, context, journal, route: resources.routes.main, config: prefs.replyOptions, signal,
-        enabled: () => settings.snapshot().preferences.replyOptionsEnabled,
-      })
+      if (prefs.replyOptionsEnabled) resources.replyOptions = {
+        config: prefs.replyOptions, enabled: () => settings.snapshot().preferences.replyOptionsEnabled,
+      }
       await executor.execute(runId, signal, resources)
     }, error => app.log.error({ code: error instanceof RpError ? error.code : 'RUN_FAILED' }, 'Run failed'), () => operations.quiesced, () => inputs.promote(), runId => summaryService.settleRun(runId))
     const runs = queue
@@ -123,7 +120,7 @@ export async function createServer(config: ServerConfig, dependencies: { logger?
     registerTrace(app, new TraceService(stories))
     registerAssetRoutes(app, assets, fileService)
     registerFileRoutes(app, fileService, client)
-    registerSettingsRoutes(app, settings, skills, subagents, config.defaultMain, preferences => { if (!preferences.replyOptionsEnabled) optionsService.cancelAll() })
+    registerSettingsRoutes(app, settings, skills, subagents, config.defaultMain)
     registerBackgrounds(app, new BackgroundService(assets))
     registerToolSettings(app, toolSettings)
     registerWriterHistory(app, writerHistory)

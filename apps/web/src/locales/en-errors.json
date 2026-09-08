@@ -288,5 +288,7 @@
   "上一轮未完成，已停止会话总结并保留原始对话。": "The previous turn did not complete. Summarization stopped and the original conversation was kept.",
   "模型未完成剧情提交或讨论回复，请查看过程后重新生成。": "The model did not finalize the story or discussion reply. View the process, then try again.",
   "后台任务尚未结束，请稍后再删除会话。": "Background tasks are still running. Try deleting this conversation after they finish.",
-  "这次创建对应的会话已删除，请重新发起新会话。": "The conversation for this request was deleted. Start a new conversation."
+  "这次创建对应的会话已删除，请重新发起新会话。": "The conversation for this request was deleted. Start a new conversation.",
+  "关闭提示": "Dismiss notice",
+  "主模型未提供可用的回复建议，正文与变量已保存。": "The main model did not provide usable reply suggestions. The narrative and variables have been saved."
 }

@@ -151,7 +151,7 @@ describe('assembled single-process application', () => {
     expect(x.requests).toHaveLength(1)
   })
   it('runs authenticated story → Pi → Writer → commit, serves settings and static routes, and downloads files through the real tool service', async () => {
-    const x = await setup([{ call: { name: 'rp_write_turn', arguments: { action: 'write' } } }, { text: '海风掠过灯塔。' }, { call: { name: 'rp_commit_turn', arguments: { runSummary: '灯塔的一天。' } } }, { call: { name: 'emit_reply_options', arguments: { options: ['他走向海边。', '他留在塔内。', '他推开窗户。'] } } }])
+    const x = await setup([{ call: { name: 'rp_write_turn', arguments: { action: 'write' } } }, { text: '海风掠过灯塔。' }, { call: { name: 'rp_commit_turn', arguments: { runSummary: '灯塔的一天。', extensions: { 'rp.reply-options': { options: ['他走向海边。', '他留在塔内。', '他推开窗户。'] } } } } }])
     expect((await fetch(x.url + '/api/stories')).status).toBe(401)
     expect((await fetch(x.url + '/health')).status).toBe(200)
     expect(await (await fetch(x.url + '/stories/example', { headers: { accept: 'text/html' } })).text()).toContain('Application route fixture')
@@ -162,7 +162,7 @@ describe('assembled single-process application', () => {
     expect(sent.status).toBe(202); await x.queue.idle()
     const story = (await x.call(`/api/stories/${id}`)).body.story
     expect(story.messages.at(-1)).toMatchObject({ kind: 'narrative', text: '海风掠过灯塔。' })
-    expect(x.stories.run(sent.body.run.id).status).toBe('completed'); expect(x.requests).toHaveLength(4)
+    expect(x.stories.run(sent.body.run.id).status).toBe('completed'); expect(x.requests).toHaveLength(3)
     expect(x.stories.snapshot(id).replyOptions[story.messages.at(-1).id]).toEqual(['他走向海边。', '他留在塔内。', '他推开窗户。'])
     expect(x.headers.every(headers => headers.get('authorization') === 'Bearer synthetic-provider-secret')).toBe(true)
     const status = await x.call('/api/system/status')
@@ -219,50 +219,32 @@ describe('assembled single-process application', () => {
     expect(story.messages.at(-1).text).toBe('正常完成的正文。')
   })
 
-  it('does not start a suggestion request after its switch is disabled during Writer', async () => {
-    let x: Awaited<ReturnType<typeof setup>>
-    x = await setup([{ call: { name: 'rp_write_turn', arguments: { action: 'write' } } }, { text: '正文仍然完成。' }, { call: { name: 'rp_commit_turn', arguments: {} } }], async index => {
-      if (index !== 1) return
-      const settings = (await x.call('/api/settings')).body
-      expect((await x.call('/api/settings', 'PUT', { expectedRevision: settings.revision, preferences: { ...settings.preferences, replyOptionsEnabled: false } })).status).toBe(200)
-    })
+  it.each([1, 2])('discards returned options when disabled during request %s without cancelling the main model', async stage => {
+    let release!: () => void
+    const x = await setup([{ call: { name: 'rp_write_turn', arguments: { action: 'write' } } }, { text: '正文仍然完成。' },
+      { call: { name: 'rp_commit_turn', arguments: { extensions: { 'rp.reply-options': { options: ['沿海岸前行。'] } } } } },
+    ], async index => { if (index === stage) await new Promise<void>(resolve => { release = resolve }) })
     const story = x.service.create('运行中关闭建议')
-    await x.call(`/api/stories/${story.id}/messages`, 'POST', { requestId: randomUUID(), inputs: [{ text: '继续', attachmentIds: [] }] })
-    await x.queue.idle()
-    expect(x.requests).toHaveLength(3)
-    expect(x.stories.snapshot(story.id).messages.at(-1)?.text).toBe('正文仍然完成。')
-    expect(x.stories.snapshot(story.id).maintenance['reply-options']).toBeUndefined()
-  })
-
-  it('skips an in-flight suggestion when disabled and finishes the same narrative commit', async () => {
-    const x = await setup([{ call: { name: 'rp_write_turn', arguments: { action: 'write' } } }, { text: '正文已经保存。' }, { call: { name: 'rp_commit_turn', arguments: {} } }], async (index, signal) => {
-      if (index !== 3) return
-      await new Promise<void>((_resolve, reject) => {
-        if (signal?.aborted) reject(new Error('cancelled'))
-        else signal?.addEventListener('abort', () => reject(new Error('cancelled')), { once: true })
-      })
-    })
-    const story = x.service.create('建议取消')
-    await x.call(`/api/stories/${story.id}/messages`, 'POST', { requestId: randomUUID(), inputs: [{ text: '继续', attachmentIds: [] }] })
-    await expect.poll(() => x.requests.length).toBe(4)
-    const pending = x.stories.snapshot(story.id), settings = (await x.call('/api/settings')).body
-    expect(pending.messages.some(message => message.kind === 'narrative')).toBe(false)
-    expect(pending.replyOptions).toEqual({})
+    const sent = await x.call(`/api/stories/${story.id}/messages`, 'POST', { requestId: randomUUID(), inputs: [{ text: '继续', attachmentIds: [] }] })
+    await expect.poll(() => x.requests.length).toBe(stage + 1)
+    const settings = (await x.call('/api/settings')).body
     expect((await x.call('/api/settings', 'PUT', { expectedRevision: settings.revision, preferences: { ...settings.preferences, replyOptionsEnabled: false } })).status).toBe(200)
-    await x.queue.idle()
+    release(); await x.queue.idle()
+    expect(x.requests).toHaveLength(3)
+    expect(x.stories.run(sent.body.run.id).status).toBe('completed')
     const saved = x.stories.snapshot(story.id)
-    expect(saved.messages.at(-1)?.text).toBe('正文已经保存。')
+    expect(saved.messages.at(-1)?.text).toBe('正文仍然完成。')
     expect(saved.maintenance['reply-options']).toBeUndefined()
-    expect(x.stories.eventsOfTypes(story.id, ['turn.committed'])).toHaveLength(1)
     expect(saved.replyOptions).toEqual({})
+    expect(x.stories.eventsOfTypes(story.id, ['turn.committed'])).toHaveLength(1)
   })
 
-  it.each(['complete', 'stop', 'shutdown'] as const)('holds the main run at rp_commit_turn until suggestions %s', async outcome => {
+  it.each(['complete', 'stop', 'shutdown'] as const)('saves narrative and suggestions only after the main commit request finishes (%s)', async outcome => {
     let release!: () => void
     const x = await setup([{ call: { name: 'rp_write_turn', arguments: { action: 'write' } } }, { text: '等待选项后共同保存。' },
-      { call: { name: 'rp_commit_turn', arguments: {} } }, { call: { name: 'emit_reply_options', arguments: { options: ['走向海边。'] } } },
+      { call: { name: 'rp_commit_turn', arguments: { extensions: { 'rp.reply-options': { options: ['走向海边。'] } } } } },
     ], async (index, signal) => {
-      if (index !== 3) return
+      if (index !== 2) return
       await new Promise<void>((resolve, reject) => {
         const abort = () => reject(new Error('cancelled'))
         signal?.addEventListener('abort', abort, { once: true })
@@ -272,11 +254,11 @@ describe('assembled single-process application', () => {
     })
     const story = x.service.create('提交内生成选项')
     const sent = await x.call(`/api/stories/${story.id}/messages`, 'POST', { requestId: randomUUID(), inputs: [{ text: '继续', attachmentIds: [] }] })
-    await expect.poll(() => x.requests.length).toBe(4)
+    await expect.poll(() => x.requests.length).toBe(3)
     const waiting = (await x.call(`/api/stories/${story.id}`)).body.story
     expect(x.stories.run(sent.body.run.id).status).toBe('running')
     expect(waiting.messages.some((message: { kind: string }) => message.kind === 'narrative')).toBe(false)
-    expect(x.stories.snapshot(story.id).tools.find(tool => tool.name === 'rp_commit_turn')?.status).toBe('running')
+    expect(x.stories.snapshot(story.id).tools.find(tool => tool.name === 'rp_commit_turn')).toBeUndefined()
     expect(x.stories.hasCommitted(sent.body.run.id)).toBe(false)
     if (outcome === 'complete') release()
     else if (outcome === 'stop') await x.call(`/api/runs/${sent.body.run.id}/stop`, 'POST')
@@ -284,7 +266,7 @@ describe('assembled single-process application', () => {
     await x.queue.idle()
     const saved = x.stories.snapshot(story.id), commits = x.stories.eventsOfTypes(story.id, ['turn.committed'])
     expect(x.stories.eventsOfTypes(story.id, ['reply-options.ready', 'maintenance.status'])).toEqual([])
-    expect(x.requests).toHaveLength(4)
+    expect(x.requests).toHaveLength(3)
     if (outcome === 'complete') {
       expect(commits).toHaveLength(1)
       expect(saved.messages.at(-1)?.text).toBe('等待选项后共同保存。')

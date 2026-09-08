@@ -1,9 +1,11 @@
 import { uiT, useUiLanguage } from "../../lib/i18n.ts"
-import type { StorySnapshot } from '../../../../../packages/rp-core/src/types.ts'
+import { useState } from 'react'
+import type { MaintenanceRecord, StorySnapshot } from '../../../../../packages/rp-core/src/types.ts'
 import type { Preferences } from '../../../../../packages/rp-core/src/settings/preferences.ts'
-import { Sparkles, ChevronDown } from 'lucide-react'
+import { Sparkles, ChevronDown, X } from 'lucide-react'
 import { ChoiceOption } from '../../components/choice-option.tsx'
 import { StatusNotice } from '../../components/status-notice.tsx'
+import { IconButton } from '../../components/ui.tsx'
 
 export function ReplySuggestions({ story, preferences, busy, insert }: { story: StorySnapshot; preferences: Preferences; busy: boolean; insert: (text: string) => void }) {
   useUiLanguage()
@@ -19,6 +21,23 @@ export function ReplySuggestions({ story, preferences, busy, insert }: { story: 
         if (details) details.open = false
       }} />)}</div>
     </details>}
-    {last && maintenance?.status === 'failed' && maintenance.messageId === last.id && <StatusNotice className="reply-suggestions-failure" compact icon={Sparkles} title={options.length ? uiT('回复建议未更新') : uiT('回复建议暂不可用')} details={maintenance.message ? uiT(maintenance.message) : undefined}><p>{options.length ? uiT('仍可使用已有建议，或直接输入。') : uiT('可以直接输入，继续对话。')}</p></StatusNotice>}
+    {last && maintenance?.status === 'failed' && maintenance.messageId === last.id && <SuggestionFailure key={`${story.id}:${maintenance.id}:${last.id}`} storyId={story.id} failure={maintenance} hasOptions={options.length > 0} />}
   </>
+}
+
+function SuggestionFailure({ storyId, failure, hasOptions }: { storyId: string; failure: MaintenanceRecord; hasOptions: boolean }) {
+  const storageKey = `rp.reply-options.dismissed:${storyId}`, failureKey = `${failure.id}:${failure.messageId}`
+  const [dismissed, setDismissed] = useState(() => {
+    try { return sessionStorage.getItem(storageKey) === failureKey } catch { return false }
+  })
+  if (dismissed) return null
+  return <StatusNotice className="reply-suggestions-failure" compact icon={Sparkles}
+    title={hasOptions ? uiT('回复建议未更新') : uiT('回复建议暂不可用')}
+    details={failure.message ? uiT(failure.message) : undefined}
+    actions={<IconButton label={uiT('关闭提示')} onClick={() => {
+      setDismissed(true)
+      try { sessionStorage.setItem(storageKey, failureKey) } catch { /* Dismissal still works for this mounted notice when browser storage is unavailable. */ }
+    }}><X size={16} /></IconButton>}>
+    <p>{hasOptions ? uiT('仍可使用已有建议，或直接输入。') : uiT('可以直接输入，继续对话。')}</p>
+  </StatusNotice>
 }

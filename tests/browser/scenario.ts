@@ -1,8 +1,10 @@
 /** Scenario switches belong to the current input, never to replayed conversation history. */
 export function browserScenario(messages: { role: string; content?: unknown }[]) {
   const texts = messages.filter(message => message.role === 'user').map(({ content: value }) => typeof value === 'string' ? value : Array.isArray(value) ? value.map(part => part && typeof part === 'object' && 'text' in part ? String(part.text) : '').join('\n') : '')
-  const text = texts.findLast(value => value.includes('<section name="当前输入">')) ?? ''
-  const input = text.match(/<section name="当前输入">([\s\S]*?)<\/section>/u)?.[1] ?? ''
+  const text = texts.findLast(value => value.startsWith('<roleplay_request') || value.includes('<section name="当前输入">')) ?? ''
+  // Chat sends the user message natively; its prepared request contains only parent-delivered material.
+  const input = text.match(/<section name="当前输入">([\s\S]*?)<\/section>/u)?.[1]
+    ?? texts.findLast(value => !value.startsWith('<roleplay_request') && !value.startsWith('<conversation_summary>')) ?? ''
   const stateRevision = () => {
     const contract = JSON.parse(text.match(/<commit_content>([\s\S]*?)<\/commit_content>/u)?.[1] ?? '{}')
     const revision = contract.state_commit_contract?.namespaces?.find((item: { namespace: string }) => item.namespace === 'story')?.expectedRevision

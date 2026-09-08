@@ -41,3 +41,26 @@ it('keeps conversation field values literal and excludes them from isolated task
   }
   expect(systemPromptSections({ role: 'task', conversation }).some(section => section.id === 'conversation')).toBe(false)
 })
+
+it('puts enabled reply options in the parent prompt with user directions taking precedence and excludes them from isolated roles', () => {
+  const config = { count: 3, maxCharacters: 80, keywords: ['只用第一人称对白，婉拒同行，不写姓名或动作', '', '保持沉默，用动作表示愿意同行'] }
+  const original = structuredClone(config)
+  for (const role of ['chat', 'agent'] as const) {
+    const prompt = composeSystemPrompt({ role, replyOptions: config })
+    expect(prompt).toContain('same rp_commit_turn call')
+    expect(prompt).toContain('resulting story state, not an earlier draft')
+    expect(prompt).toContain('do not apply their events to the current effects or summary')
+    expect(prompt).toContain('exactly 3 distinct')
+    expect(prompt).toContain('80 Unicode characters')
+    expect(prompt).toContain('playerCharacterId and cast')
+    expect(prompt.indexOf('take precedence')).toBeLessThan(prompt.indexOf('Default writing rules:'))
+    expect(prompt).toContain(`Option 1 direction: ${config.keywords[0]}`)
+    expect(prompt).toContain(`Option 3 direction: ${config.keywords[2]}`)
+    expect(prompt).not.toContain('Option 2 direction:')
+    const disabled = composeSystemPrompt({ role })
+    expect(disabled).toContain('Reply options are disabled.')
+    expect(disabled).not.toContain('Option 1 direction:')
+  }
+  for (const role of ['writer', 'task'] as const) expect(composeSystemPrompt({ role, replyOptions: config })).toBe(composeSystemPrompt({ role }))
+  expect(config).toEqual(original)
+})

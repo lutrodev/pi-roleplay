@@ -7,9 +7,10 @@ import { compileContextBuild, contextBuildCustomDefinitions, contextSourceCatalo
 import { renderRoleplayRequest } from './prompts.js'
 import { composeSystemPrompt } from './system-prompt.ts'
 import { stateContext, stateLoreActivation } from './state.ts'
+import type { Preferences } from '../settings/preferences.ts'
 import { storyVariables } from '../story/variables.ts'
 
-export interface ContextPolicy { identity?: string; writerModel?: string; skillInstructions?: string }
+export interface ContextPolicy { identity?: string; writerModel?: string; skillInstructions?: string; replyOptions?: Preferences['replyOptions'] }
 
 interface Source extends Record<string, unknown> {
   id: string; label: string; text: string; revision: string | number; order: number
@@ -168,24 +169,11 @@ export function assembleContext(input: ContextInput) {
     specialists: input.specialists ?? [], roleplayContext: mode === 'agent' ? compiled.contextText : compiled.parentContextText,
     commitContext })
   const conversation = { playerCharacterId: profile.playerCharacterId, cast, scene: { title: profile.scene.title } }
-  const systemPrompt = composeSystemPrompt({ role: mode, identity: input.policy?.identity, model: model.model, stateEnabled, skillInstructions: input.policy?.skillInstructions, conversation })
+  const systemPrompt = composeSystemPrompt({ role: mode, identity: input.policy?.identity, model: model.model, stateEnabled, replyOptions: input.policy?.replyOptions, skillInstructions: input.policy?.skillInstructions, conversation })
   const writerSystemPrompt = composeSystemPrompt({ role: 'writer', identity: input.policy?.identity, model: input.policy?.writerModel ?? model.model, attachments: input.files.length > 0, conversation })
-  const optionPlayer = cast.find(member => member.characterId === profile.playerCharacterId && member.controller === 'user')
   return {
     writerPrompt: compiled.contextText, writerSystemPrompt, parentPrompt, systemPrompt,
     runtimePrompt: mode === 'chat' ? referencedStories.trim() : '',
-    replyOptionsPlayer: optionPlayer ? { characterId: optionPlayer.characterId, name: optionPlayer.name } : null,
-    replyOptionsContext: (committedState: StoryState, narrative: StoryMessage) => {
-      // Re-evaluate state-dependent material against the commit, using only this turn's captured books and layout.
-      const nextState = stateEnabled ? committedState : { namespaces: {} }
-      const nextLore = prepareLore(nextState, [...recent, ...current, narrative])
-      const replacements = new Map(nextLore.fragments.map(item => [item.id, item]))
-      const nextStateContext = stateEnabled ? stateContext(nextState) : { text: '', parentText: '' }
-      const nextSources = candidates.map(item => item.id === 'rp.state'
-        ? { ...item, text: nextStateContext.text, parentText: nextStateContext.parentText, revision: digest(nextState) }
-        : replacements.get(item.id) ?? item)
-      return compileContextBuild({ layout, candidates: nextSources.filter(item => item.text.length > 0), unavailable: missing }).contextText
-    },
     sourceMessageIds: [...recent, ...current].map(message => message.id),
     identities, files: currentFiles, sources: asJson(compiled.fragments) as unknown as JsonObject[],
     layout, catalog: contextSourceCatalog(definitions), diagnostics: { missing, lore: lore.diagnostics },

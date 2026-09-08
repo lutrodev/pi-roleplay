@@ -39,7 +39,7 @@ describe('Writer and atomic narrative commits', () => {
     const core = { text, summary: '', effects: [], references: [], extensions: { [namespace]: { version: 1, options: [''] } } }
     const size = 262_144 - Buffer.byteLength(JSON.stringify(core), 'utf8') + excess
     const value = { version: 1, options: ['x'.repeat(size)] }
-    const committed = await x.turns.commit(x.run.id, x.owner, '', { runSummary: '' }, true, undefined, async () => ({ extensions: { [namespace]: value }, diagnostics: [] }))
+    const committed = await x.turns.commit(x.run.id, x.owner, '', { runSummary: '', extensions: { [namespace]: value } }, true, undefined, { count: 1, maxCharacters: 50, keywords: [''] })
     if (committed.type !== 'turn.committed') throw new Error('Expected narrative commit')
     expect(committed.data.extensions[namespace]).toEqual(excess === 0 ? value : undefined)
     expect(committed.data.diagnostics?.[0]?.code).toBe(excess === 0 ? undefined : 'RP_GENERATED_ARTIFACT_LIMIT')

@@ -57,19 +57,17 @@ const app = await createServer({ dataDirectory: join(root, 'data'), publicOrigin
     if (body.messages.some(message => message.role === 'user' && typeof message.content === 'string' && message.content.includes('BROWSER_SUMMARY_DELAY_TEST'))) await pause(10000, undefined, { signal: init?.signal ?? undefined })
     text = SUMMARY_HEADINGS.map(heading => `${heading}\n- 林舟来到灯塔，与一位同样收到匿名信的女人会面。`).join('\n\n')
   }
-  else if (names.includes('emit_reply_options')) {
-    if (activityPreview || browserScenario(body.messages).has('BROWSER_REPLY_OPTIONS_DELAY_TEST')) await pause(8000, undefined, { signal: init?.signal ?? undefined })
-    call = { name: 'emit_reply_options', args: { options: ['请她先讲述信中的内容。', '比较两封信的邮戳与字迹。', '起身查看窗外是谁来了。'] } }
-  }
   else if (names.includes('rp_write_turn')) {
     const scenario = browserScenario(body.messages)
     const performed = body.messages.flatMap(message => (message.tool_calls ?? []).map(call => (call as { function: { name: string } }).function.name))
     if (last?.role === 'user' && scenario.has('BROWSER_DELAY_TEST')) await pause(10000, undefined, { signal: init?.signal ?? undefined })
     if (last?.role === 'tool' && performed.includes('rp_write_turn')) {
-      if (activityPreview && scenario.has('BROWSER_STREAM_TEST')) await pause(10000, undefined, { signal: init?.signal ?? undefined })
+      if (activityPreview && scenario.has('BROWSER_STREAM_TEST') || scenario.has('BROWSER_COMMIT_DELAY_TEST')) await pause(10000, undefined, { signal: init?.signal ?? undefined })
       call = JSON.stringify(last.content).includes(writerResponse)
         ? { name: 'rp_reply', args: { useWriterResult: true } }
-        : { name: 'rp_commit_turn', args: { runSummary: '林舟在灯塔中与神秘来信的另一位收件人见面。' } }
+        : { name: 'rp_commit_turn', args: { runSummary: '林舟在灯塔中与神秘来信的另一位收件人见面。',
+          ...(!system.includes('Reply options are disabled.') ? { extensions: { 'rp.reply-options': { options: scenario.has('BROWSER_REPLY_OPTIONS_INVALID_TEST') ? [] : ['请她先讲述信中的内容。', '比较两封信的邮戳与字迹。', '起身查看窗外是谁来了。'] } } } : {}),
+        } }
     }
     else if (last?.role === 'user' && names.includes('ask_user_question') && scenario.has('出发前，让我们确认一下计划。')) call = { name: 'ask_user_question', args: { questions: [
       { id: 'direction', question: '接下来先调查哪里？', options: [{ label: '塔顶', description: '检查钟楼与灯室。' }, { label: '码头', description: '打听寄信人的去向。' }] },

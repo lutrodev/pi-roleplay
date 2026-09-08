@@ -8,18 +8,16 @@ import { commitIssues, rejectCommitIssues, type CommitIssue } from '../../../../
 import { createNamespaceSnapshot, normalizeNamespaceId, normalizeStateDefinition } from '../../../../packages/rp-core/src/state/definition.js'
 import { validateStateValue } from '../../../../packages/rp-core/src/state/schema.js'
 import { requireStateNamespaceCapacity } from '../../../../packages/rp-core/src/state/limits.ts'
-import type { CommitDiagnostic, JsonObject, JsonValue, NamespaceSnapshot, StoryEvent, StoryMessage, StorySnapshot, StoryState } from '../../../../packages/rp-core/src/types.ts'
+import type { JsonObject, JsonValue, NamespaceSnapshot, StoryEvent, StoryMessage } from '../../../../packages/rp-core/src/types.ts'
+import { normalizeReplyOptionsInput, REPLY_OPTIONS_EXTENSION_NAMESPACE } from '../../../../packages/rp-core/src/interaction/reply-options.js'
+import type { Preferences } from '../../../../packages/rp-core/src/settings/preferences.ts'
 import type { StoryRepository } from '../storage/story-repository.ts'
 
 interface CachedCommit { token: string; contextSeq: number; draft: JsonObject; narrative: string; ownerId: string }
-export interface CommitGeneration { message: StoryMessage; state: StoryState; contextSeq: number }
-export interface GeneratedCommit { extensions: JsonObject; diagnostics: CommitDiagnostic[] }
-export type CommitGenerator = (input: CommitGeneration) => Promise<GeneratedCommit>
 const MAX_COMMIT_BYTES = 262_144
 
 export class TurnService {
   private readonly retries = new Map<string, CachedCommit>()
-  private readonly committing = new Set<string>()
   constructor(readonly stories: StoryRepository) {}
 
   recordWriter(runId: string, callId: string, contextSeq: number, text: string, writerHistory?: import('../../../../packages/rp-core/src/agents/writer-history.ts').WriterHistoryMetadata) {
@@ -34,8 +32,7 @@ export class TurnService {
     })
   }
 
-  async commit(runId: string, ownerId: string, narrative: string, input: unknown, stateEnabled = true, guard?: () => void, generate?: CommitGenerator) {
-    requireValue(!this.committing.has(runId), 'COMMIT_IN_PROGRESS', '本轮正在提交，请等待当前提交完成。', 409)
+  async commit(runId: string, ownerId: string, narrative: string, input: unknown, stateEnabled = true, guard?: () => void, replyOptions?: Preferences['replyOptions']) {
     const run = this.stories.run(runId)
     const context = this.context(run.storyId, runId)
     requireValue(context, 'CONTEXT_REQUIRED', '本轮写作资料尚未准备完成。', 409)
@@ -51,9 +48,8 @@ export class TurnService {
       narrative = cached.narrative
       ownerId = cached.ownerId
     }
-    this.committing.add(runId)
     try {
-      const proposal = this.stories.database.transaction(() => {
+      return this.stories.database.transaction(() => {
         const writer = this.stories.latestRunEvent(run.storyId, runId, 'writer.completed')
         requireValue(writer?.type === 'writer.completed' && writer.data.contextSeq === context.seq, 'WRITER_REQUIRED', '请先完成使用当前资料的正文写作。', 409)
         const snapshot = this.stories.snapshot(run.storyId)
@@ -70,21 +66,22 @@ export class TurnService {
         const effects = draft.effects ?? []
         inspect('/effects', () => requireValue(stateEnabled || Array.isArray(effects) && effects.length === 0, 'STATE_UNAVAILABLE', '本轮未启用变量维护，不能提交变量变化。'))
         const references = draft.references ?? []
-        const extensions = draft.extensions ?? {}
-        inspect('/extensions', () => { objectInput(extensions); requireValue(Object.keys(extensions).length === 0, 'EXTENSION_UNAVAILABLE', '本次提交包含未启用的扩展结果。') })
+        const extensions = draft.extensions && typeof draft.extensions === 'object' && !Array.isArray(draft.extensions) ? draft.extensions : {}
+        inspect('/extensions', () => requireValue(Object.keys(extensions).every(key => key === REPLY_OPTIONS_EXTENSION_NAMESPACE), 'EXTENSION_UNAVAILABLE', '本次提交包含未启用的扩展结果。'))
         issues.push(...this.validateReferences(references, context.data.sources))
         if (guard) inspect('/guard', guard)
-        const serialized = JSON.stringify({ text, summary, effects, references, extensions })
+        // Advisory options do not consume the core budget or change an already committed turn.
+        const serialized = JSON.stringify({ text, summary, effects, references, extensions: {} })
         inspect('', () => requireValue(Buffer.byteLength(serialized, 'utf8') <= MAX_COMMIT_BYTES, 'COMMIT_TOO_LARGE', '本次剧情提交过大，请缩短正文或提交内容。'))
         const fingerprint = createHash('sha256').update(serialized).digest('hex')
         const existing = this.stories.findEvent(run.storyId, `commit:${runId}`)
         if (existing?.type === 'turn.committed') {
           rejectCommitIssues(issues)
           requireValue(existing.data.fingerprint === fingerprint, 'COMMIT_CONFLICT', '这次生成已经提交了不同的正文。', 409)
-          return { existing }
+          return existing
         }
         inspect('/guard', () => requireValue(this.stories.run(runId).status === 'running', 'RUN_STATE_CONFLICT', '当前生成已停止，正文尚未提交。', 409))
-        let prepared: Pick<ReturnType<typeof prepareStateEffects>, 'effects' | 'updates' | 'state'> = { effects: [], updates: [], state: snapshot.state }
+        let prepared: Pick<ReturnType<typeof prepareStateEffects>, 'effects' | 'updates'> = { effects: [], updates: [] }
         if (stateEnabled) {
           try { prepared = prepareStateEffects(snapshot.state, effects) }
           catch (error) { issues.push(...commitIssues(error, Array.isArray(effects) ? '' : '/effects')) }
@@ -99,28 +96,20 @@ export class TurnService {
         const data: Extract<StoryEvent, { type: 'turn.committed' }>['data'] = {
           commitId: runId, fingerprint, runId, message, summary: summary as string,
           effects: prepared.effects as unknown as JsonObject[], stateUpdates: prepared.updates,
-          references: references as JsonValue[], extensions: extensions as JsonObject,
+          references: references as JsonValue[], extensions: {},
         }
         requireValue(commitBytes(data) <= MAX_COMMIT_BYTES, 'COMMIT_TOO_LARGE', '本次剧情提交过大，请缩短正文或提交内容。')
-        return { data, state: prepared.state, source: commitSource(snapshot) }
-      })
-      if (proposal.existing) return proposal.existing
-      const { data } = proposal
-      // Validate the core commit first, then generate against its private final state.
-      // Never hold a SQLite transaction open across the model request.
-      const generated = generate ? await generate({ message: structuredClone(data.message), state: structuredClone(proposal.state), contextSeq: context.seq }) : undefined
-      return this.stories.database.transaction(() => {
-        requireValue(this.stories.run(runId).status === 'running', 'RUN_STATE_CONFLICT', '当前生成已停止，正文尚未提交。', 409)
-        requireValue(this.context(run.storyId, runId)?.seq === context.seq && commitSource(this.stories.snapshot(run.storyId)) === proposal.source,
-          'COMMIT_CONTEXT_CHANGED', '提交期间故事已变化，请重新检查本轮正文。', 409)
-        guard?.()
-        for (const [namespace, value] of Object.entries(generated?.extensions ?? {})) {
-          data.extensions[namespace] = value
-          if (commitBytes(data) <= MAX_COMMIT_BYTES) continue
-          delete data.extensions[namespace]
-          appendDiagnostic(data, { source: namespace, code: 'RP_GENERATED_ARTIFACT_LIMIT', severity: 'warning', message: '回复选项超过本轮容量限制，正文与状态仍正常保存。' })
+        if (replyOptions) {
+          try {
+            data.extensions[REPLY_OPTIONS_EXTENSION_NAMESPACE] = normalizeReplyOptionsInput((extensions as JsonObject)[REPLY_OPTIONS_EXTENSION_NAMESPACE], replyOptions.count)
+            if (commitBytes(data) > MAX_COMMIT_BYTES) {
+              delete data.extensions[REPLY_OPTIONS_EXTENSION_NAMESPACE]
+              data.diagnostics = [{ source: REPLY_OPTIONS_EXTENSION_NAMESPACE, code: 'RP_GENERATED_ARTIFACT_LIMIT', severity: 'warning', message: '回复选项超过本轮容量限制，正文与状态仍正常保存。' }]
+            }
+          } catch {
+            data.diagnostics = [{ source: REPLY_OPTIONS_EXTENSION_NAMESPACE, code: 'RP_REPLY_OPTIONS_INVALID', severity: 'warning', message: '主模型未提供可用的回复建议，正文与变量已保存。' }]
+          }
         }
-        for (const diagnostic of generated?.diagnostics ?? []) appendDiagnostic(data, diagnostic)
         const event = this.stories.append(run.storyId, { type: 'turn.committed', data }, `commit:${runId}`)
         this.retries.delete(runId)
         return event
@@ -130,7 +119,7 @@ export class TurnService {
       this.retries.set(runId, { token, contextSeq: context.seq, draft, narrative, ownerId })
       const failure = error instanceof RpError ? error : new RpError('COMMIT_FAILED', '剧情尚未提交，请检查后重试。', 400)
       throw new RpError(failure.code, failure.message, failure.statusCode, { issues: failure.details, retry: { token, patches: [] } })
-    } finally { this.committing.delete(runId) }
+    }
   }
 
   configureState(runId: string, ownerId: string, input: { operation: 'create' | 'update' | 'reset' | 'delete'; namespace: string; expectedRevision: number; definition?: unknown; initialValue?: unknown; value?: unknown }) {
@@ -199,18 +188,7 @@ export class TurnService {
   }
 }
 
-function commitSource(story: StorySnapshot) {
-  return createHash('sha256').update(JSON.stringify({ profile: story.profile, state: story.state, messages: story.messages.filter(message => message.kind !== 'tool') })).digest('hex')
-}
-
+// Bound the authored payload; the one fixed-size diagnostic remains observable even at the payload limit.
 function commitBytes(data: Extract<StoryEvent, { type: 'turn.committed' }>['data']) {
-  return Buffer.byteLength(JSON.stringify({ text: data.message.text, summary: data.summary, effects: data.effects, references: data.references, extensions: data.extensions,
-    ...(data.diagnostics?.length ? { diagnostics: data.diagnostics } : {}),
-  }), 'utf8')
-}
-
-function appendDiagnostic(data: Extract<StoryEvent, { type: 'turn.committed' }>['data'], diagnostic: CommitDiagnostic) {
-  ;(data.diagnostics ??= []).push(diagnostic)
-  if (commitBytes(data) > MAX_COMMIT_BYTES) data.diagnostics.pop()
-  if (!data.diagnostics.length) delete data.diagnostics
+  return Buffer.byteLength(JSON.stringify({ text: data.message.text, summary: data.summary, effects: data.effects, references: data.references, extensions: data.extensions }), 'utf8')
 }

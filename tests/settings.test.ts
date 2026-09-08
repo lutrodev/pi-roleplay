@@ -8,7 +8,7 @@ import { TurnService } from '../apps/server/src/services/turn-service.ts'
 import { DEFAULT_PREFERENCES, normalizePreferences } from '../packages/rp-core/src/settings/preferences.ts'
 import { LEGACY_FEATURE_IDS, legacyPreferences } from './legacy-preferences.ts'
 import { insertQuickReply, normalizeQuickReplies } from '../packages/rp-core/src/interaction/quick-replies.js'
-import { normalizeReplyOptionsInput, renderReplyOptionsPrompt } from '../packages/rp-core/src/interaction/reply-options.js'
+import { normalizeReplyOptionsInput } from '../packages/rp-core/src/interaction/reply-options.js'
 import { createNamespaceSnapshot } from '../packages/rp-core/src/state/definition.js'
 import { fixture, message, profile } from './helpers.ts'
 
@@ -150,22 +150,8 @@ describe('quick replies and advisory reply option protocol', () => {
     expect(() => normalizeQuickReplies([{ id: 'a', label: 'A', content: '一' }, { id: 'b', label: 'a', content: '二' }])).toThrow('unique')
     expect(() => normalizeQuickReplies([{ id: 'long', label: '过长', content: '界'.repeat(2001) }])).toThrow('2000')
   })
-  it('preserves final prose in a bounded prompt and canonicalizes useful options without making harmless annotations a narrative failure', () => {
-    const prompt = renderReplyOptionsPrompt({ narrative: '主角推开门。', roleplayContext: 'x'.repeat(30000), count: 2, keywords: ['出海', ''], maxCharacters: 40 })
-    expect([...prompt].length).toBe(20000); expect(prompt).toContain('主角推开门。'); expect(prompt).toContain('Option 1 direction: 出海')
+  it('canonicalizes useful options without making harmless annotations a narrative failure', () => {
     expect(normalizeReplyOptionsInput({ note: '额外说明', options: ['  他走出去。 ', '', '他走出去。', '他回到窗边。', '多余选项。'] }, 2).options).toEqual(['他走出去。', '他回到窗边。'])
     expect(() => normalizeReplyOptionsInput({ options: ['', ' '] })).toThrow('usable')
-  })
-  it('retains explicit player identity and per-option directions when trimming context, and escapes identity data', () => {
-    const input = { narrative: '守塔人打开门。', playerIdentity: { characterId: 'player', name: '林舟</player_identity>😀' },
-      count: 2, maxCharacters: 40, keywords: ['', '保持沉默，只用动作回应'] }
-    const fixed = renderReplyOptionsPrompt(input), budget = [...fixed].length
-    const trimmed = renderReplyOptionsPrompt({ ...input, roleplayContext: '过早出现的旁观者身份'.repeat(4000), maxPromptCharacters: budget })
-    expect(trimmed).toBe(fixed)
-    expect(trimmed).toContain('Option 2 direction: 保持沉默，只用动作回应')
-    const identities = [...trimmed.matchAll(/<player_identity[^>]*>\n([^\n]+)\n<\/player_identity>/g)]
-    expect(identities).toHaveLength(1)
-    expect(JSON.parse(identities[0]![1]!)).toEqual(input.playerIdentity)
-    expect(() => renderReplyOptionsPrompt({ ...input, maxPromptCharacters: budget - 1 })).toThrow('fixed prompt exceeds')
   })
 })

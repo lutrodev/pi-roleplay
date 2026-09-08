@@ -58,8 +58,7 @@ describe('Writer result routing', () => {
   it.each(['chat', 'agent'] as const)('delivers the saved non-narrative %s response exactly once without effects or generated options', async mode => {
     const text = '这次请求无法继续。请换一个方向，或补充需要澄清的信息。'
     const state = unchangedState(), x = setup([{ calls: [write] }, { text }, { calls: [writerReply, commit] }], mode, state)
-    let options = 0
-    x.resources.replyOptions = async () => { options++; return { extensions: {}, diagnostics: [] } }
+    x.resources.replyOptions = { config: { count: 2, maxCharacters: 40, keywords: ['', ''] }, enabled: () => true }
     x.queue.wake(); await x.queue.idle()
     const story = x.stories.snapshot(x.story.id), events = x.stories.eventLog(x.story.id)
     expect(x.stories.run(x.run.id).status).toBe('completed')
@@ -68,7 +67,8 @@ describe('Writer result routing', () => {
     expect(events.some(event => event.type === 'turn.committed')).toBe(false)
     expect(story.tools.filter(tool => tool.name === 'rp_write_turn')).toHaveLength(1)
     expect(story.tools.find(tool => tool.name === 'rp_commit_turn')?.status).toBe('failed')
-    expect(options).toBe(0)
+    expect(story.replyOptions).toEqual({})
+    expect(story.maintenance['reply-options']).toBeUndefined()
     expect(x.requests).toHaveLength(3)
     expect(JSON.stringify(new ModelHistoryService(x.stories).read(story))).toContain(text)
     expect(x.faults).toEqual([])
@@ -378,4 +378,33 @@ it('A02 retains failed Agent commit prose instead of a later acknowledgement, wi
   x.stories.setRunStatus(next.id, 'cancelled')
   x.service.remove(story.id, story.revision, draft.id)
   expect(x.stories.snapshot(story.id).messages.map(message => message.role)).toEqual(['user'])
+})
+
+describe('main-model narrative options', () => {
+  it.each(['chat', 'agent'] as const)('accepts useful and malformed %s option values through Pi without an extra call or a narrative retry', async mode => {
+    for (const extensions of [{ 'rp.reply-options': { options: ['旅人走向海岸。'] } }, { 'rp.reply-options': { options: 42 } }, { 'rp.reply-options': null }, 'malformed', null, []]) {
+      const text = '旅人在灯塔中休息，恢复了精力。'
+      const args = { ...(mode === 'agent' ? { narrative: text } : {}),
+        effects: [{ kind: 'state.update', namespace: 'story', expectedRevision: 1, payload: { changes: [{ op: 'increment', path: '/minute', by: 1, reason: '休息经过一分钟' }] } }],
+        extensions,
+      }
+      const x = setup([{ calls: [write] }, { text }, { calls: [{ name: 'rp_commit_turn', args }] }], mode, unchangedState())
+      x.resources.replyOptions = { config: { count: 2, maxCharacters: 50, keywords: ['出海', ''] }, enabled: () => true }
+      x.queue.wake(); await x.queue.idle()
+      const saved = x.stories.snapshot(x.story.id)
+      expect(x.stories.run(x.run.id).status).toBe('completed')
+      expect(saved.messages.at(-1)?.text).toBe(text)
+      expect(saved.state.namespaces.story?.value).toEqual({ minute: 6 })
+      expect(saved.tools.filter(tool => tool.name === 'rp_commit_turn').map(tool => tool.status)).toEqual(['completed'])
+      const value = extensions && typeof extensions === 'object' && 'rp.reply-options' in extensions ? extensions['rp.reply-options'] : undefined
+      if (Array.isArray(value?.options)) expect(saved.replyOptions[saved.messages.at(-1)!.id]).toEqual(value.options)
+      else expect(saved.maintenance['reply-options']).toMatchObject({ status: 'failed', code: 'RP_REPLY_OPTIONS_INVALID' })
+      expect(x.requests).toHaveLength(3)
+      const system = (x.requests[2]!.messages as { role: string; content: string }[]).filter(item => item.role === 'system').map(item => item.content).join('\n')
+      expect(system).toContain('Option 1 direction: 出海')
+      const writerSystem = (x.requests[1]!.messages as { role: string; content: string }[]).filter(item => item.role === 'system').map(item => item.content).join('\n')
+      expect(writerSystem).not.toContain('Option 1 direction: 出海')
+      expect(x.faults).toEqual([])
+    }
+  })
 })

@@ -96,28 +96,23 @@ describe('durable pending input boundaries', () => {
   })
 })
 
-for (const arrival of ['writer', 'commit', 'options'] as const) it(`real Pi steering during ${arrival} cannot commit stale Writer prose`, async () => {
+for (const arrival of ['writer', 'commit'] as const) it(`real Pi steering during ${arrival} cannot commit stale Writer prose`, async () => {
   const x = setup(), requests: Record<string, unknown>[] = [], route = { provider: 'test', model: 'story' }
   const run = x.service.send(x.story.id, 'first', input('原始要求')).run
-  const write = { name: 'rp_write_turn', args: { action: 'write' } }, commit = { name: 'rp_commit_turn', args: {} }
+  const write = { name: 'rp_write_turn', args: { action: 'write' } }, commit = { name: 'rp_commit_turn', args: { extensions: { 'rp.reply-options': { options: ['留在门内。'] } } } }
   const script = arrival === 'writer'
     ? [{ call: write }, { text: '不再适用的初稿' }, { call: write }, { text: '遵守补充要求的新稿' }, { call: commit }]
-    : [{ call: write }, { text: '不再适用的初稿' }, { call: commit }, { call: write }, { text: '遵守补充要求的新稿' }, { call: commit }]
+    : [{ call: write }, { text: '不再适用的初稿' }, { call: { name: 'rp_commit_turn', args: { extensions: { 'rp.reply-options': { options: ['打开大门。'] } } } } }, { call: write }, { text: '遵守补充要求的新稿' }, { call: commit }]
   const models = new ModelRegistry([{ ...route, keyEnv: 'SYNTHETIC', api: 'openai-completions', baseUrl: 'https://test.invalid/v1', contextWindow: 100000, maxTokens: 8000 }], { env: () => 'synthetic-test', fetch: async (_url, init) => {
     const index = requests.length, next = script[index]!
     requests.push(JSON.parse(String(init?.body)))
-    if (arrival !== 'options' && index === (arrival === 'writer' ? 1 : 2)) x.inputs.submit(x.story.id, 'steering', input('补充要求：保持灯塔大门关闭。'), 'steer', run.id)
+    if (index === (arrival === 'writer' ? 1 : 2)) x.inputs.submit(x.story.id, 'steering', input('补充要求：保持灯塔大门关闭。'), 'steer', run.id)
     const delta = { role: 'assistant', content: next.text ?? '', ...(next.call ? { tool_calls: [{ index: 0, id: `test-${index}`, type: 'function', function: { name: next.call.name, arguments: JSON.stringify(next.call.args) } }] } : {}) }
     return new Response(`data: ${JSON.stringify({ id: `reply-${index}`, choices: [{ index: 0, delta, finish_reason: next.call ? 'tool_calls' : 'stop' }] })}\n\ndata: [DONE]\n\n`, { headers: { 'content-type': 'text/event-stream' } })
   } })
   const executor = new RunExecutor(x.stories, new ContextService(x.stories, x.assets), new TurnService(x.stories), models, x.files, undefined, x.inputs)
-  let generations = 0
   const faults: unknown[] = [], queue = new RunQueue(x.stories, (id, signal) => executor.execute(id, signal, { routes: { main: route, writer: route }, files: [], images: [], readonlyTools: [], specialists: [], tools: () => [],
-    ...(arrival === 'options' ? { replyOptions: async () => {
-      generations++
-      if (generations === 1) x.inputs.submit(x.story.id, 'steering', input('补充要求：保持灯塔大门关闭。'), 'steer', run.id)
-      return { extensions: { 'rp.reply-options': { version: 1, options: [generations === 1 ? '打开大门。' : '留在门内。'] } }, diagnostics: [] }
-    } } : {}),
+    replyOptions: { config: { count: 1, maxCharacters: 40, keywords: [''] }, enabled: () => true },
   }), error => faults.push(error))
   queue.wake(); await queue.idle(); await queue.close()
   expect(x.stories.run(run.id)).toMatchObject({ status: 'completed', error: null })
@@ -127,8 +122,5 @@ for (const arrival of ['writer', 'commit', 'options'] as const) it(`real Pi stee
   expect(x.stories.eventsOfTypes(x.story.id, ['turn.committed'])).toHaveLength(1)
   expect(x.inputs.list(x.story.id)).toEqual([])
   expect(faults).toEqual([])
-  if (arrival === 'options') {
-    expect(generations).toBe(2)
-    expect(Object.values(x.stories.snapshot(x.story.id).replyOptions)).toEqual([['留在门内。']])
-  }
+  expect(Object.values(x.stories.snapshot(x.story.id).replyOptions)).toEqual([['留在门内。']])
 })

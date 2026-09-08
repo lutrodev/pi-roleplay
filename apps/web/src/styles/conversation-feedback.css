@@ -4,7 +4,8 @@
 .run-feedback > .draft-message { margin: 10px 0 20px; }
 .composer-surface:has(.reply-suggestions) > .status-notice { border: 0; border-radius: 0; }
 .composer-surface:not(:has(.reply-suggestions)) > .status-notice:not(:last-child) { margin-bottom: 8px; }
-.reply-suggestions-failure.status-notice { padding: 12px 14px; }
+.reply-suggestions-failure.status-notice { position: relative; padding: 12px 52px 12px 14px; }
+.reply-suggestions-failure > .status-notice-actions { position: absolute; top: 4px; right: 4px; margin: 0; }
 .summary-feedback { margin: 18px 0; }
 .story-page > .loading { margin-block: auto; }
 .reading-column > .empty-state { padding: 48px 16px; gap: 10px; }

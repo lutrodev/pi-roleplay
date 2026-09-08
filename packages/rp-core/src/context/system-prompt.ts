@@ -1,4 +1,6 @@
 import { DEFAULT_WRITER_PERSONA, roleplayPersonaText, roleplayRuntimeContractText } from './prompts.js'
+import { replyOptionsInstructions } from './reply-options.ts'
+import type { Preferences } from '../settings/preferences.ts'
 import type { StoryProfile } from '../types.ts'
 
 export type PromptRole = 'chat' | 'agent' | 'writer' | 'task'
@@ -7,6 +9,7 @@ export interface SystemPromptInput {
   identity?: string
   model?: string
   stateEnabled?: boolean
+  replyOptions?: Preferences['replyOptions']
   skillInstructions?: string
   taskInstructions?: string
   attachments?: boolean
@@ -25,6 +28,7 @@ export function systemPromptSections(input: SystemPromptInput): SystemPromptSect
   } else {
     sections.push({ id: 'roleplay', label: 'RP 职责与事实规则', text: roleplayPersonaText({ stateEnabled: input.stateEnabled ?? true }), source: '应用内置规则；变量开关决定变量职责' })
     sections.push({ id: 'workflow', label: `${input.role === 'chat' ? 'Chat' : 'Agent'} 工作流程`, text: roleplayRuntimeContractText({ executionMode: input.role }), source: '应用内置 Writer 调用和剧情提交契约' })
+    sections.push({ id: 'reply-options', label: '回复选项', text: replyOptionsInstructions(input.replyOptions), source: '系统设置中的回复选项开关、数量、字数和方向；随剧情提交一起生成' })
   }
   if ((input.role === 'agent' || input.role === 'task') && input.skillInstructions) sections.push({ id: 'skills', label: 'Skills 使用规则与目录', text: input.skillInstructions, source: '本轮启用的 Skills 快照；用户通过 /名称 调用的完整指导追加在此处' })
   const rendered = sections.map(section => ({ ...section, text: section.text.replaceAll('{{model}}', input.model ?? '（接收方模型）') }))

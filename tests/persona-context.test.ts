@@ -54,7 +54,6 @@ describe('live persona identity in frozen context', () => {
         { characterId: 'npc', name: '旁观者', controller: 'agent' }, { characterId: 'player', name, controller: 'user' },
       ], scene: {} })
       expect(context.identities.userName).toBe(name)
-      expect(context.replyOptionsPlayer).toEqual({ characterId: 'player', name })
       expect(context.sources.find(source => source.id === 'rp.persona')!.text).toContain(`name: ${name}\n`)
       for (const prompt of [context.parentPrompt, context.writerPrompt]) {
         expect(prompt).not.toContain('"playerCharacterId"')
@@ -83,7 +82,6 @@ describe('live persona identity in frozen context', () => {
     const context = x.contexts.preview(x.story.id, '', route, [], [], '', {}, saved.profile)
     expectParticipation(context, { playerCharacterId: saved.profile.playerCharacterId, cast: saved.profile.cast, scene: {} })
     expect(context.identities.userName).toBe('会话原名')
-    expect(context.replyOptionsPlayer).toEqual({ characterId: 'player', name: '会话原名' })
     expect(context.sources.find(source => source.id === 'rp.persona')).toBeUndefined()
     if (state === 'deleted') expect(context.diagnostics.missing).toContainEqual(expect.objectContaining({ id: x.first.id, kind: 'persona' }))
   })
@@ -99,6 +97,5 @@ describe('live persona identity in frozen context', () => {
     saved.profile.cast = [{ characterId: 'npc', name: '旁观者', controller: 'agent' }]
     const withoutPlayer = assembleContext(input)
     expectParticipation(withoutPlayer, { cast: saved.profile.cast, scene: {} })
-    expect(withoutPlayer.replyOptionsPlayer).toBeNull()
   })
 })

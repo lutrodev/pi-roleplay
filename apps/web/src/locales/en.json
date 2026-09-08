@@ -1720,7 +1720,6 @@
   "显示会话变量卡片": "Show conversation variable cards",
   "在最新回复下方显示变量。隐藏卡片不会停止变量更新，仍可从资料中的变量页查看。": "Show variables below the latest reply. Hiding cards does not stop updates; variables remain available in the conversation details.",
   "自动生成回复建议": "Automatically generate reply suggestions",
-  "回复建议会与正文一起保存。关闭后跳过建议生成，已有配置会保留。": "Save reply suggestions together with the narrative. Turning this off skips suggestion generation and keeps your settings.",
   "允许调用任务子代理": "Allow task subagents",
   "在 Agent 模式下，主模型可调用已启用的任务子代理。关闭后保留单项配置，不影响 Writer。": "In Agent mode, the main model may call enabled task subagents. Turning this off keeps their configurations and does not affect Writer.",
   "任务子代理已暂停。各项配置仍可编辑，重新允许调用后生效；Writer 正常工作。": "Task subagents are paused. You can still edit their configurations, which apply when calls are enabled again. Writer continues to work.",
@@ -1907,5 +1906,6 @@
   "查看本轮轨迹": "View this round’s trace",
   "查看轨迹": "View trace",
   "本轮轨迹暂时无法读取": "This round’s trace is temporarily unavailable",
-  "实时进展暂时无法读取，可查看本轮轨迹": "Live progress is unavailable; view this round’s trace for details"
+  "实时进展暂时无法读取，可查看本轮轨迹": "Live progress is unavailable; view this round’s trace for details",
+  "主模型会在提交正文和变量时生成回复建议。关闭后不再要求生成，已有配置会保留。": "The main model generates reply suggestions when submitting the narrative and variables. Turning this off stops requesting suggestions and keeps your configuration."
 }

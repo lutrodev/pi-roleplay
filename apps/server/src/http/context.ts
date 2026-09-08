@@ -22,7 +22,7 @@ export function registerContextPreview(app: FastifyInstance, contexts: ContextSe
     const inherited = preferences.mainModel ?? defaultMain
     const model = profile.runtime.model ?? inherited?.model ?? '（尚未选择模型）'
     const { withCheckpoint: _rebuild, ...assembly } = contexts.preview(story.id, '', { provider: profile.runtime.provider ?? inherited?.provider ?? 'preview', model }, [], [], '',
-      { identity: preferences.identity }, profile)
+      { identity: preferences.identity, replyOptions: preferences.replyOptionsEnabled ? preferences.replyOptions : undefined }, profile)
     return assembly
   })
 }
