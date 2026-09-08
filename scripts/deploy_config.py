@@ -111,25 +111,73 @@ def proxy_values(origin, mode, *, port=None, bind=None, network=None, previous=N
             'RP_HTTP_PORT': http_port, 'RP_HTTPS_PORT': https_port}
 
 
+def require_new_storage(root, values):
+    storage = (root / values.get('RP_STORAGE_DIR', './state')).resolve()
+    if os.path.lexists(storage / 'app/app.sqlite'):
+        if not (root / 'secrets/session_key').is_file():
+            raise RuntimeError('已有应用数据库但缺少原 secrets/session_key。请从原部署或备份恢复原加密密钥，不能重新生成。')
+        raise RuntimeError('已有应用数据。继续启动请使用 up；升级请使用 update；重置密码请使用 password。')
+    return storage
+
+
+def create_file(path, content, mode):
+    temporary = path.with_name(path.name + '.tmp-' + secrets.token_hex(6))
+    try:
+        with temporary.open('xb') as file:
+            os.chmod(temporary, 0o600)
+            file.write(content)
+            file.flush()
+            os.fchmod(file.fileno(), mode)
+            os.fsync(file.fileno())
+        # Publish a complete file without replacing a credential created meanwhile.
+        os.link(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def prepare_installation(root, values):
+    storage = require_new_storage(root, values)
+    files = {
+        'secrets/session_key': (lambda: secrets.token_bytes(32), 0o444),
+        'secrets/tool_token': (lambda: secrets.token_urlsafe(48).encode(), 0o444),
+        'secrets/models.env': (lambda: b'# Only app receives these environment variables.\nRP_MODEL_API_KEY=\n', 0o600),
+        'config/models.json': (lambda: b'{"models":[],"main":null}\n', 0o644),
+    }
+    for name in ['secrets', 'config', 'skills', 'skills/custom']:
+        path = root / name
+        if path.is_symlink() or path.exists() and not path.is_dir():
+            raise RuntimeError(f'{name} 必须是普通目录，未修改初始化文件。')
+    for name in files:
+        path = root / name
+        if path.is_symlink() or path.exists() and not path.is_file():
+            raise RuntimeError(f'{name} 必须是普通文件，未修改初始化文件。')
+        if not path.exists():
+            continue
+        if name == 'secrets/session_key' and path.stat().st_size != 32:
+            raise RuntimeError('现有 secrets/session_key 必须为 32 字节，未覆盖密钥。')
+        if name == 'secrets/tool_token' and (path.stat().st_size > 512 or not re.fullmatch(rb'[A-Za-z0-9_-]{32,256}', path.read_bytes().strip())):
+            raise RuntimeError('现有 secrets/tool_token 格式不正确，未覆盖令牌。')
+    # Validate all existing paths before writing any missing initialization file.
+    for directory in [root / 'secrets', root / 'config', storage, root / 'backups']:
+        directory.mkdir(parents=True, mode=0o700, exist_ok=True)
+    custom = root / 'skills/custom'
+    custom.mkdir(parents=True, mode=0o755, exist_ok=True)
+    os.chmod(custom, 0o755)
+    for name, (content, mode) in files.items():
+        path = root / name
+        if not path.exists():
+            create_file(path, content(), mode)
+            print('已生成缺失的初始化文件：' + name)
+
+
 def configure(root, origin, project, mode='external', **options):
     values = proxy_values(origin, mode, **options)
     if not re.fullmatch(r'[a-z0-9][a-z0-9_-]{0,49}', project):
         raise RuntimeError('项目名只能含小写字母、数字、下划线或连字符。')
     if (root / '.env').exists() or (root / 'secrets').exists():
         raise RuntimeError('部署配置已存在，未覆盖密钥或配置。')
-    for name in ['secrets', 'config', 'state', 'backups']:
-        (root / name).mkdir(mode=0o700, exist_ok=True)
-    (root / 'skills/custom').mkdir(parents=True, mode=0o755, exist_ok=True)
-    os.chmod(root / 'skills/custom', 0o755)
     values = {'COMPOSE_PROJECT_NAME': project, **values, 'RP_STORAGE_DIR': './state', 'RP_APP_IMAGE': 'pi-roleplay-app:0.1.0', 'RP_TOOLS_IMAGE': 'pi-roleplay-tools:0.1.0'}
+    require_new_storage(root, values)
     atomic_text(root / '.env', ''.join(key + '=' + value + '\n' for key, value in values.items()))
-    (root / 'secrets/session_key').write_bytes(secrets.token_bytes(32))
-    (root / 'secrets/tool_token').write_text(secrets.token_urlsafe(48))
-    # Bind-file secrets retain host permissions; only these individual files go into containers.
-    for name in ['session_key', 'tool_token']:
-        os.chmod(root / 'secrets' / name, 0o444)
-    (root / 'secrets/models.env').write_text('# Only app receives these environment variables.\nRP_MODEL_API_KEY=\n')
-    os.chmod(root / 'secrets/models.env', 0o600)
-    (root / 'config/models.json').write_text('{"models":[],"main":null}\n')
-    os.chmod(root / 'config/models.json', 0o644)
+    prepare_installation(root, values)
     print('部署配置已建立，尚未启动服务。运行 build、password、up；登录后在网页配置模型。')

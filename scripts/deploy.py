@@ -355,7 +355,8 @@ def main():
                 if args.caddy and proxy_mode(values) != 'caddy' or any(value is not None and str(value) != values.get(key) for key, value in [('RP_APP_PORT', args.port), ('RP_APP_BIND_IP', args.bind), ('RP_PROXY_NETWORK', args.proxy_network)]):
                     raise RuntimeError('安装参数与现有代理配置不同。请先用 proxy 命令明确选择接入方式。')
             deployment = Deployment()
-            if (deployment.storage / 'app/app.sqlite').exists() or deployment.running('app'):
+            deploy_config.prepare_installation(ROOT, deployment.values)
+            if deployment.running('app'):
                 raise RuntimeError('已有应用数据。继续启动请使用 up；升级请使用 update；重置密码请使用 password。')
             deployment.build()
             deployment.password(args.password_stdin)

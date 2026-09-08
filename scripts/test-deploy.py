@@ -226,5 +226,103 @@ class ProxyConfiguration(unittest.TestCase):
             deployment.configure('http://127.0.0.1:18767', 'synthetic-proxy', 'caddy')
 
 
+class InstallationConfiguration(unittest.TestCase):
+    required = ['secrets/models.env', 'secrets/session_key', 'secrets/tool_token', 'config/models.json']
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(); self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.root_patch = patch.object(deployment, 'ROOT', self.root)
+        self.root_patch.start(); self.addCleanup(self.root_patch.stop)
+        self.environment = '# Keep this deployment configuration.\nCOMPOSE_PROJECT_NAME=synthetic-install\nCOMPOSE_PROFILES=\nRP_PUBLIC_ORIGIN=https://rp.example.test\nRP_APP_PORT=19767\nRP_STORAGE_DIR=./custom-state\nRP_APP_IMAGE=app:custom\nRP_TOOLS_IMAGE=tools:custom\n'
+        (self.root / '.env').write_text(self.environment)
+        self.argv = ['deploy.py', 'install', 'https://rp.example.test', '--project', 'synthetic-install']
+
+    def write(self, name, content):
+        path = self.root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+        return path
+
+    def test_env_only_install_prepares_every_file_before_docker_and_keeps_configuration(self):
+        def running(service):
+            self.assertEqual(service, 'app')
+            self.assertTrue(all((self.root / name).is_file() for name in self.required))
+            return ''
+        with patch.object(deployment.sys, 'argv', self.argv), patch.object(deployment.Deployment, 'running', side_effect=running), patch.object(deployment.Deployment, 'build') as build, patch.object(deployment.Deployment, 'password'), patch.object(deployment.Deployment, 'helper'), patch.object(deployment.Deployment, 'start') as start:
+            deployment.main()
+        build.assert_called_once_with(); start.assert_called_once_with()
+        self.assertEqual((self.root / '.env').read_text(), self.environment)
+        self.assertEqual((self.root / 'secrets/session_key').stat().st_size, 32)
+        self.assertRegex((self.root / 'secrets/tool_token').read_text(), r'^[A-Za-z0-9_-]{64}$')
+        self.assertEqual(json.loads((self.root / 'config/models.json').read_text()), {'models': [], 'main': None})
+        for name, mode in [('secrets/session_key', 0o444), ('secrets/tool_token', 0o444), ('secrets/models.env', 0o600), ('config/models.json', 0o644), ('skills/custom', 0o755)]:
+            self.assertEqual((self.root / name).stat().st_mode & 0o777, mode)
+        self.assertTrue((self.root / 'custom-state').is_dir())
+        self.assertFalse((self.root / 'state').exists())
+
+    def test_partial_initialization_and_build_retry_preserve_existing_files(self):
+        key = self.write('secrets/session_key', bytes(range(32)))
+        model = self.write('config/models.json', b'{ "models": [], "main": null }\n')
+        key.chmod(0o444)
+        originals = {key: key.read_bytes(), model: model.read_bytes()}
+        with patch.object(deployment.sys, 'argv', self.argv), patch.object(deployment.Deployment, 'running', return_value=''), patch.object(deployment.Deployment, 'build', side_effect=RuntimeError('synthetic build failure')), patch.object(deployment.Deployment, 'password') as password, patch.object(deployment.Deployment, 'start') as start:
+            with self.assertRaisesRegex(RuntimeError, 'synthetic build failure'):
+                deployment.main()
+            password.assert_not_called(); start.assert_not_called()
+        created = {self.root / name: (self.root / name).read_bytes() for name in self.required}
+        with patch.object(deployment.sys, 'argv', self.argv), patch.object(deployment.Deployment, 'running', return_value=''), patch.object(deployment.Deployment, 'build'), patch.object(deployment.Deployment, 'password'), patch.object(deployment.Deployment, 'helper'), patch.object(deployment.Deployment, 'start'):
+            deployment.main()
+        for path, content in {**created, **originals}.items():
+            self.assertEqual(path.read_bytes(), content)
+        self.assertEqual((self.root / '.env').read_text(), self.environment)
+
+    def test_existing_database_with_missing_key_blocks_before_initialization_and_docker(self):
+        database = self.write('custom-state/app/app.sqlite', b'synthetic database')
+        with patch.object(deployment.sys, 'argv', self.argv), patch.object(deployment, 'execute') as execute:
+            with self.assertRaisesRegex(RuntimeError, '恢复原加密密钥'):
+                deployment.main()
+            execute.assert_not_called()
+        self.assertEqual(database.read_bytes(), b'synthetic database')
+        self.assertFalse((self.root / 'secrets').exists())
+        self.assertFalse((self.root / 'config').exists())
+
+    def test_existing_database_is_not_repaired_or_reinstalled(self):
+        self.write('custom-state/app/app.sqlite', b'synthetic database')
+        key = self.write('secrets/session_key', bytes(range(32)))
+        with patch.object(deployment.sys, 'argv', self.argv), patch.object(deployment, 'execute') as execute:
+            with self.assertRaisesRegex(RuntimeError, '已有应用数据'):
+                deployment.main()
+            execute.assert_not_called()
+        self.assertEqual(key.read_bytes(), bytes(range(32)))
+        self.assertFalse((self.root / 'secrets/models.env').exists())
+
+    def test_invalid_or_linked_existing_files_are_not_replaced(self):
+        for name, content in [('secrets/session_key', b'invalid'), ('secrets/tool_token', b'invalid')]:
+            with self.subTest(name=name):
+                path = self.write(name, content)
+                with patch.object(deployment.sys, 'argv', self.argv), patch.object(deployment, 'execute') as execute:
+                    with self.assertRaisesRegex(RuntimeError, '未覆盖'):
+                        deployment.main()
+                    execute.assert_not_called()
+                self.assertEqual(path.read_bytes(), content)
+                self.assertFalse((self.root / 'config').exists())
+                path.unlink()
+        target = self.write('original-key', bytes(range(32)))
+        (self.root / 'secrets/session_key').symlink_to(target)
+        with self.assertRaisesRegex(RuntimeError, '必须是普通文件'):
+            deployment.deploy_config.prepare_installation(self.root, deployment.read_env())
+        self.assertEqual(target.read_bytes(), bytes(range(32)))
+        self.assertFalse((self.root / 'secrets/models.env').exists())
+
+    def test_configure_does_not_create_new_identity_for_existing_data(self):
+        (self.root / '.env').unlink()
+        self.write('state/app/app.sqlite', b'synthetic database')
+        with self.assertRaisesRegex(RuntimeError, '恢复原加密密钥'):
+            deployment.configure('https://rp.example.test', 'synthetic-install')
+        self.assertFalse((self.root / '.env').exists())
+        self.assertFalse((self.root / 'secrets').exists())
+
+
 if __name__ == '__main__':
     unittest.main()

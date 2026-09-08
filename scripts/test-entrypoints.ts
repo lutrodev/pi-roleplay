@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
 import { spawn } from 'node:child_process'
 import { createServer } from 'node:net'
-import { mkdtemp, realpath, mkdir, readFile, readdir, rm, writeFile, copyFile } from 'node:fs/promises'
+import { mkdtemp, realpath, mkdir, readFile, readdir, rm, writeFile, copyFile, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -63,6 +63,10 @@ try {
     return { path, project, origin, http, application, network }
   }
   const sourceDeployment = await checkout('source', 'external'), { path, project, origin, http, application, network } = sourceDeployment
+  // Reproduce a fresh server where only the user's completed .env was copied.
+  const initialEnvironment = await readFile(join(path, '.env'))
+  await rm(join(path, 'secrets'), { recursive: true })
+  await rm(join(path, 'config'), { recursive: true })
   // An existing proxy starts first. Accidental Caddy activation would collide with its port.
   const location = `location / {
     resolver 127.0.0.11 valid=1s ipv6=off;
@@ -81,10 +85,16 @@ try {
   proxyContainers.push(proxyName)
   await command('docker', ['run', '--detach', '--name', proxyName, '--network', network, '-p', `127.0.0.1:${http}:80`, '--mount', `type=bind,source=${proxyConfig},target=/etc/nginx/conf.d/default.conf,readonly`, proxyImage], path)
   const proxyId = await command('docker', ['inspect', '--format', '{{.Id}}', proxyName], path)
-  const rendered = JSON.parse(await dc(path, 'config', '--format', 'json'))
+  const rendered = JSON.parse(await dc(path, 'config', '--no-env-resolution', '--format', 'json'))
   assert.deepEqual(Object.keys(rendered.services).sort(), ['app', 'tools'])
   console.log('验证：已有 OpenResty 运行时，默认仅启动 app/tools 并开放一个内网入口。')
   await deploy(path, ['install', origin, '--project', project, '--password-stdin'])
+  assert.deepEqual(await readFile(join(path, '.env')), initialEnvironment)
+  assert.equal((await readFile(join(path, 'secrets/session_key'))).length, 32)
+  for (const [name, mode] of [['secrets/session_key', 0o444], ['secrets/tool_token', 0o444], ['secrets/models.env', 0o600], ['config/models.json', 0o644]] as const) {
+    assert.equal((await stat(join(path, name))).mode & 0o777, mode)
+  }
+  passed.push('Env-only first installation initializes all missing private files before Docker, preserves .env and sets container-readable key permissions')
   let cookie = ''
   const login = async (url: string) => {
     const response = await fetch(url + '/api/auth/login', { method: 'POST', headers: { origin: url, 'content-type': 'application/json' }, body: JSON.stringify({ password }) })
