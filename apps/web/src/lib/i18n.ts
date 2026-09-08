@@ -5,6 +5,7 @@ import englishErrors from '../locales/en-errors.json'
 import englishWriterHistory from '../locales/en-writer-history.json'
 import englishModelServices from '../locales/en-model-services.json'
 import englishComposer from '../locales/en-composer.json'
+import englishReasoning from '../locales/en-reasoning.json'
 
 export type UiLanguage = 'zh' | 'en'
 const preferenceKey = 'rp-ui-language'
@@ -14,7 +15,7 @@ function initialLanguage(): UiLanguage {
 
 /** Only authored interface copy is translated. Story text, prompts and imported assets remain data. */
 export const uiI18n = createInstance()
-const englishCopy = { ...english, ...englishErrors, ...englishWriterHistory, ...englishModelServices, ...englishComposer }
+const englishCopy = { ...english, ...englishErrors, ...englishWriterHistory, ...englishModelServices, ...englishComposer, ...englishReasoning }
 void uiI18n.use(initReactI18next).init({
   lng: initialLanguage(), fallbackLng: 'zh', supportedLngs: ['zh', 'en'], initAsync: false,
   defaultNS: 'ui', keySeparator: false, nsSeparator: false,

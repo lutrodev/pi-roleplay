@@ -33,9 +33,9 @@
 .composer-send-actions { grid-area: send; display: flex; align-items: center; gap: 6px; }
 .composer-selector { min-width: 0; min-height: 34px; padding: 6px 8px; gap: 5px; font-size: 13px; font-weight: 400; border-radius: 9px; }
 .composer-selector > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.model-selector { grid-area: model; max-width: min(300px, 100%); justify-self: end; }
+.composer-model-controls { grid-area: model; display: flex; align-items: center; gap: 2px; min-width: 0; max-width: min(360px, 100%); justify-self: end; }
+.model-selector { min-width: 0; }
 .model-selector .model-label-compact { display: none; }
-.model-effort { flex-shrink: 0; color: var(--muted); font-size: 12px; }
 .send-button { width: 34px; height: 34px; min-height: 34px; padding: 6px; flex-shrink: 0; border-radius: 50%; }
 .send-button:disabled { background: var(--soft); color: var(--muted); border-color: transparent; opacity: 1; }
 .composer .notice { margin: 10px 4px 0; }
@@ -59,7 +59,8 @@
 }
 
 @container composer (max-width: 760px) {
-  .model-selector .model-label-full, .model-effort { display: none; }
+  .model-selector .model-label-full { display: none; }
+  .composer-model-controls .reasoning-trigger { min-height: 44px; padding-inline: 6px; }
   .model-selector .model-label-compact { display: block; }
 }
 .composer-toolbar:has(.composer-quick-reply:nth-child(4)) { grid-template: 'utilities utilities utilities utilities' auto 'add mode model send' auto / auto auto minmax(0, 1fr) auto; }

@@ -54,6 +54,8 @@ python3 scripts/deploy.py configure https://rp.example.com
 
 `config/models.json` 初始为空。启动后可在网页“设置 → 模型”添加提供方、模型和 API 密钥，再选择默认主模型并保存。ClinePass 可直接选择 DeepSeek V4 Flash 快速填写项。修改立即生效，模型任务运行期间禁止改动提供方。
 
+新增模型自动识别思考能力，支持的模型默认开启；主会话、Writer 和任务子代理均可独立设置强度。入口、继承规则和旧版配置说明见[模型与思考强度](model-reasoning.md)。
+
 也可在第一次启动前参照 `deploy/models.example.json` 填写初始清单；文件只在数据库尚未建立模型目录时导入。数据库中的模型目录随后是管理来源，重启不会覆盖网页修改。`provider` 是该路由的唯一分组名；`model` 是提供商实际接受的模型 ID。
 
 - `api` 可选 `openai-completions`、`openai-responses`、`anthropic-messages`。

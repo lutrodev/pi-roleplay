@@ -28,7 +28,7 @@ export class ResourceFactory {
     const run = this.stories.repository.run(runId), story = this.stories.repository.snapshot(run.storyId)
     const agent = story.profile.runtime.executionMode === 'agent', attachments = this.system.files.attachmentsForRun(runId)
     const catalog = storySubagentCatalog(this.subagents.snapshot(), story.profile.runtime)
-    const routes = this.models.routes(story.profile, { main: this.defaultMain, ...(catalog.writer.route.kind === 'fixed' ? { writer: catalog.writer.route } : {}) })
+    const routes = this.models.routes(story.profile, { main: this.defaultMain, writer: catalog.writer.route })
     const main = this.models.resolve(routes.main, attachments.images), writer = this.models.resolve(routes.writer, attachments.images)
     const { enabled: stateEnabled } = storyVariables(story.profile)
     const disabledSkills = disabledSkillNames(this.options.disabledSkills, stateEnabled)

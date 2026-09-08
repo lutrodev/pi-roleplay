@@ -82,6 +82,10 @@
 .model-picker-trigger strong, .model-option strong { display: block; font-size: 13px; font-weight: 500; }
 .model-picker-trigger small, .model-option small { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; line-height: 1.5; }
 .model-picker-trigger svg { flex-shrink: 0; }
+.reasoning-trigger { flex-shrink: 0; min-height: 34px; padding: 6px 9px; gap: 5px; color: var(--muted); font-size: 13px; font-weight: 400; }
+.reasoning-trigger:hover { color: var(--text); }
+.model-picker .reasoning-trigger { min-width: 96px; justify-content: space-between; padding-inline: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+.reasoning-menu { min-width: 220px; }
 .model-options { max-height: 50dvh; overflow: auto; overscroll-behavior: contain; }
 .model-option { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 12px; background: transparent; color: var(--text); text-align: left; border: 0; border-radius: 8px; cursor: pointer; }
 .model-option > span { min-width: 0; overflow-wrap: anywhere; }
@@ -90,6 +94,7 @@
 .model-option:disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 800px), (pointer: coarse) {
   :is(.model-toolbar, .connection-wizard) .search-field { --search-height: 44px; }
+  .model-picker .reasoning-trigger { min-height: 44px; }
 }
 @media (max-width: 540px) {
   .model-dialog.modal-editor .modal-body { display: flex; flex-direction: column; flex: 1; }

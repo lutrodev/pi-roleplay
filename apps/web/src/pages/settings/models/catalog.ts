@@ -11,7 +11,7 @@ export interface Discovery { truncated?: boolean; models: { model: string; label
 export const fields = ({ configured: _configured, check: _check, ...model }: CatalogModel): ModelFields => model
 export const freshModel = (connection: ModelConnection, model = '', label = ''): ModelFields => {
   const compat = serviceForConnection(connection)?.compat
-  return { model, label, ...connection, contextWindow: 128000, maxTokens: 8192, input: ['text'], reasoning: false, ...(compat ? { compat: { ...compat } } : {}) }
+  return { model, label, ...connection, contextWindow: 128000, maxTokens: 8192, input: ['text'], ...(compat ? { compat: { ...compat } } : {}) }
 }
 export async function refreshModels() { await Promise.all(['providers', 'models', 'system-status', 'prompt-projection'].map(key => queryClient.invalidateQueries({ queryKey: [key] }))) }
 export async function saveModels(provider: Provider, revision: number, models: ModelFields[]) {

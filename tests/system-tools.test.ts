@@ -81,6 +81,22 @@ async function setup(mode: ExecutionMode, replies: Reply[], attachment?: 'image'
 }
 
 describe('Pi with concrete system tools', () => {
+  it('dispatches independent thinking strengths for the main Agent, inherited Writer, and inherited task models', async () => {
+    const x = await setup('agent', [
+      { calls: [{ name: 'rp_run_subagent', arguments: { subagent: 'PLAN_ID', task: '规划', input: {} } }] }, { text: '先读信。' },
+      { calls: [{ name: 'rp_write_turn', arguments: { action: 'write' } }] }, { text: '她展开来信。' },
+      { calls: [{ name: 'rp_run_subagent', arguments: { subagent: 'POLISH_ID', task: '润色', input: {} } }] }, { text: '保留原文。' },
+      { calls: [{ name: 'rp_commit_turn', arguments: { narrative: '她展开来信。' } }] },
+    ], undefined, { tasks: true, storyRoutes: ids => ({ reasoningEffort: 'medium', writerRoute: { kind: 'inherit', reasoningEffort: 'high' },
+      subagentRoutes: { [ids['规划']!]: { kind: 'inherit', reasoningEffort: 'low' }, [ids['润色']!]: { kind: 'inherit', reasoningEffort: 'off' } } }) })
+    x.models.replace(x.models.registrations().map(model => ({ ...model, reasoning: true })))
+    x.queue.wake(); await x.queue.idle()
+    expect(x.stories.run(x.run.id).status).toBe('completed')
+    expect(x.requests.map(request => request.reasoning_effort)).toEqual(['medium', 'low', 'medium', 'high', 'medium', undefined, 'medium'])
+    expect(new Set(x.requests.map(request => request.model))).toEqual(new Set(['rp-tools']))
+    expect(x.faults).toEqual([])
+    await x.queue.close()
+  })
   it('injects history into Writer only while task agents keep fresh contexts and original read-only tools', async () => {
     const x = await setup('agent', [
       { calls: [{ name: 'rp_run_subagent', arguments: { subagent: 'PLAN_ID', task: '规划', input: {} } }] }, { text: '先核对灯塔记录。' },

@@ -2,7 +2,7 @@ import { Type, type ImageContent } from '@earendil-works/pi-ai'
 import { renderTaskSubagentPrompt, TASK_SUBAGENT_TOOL_DESCRIPTION } from '../../../../packages/rp-core/src/context/prompts.js'
 import { composeSystemPrompt } from '../../../../packages/rp-core/src/context/system-prompt.ts'
 import { requireValue } from '../../../../packages/rp-core/src/errors.ts'
-import type { TaskSubagent } from '../../../../packages/rp-core/src/agents/catalog.ts'
+import { resolveModelSelection, type TaskSubagent } from '../../../../packages/rp-core/src/agents/catalog.ts'
 import type { FileRecord, JsonObject, ModelRoute } from '../../../../packages/rp-core/src/types.ts'
 import type { SkillSnapshot } from '../services/skill-service.ts'
 import type { RuntimeToolScope } from './executor.ts'
@@ -39,7 +39,7 @@ export class TaskSession {
         requireValue(definition, 'SUBAGENT_NOT_AVAILABLE', '请使用本轮子代理目录中的 id，不能用显示名称代替。')
         const prompt = renderTaskSubagentPrompt({ task: input.task, input: input.input })
         requireValue([...prompt].length <= 20_000, 'SUBAGENT_INPUT_TOO_LARGE', '子代理任务和输入合计不能超过 20000 字，请整理后再调用。')
-        const route: ModelRoute = definition.route.kind === 'fixed' ? definition.route : this.mainRoute
+        const route = resolveModelSelection(definition.route, this.mainRoute)
         const { model } = this.models.resolve(route, this.attachments.images)
         const childScope = `task:${callId}`, parentCallId = journal.callId(callId)
         const tools = this.system.readonlyFiles(scope.run, effectiveSignal, model.input.includes('image'))

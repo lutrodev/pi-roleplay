@@ -74,7 +74,7 @@ async function deployment(name) {
   const compose = await readFile(join(path, 'deploy/compose.yaml'), 'utf8')
   // Test-only host provider route and shorter health sampling; production service/mount/security layout is preserved.
   await writeFile(join(path, 'deploy/compose.yaml'), compose.replace('  app:\n', '  app:\n    extra_hosts: ["host.docker.internal:host-gateway"]\n').replaceAll('interval: 15s', 'interval: 1s'))
-  await writeFile(join(path, 'config/models.json'), JSON.stringify({ models: [{ provider: 'fixture', model: 'rp', keyEnv: 'RP_MODEL_API_KEY', api: 'openai-completions', baseUrl: `http://host.docker.internal:${providerPort}/v1`, contextWindow: 128000, maxTokens: 8192 }], main: { provider: 'fixture', model: 'rp' } }))
+  await writeFile(join(path, 'config/models.json'), JSON.stringify({ models: [{ provider: 'fixture', model: 'gpt-6-astra', keyEnv: 'RP_MODEL_API_KEY', api: 'openai-completions', baseUrl: `http://host.docker.internal:${providerPort}/v1`, contextWindow: 128000, maxTokens: 8192 }], main: { provider: 'fixture', model: 'gpt-6-astra' } }))
   await writeFile(join(path, 'secrets/models.env'), 'RP_MODEL_API_KEY=synthetic-deployment-key\n')
   const target = { path, dc, run, origin: `http://127.0.0.1:${http}`, cookie: '' }
   targets.push(target)
@@ -126,7 +126,7 @@ try {
   const savedHistory = await source.api('/settings/writer-history', 'PUT', { expectedRevision: initialHistory.revision, config: historyConfig() })
   const workspace = (await source.api('/workspaces', 'POST', { name: 'VPS 工作区', access: 'read-write' }, 201)).workspace
   assert.equal(workspace.directory, `workspace-${workspace.id}`)
-  const story = (await source.api('/stories', 'POST', { title: 'VPS 原创验收', workspaceId: workspace.id, profile: { runtime: { executionMode: 'agent' }, variables: { enabled: false, mvu: false } } }, 201)).story
+  const story = (await source.api('/stories', 'POST', { title: 'VPS 原创验收', workspaceId: workspace.id, profile: { runtime: { executionMode: 'agent', reasoningEffort: 'high', writerRoute: { kind: 'inherit', reasoningEffort: 'low' } }, variables: { enabled: false, mvu: false } } }, 201)).story
   const upload = new FormData(); upload.append('file', new Blob(['附件原件：旧船已经修好。'], { type: 'text/plain' }), 'original.txt')
   const file = (await source.api('/files', 'POST', upload, 201)).file
   const sent = await source.api(`/stories/${story.id}/messages`, 'POST', { requestId: randomUUID(), inputs: [{ text: '归还旧船，写下工作记录。', attachmentIds: [file.id] }] }, 202)
@@ -135,13 +135,16 @@ try {
   assert.equal(snapshot.messages.at(-1).text, narrative)
   const writerRequest = requests.find(request => JSON.stringify(request.messages).includes('900719925474099312345'))
   assert(writerRequest)
-  assert.equal(writerRequest.messages[0].role, 'system')
+  assert.equal(writerRequest.reasoning_effort, 'low')
+  assert(requests.filter(request => request.tools?.some(tool => tool.function.name === 'rp_write_turn')).every(request => request.reasoning_effort === 'high'))
+  // The actual Pi adapter uses the developer role for this reasoning model's leading instruction.
+  assert.equal(writerRequest.messages[0].role, 'developer')
   assert.deepEqual(writerRequest.messages.slice(1, 11).map(message => message.role), ['user', 'assistant', 'tool', 'assistant', 'tool', 'assistant', 'user', 'assistant', 'tool', 'assistant'])
   assert(!requests.filter(request => request.tools?.some(tool => tool.function.name === 'rp_write_turn')).some(request => JSON.stringify(request).includes('900719925474099312345')))
   const records = await source.api(`/runs/${sent.run.id}/tools`)
   assert.match(JSON.stringify(records), /10001.*private-files-absent.*unset.*inputs-read-only/s)
   assert(!JSON.stringify(records).includes('read_log'))
-  passed.push('Writer-only native preset history: system first, paired serial calls, lossless numbers, no historical tool execution')
+  passed.push('Writer-only native preset history: leading developer instruction for a reasoning model, paired serial calls, lossless numbers, no historical tool execution')
   assert.equal((await source.api(`/stories/${story.id}/files/preview?path=vps.txt`)).text, 'VPS 工作文件\n')
   const branch = (await source.api(`/stories/${story.id}/messages/${snapshot.messages.at(-1).id}/fork`, 'POST', { expectedRevision: snapshot.revision }, 201)).story
   assert.equal((await source.api(`/stories/${branch.id}/files/preview?path=vps.txt`)).text, 'VPS 工作文件\n')
@@ -229,6 +232,8 @@ try {
   assert.deepEqual(restoredSuggestions.replyOptions, suggestionSnapshot.replyOptions)
   passed.push('Reply suggestions saved with the narrative survive cold backup and restore without a new generation request')
   assert.deepEqual(result.messages, snapshot.messages)
+  assert.deepEqual(result.profile.runtime, snapshot.profile.runtime)
+  passed.push('Catalog-recognized reasoning reaches real container requests: main high, inherited Writer low; independent settings survive cold backup and restore')
   assert.deepEqual(result.profile.variables, { enabled: false, mvu: false })
   assert.equal((await restored.api(`/stories/${story.id}/files/preview?path=vps.txt`)).text, 'VPS 工作文件\n')
   assert.equal((await restored.api(`/stories/${branch.id}/files/preview?path=vps.txt`)).text, 'VPS 工作文件\n')

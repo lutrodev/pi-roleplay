@@ -121,6 +121,9 @@ it('exposes discovery and testing with strict HTTP inputs and revision checks', 
   const x = setup(async (_url, init) => init?.method === 'GET' ? Response.json({ data: [{ id: 'a' }] }) : ok())
   const app = Fastify({ ajv: { customOptions: { removeAdditional: false } } }); registerModelCatalog(app, x.service)
   try {
+    const preview = { connection, provider: 'synthetic', model: 'gpt-6-astra' }
+    expect((await app.inject({ method: 'POST', url: '/api/settings/models/reasoning', payload: preview })).json()).toMatchObject({ defaultThinkingLevel: 'medium', thinkingLevels: ['low', 'medium', 'high', 'xhigh', 'max'] })
+    expect((await app.inject({ method: 'POST', url: '/api/settings/models/reasoning', payload: { ...preview, apiKey: 'not-accepted' } })).statusCode).toBe(400)
     expect((await app.inject({ method: 'POST', url: '/api/settings/providers/discover', payload: { connection, apiKey: 'secret', arbitrary: true } })).statusCode).toBe(400)
     const list = await app.inject({ method: 'POST', url: '/api/settings/providers/discover', payload: { connection, apiKey: 'secret' } })
     expect(list.json()).toMatchObject({ models: [{ model: 'a' }] })

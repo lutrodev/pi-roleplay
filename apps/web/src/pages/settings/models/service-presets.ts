@@ -14,7 +14,7 @@ export interface ServicePreset {
 }
 
 // These are connection defaults, not a model catalog. Models still come from the
-// selected service (or an explicit ID); capabilities are never inferred from a name.
+// selected service (or an explicit ID); reasoning comes from the server's exact model catalog.
 const compatible = { supportsStore: false, supportsDeveloperRole: false, supportsStrictMode: false, maxTokensField: 'max_tokens' as const }
 export const servicePresets: ServicePreset[] = [
   { id: 'openai', label: 'OpenAI', description: 'GPT 系列模型', aliases: ['ChatGPT'], common: true,

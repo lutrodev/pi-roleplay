@@ -3,6 +3,7 @@ import { afterEach, expect, it } from 'vitest'
 import { normalizeProfile } from '../packages/rp-core/src/story/profile.js'
 import { normalizeSubagentRoutes, storySubagentCatalog } from '../packages/rp-core/src/agents/session-routes.ts'
 import { SubagentService } from '../apps/server/src/services/subagent-service.ts'
+import { resolveModelSelection } from '../packages/rp-core/src/agents/catalog.ts'
 import { StoryService } from '../apps/server/src/services/story-service.ts'
 import { ModelRegistry } from '../apps/server/src/runtime/models.ts'
 import { AppDatabase } from '../apps/server/src/storage/database.ts'
@@ -19,6 +20,22 @@ function setup() {
     keyEnv: 'SYNTHETIC', api: 'openai-completions' as const, baseUrl: 'https://model.test/v1', contextWindow: 32000, maxTokens: 4096 })), { env: () => 'synthetic-key' })
   return { ...x, models, catalog: new SubagentService(x.assets, models), service: new StoryService(x.stories, x.assets, x.files) }
 }
+it('persists independent effort with inherited main models for Writer and tasks and replays it after restart', () => {
+  const x = setup(), global = x.catalog.snapshot(), task = global.subagents[0]!, original = x.service.create('思考强度')
+  const writer = { kind: 'inherit' as const, reasoningEffort: 'high' }, child = { kind: 'inherit' as const, reasoningEffort: 'low' }
+  x.catalog.updateWriter(global.writer.revision, writer)
+  const runtime = { ...original.profile.runtime, writerRoute: writer, subagentRoutes: { [task.id]: child } }
+  const saved = x.service.updateProfile(original.id, original.revision, { ...original.profile, runtime })
+  expect(projectStory(x.stories.eventLog(original.id)).profile.runtime).toEqual(runtime)
+  expect(new SubagentService(x.assets, x.models).snapshot().writer.route).toEqual(writer)
+  const main = { provider: 'test', model: 'global', reasoningEffort: 'medium' }
+  expect(x.models.routes(saved.profile, { main }).writer).toEqual({ ...main, reasoningEffort: 'high' })
+  expect(x.models.routes(profile(), { main, writer }).writer).toEqual({ ...main, reasoningEffort: 'high' })
+  const catalog = storySubagentCatalog(x.catalog.snapshot(), runtime)
+  expect(resolveModelSelection(catalog.subagents[0]!.route, main)).toEqual({ ...main, reasoningEffort: 'low' })
+  expect(resolveModelSelection(child, { ...main, model: 'updated' }).model).toBe('updated')
+  expect(main.reasoningEffort).toBe('medium')
+})
 
 it('keeps per-story model overrides in the event log, independent from defaults and other stories, including replay, reopen and fork', () => {
   const x = setup(), catalog = x.catalog.snapshot(), task = catalog.subagents[0]!

@@ -41,7 +41,7 @@ const app = await createServer({ dataDirectory: join(root, 'data'), publicOrigin
   if (String(url).startsWith('https://synthetic.invalid/')) {
     const auth = new Headers(init?.headers).get('authorization')
     if (auth === 'Bearer browser-invalid-key') return Response.json({ error: { message: 'Invalid API key' } }, { status: 401 })
-    if (init?.method === 'GET') return Response.json({ data: [{ id: 'test-model', name: 'Synthetic Text' }, { id: 'test-vision-model', name: 'Synthetic Vision' }, { id: 'test-reasoning-model', name: 'Synthetic Reasoning' }] })
+    if (init?.method === 'GET') return Response.json({ data: [{ id: 'test-model', name: 'Synthetic Text' }, { id: 'test-vision-model', name: 'Synthetic Vision' }, { id: 'test-reasoning-model', name: 'Synthetic Reasoning' }, { id: 'gpt-6-astra', name: 'GPT-6 Astra · 合成验收' }] })
   }
   if (!String(url).startsWith('https://synthetic.invalid/')) {
     const request = JSON.parse(String(init?.body)) as { model?: string }

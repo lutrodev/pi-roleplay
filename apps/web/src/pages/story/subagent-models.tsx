@@ -2,7 +2,7 @@ import { StatusNotice } from '../../components/status-notice.tsx'
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Bot, Feather, RotateCcw, Workflow } from 'lucide-react'
-import type { ModelSelection, SubagentCatalog } from '../../../../../packages/rp-core/src/agents/catalog.ts'
+import { resolveModelSelection, type ModelSelection, type SubagentCatalog } from '../../../../../packages/rp-core/src/agents/catalog.ts'
 import type { ModelRoute, StorySnapshot } from '../../../../../packages/rp-core/src/types.ts'
 import { CancelButton, EditorForm } from '../../components/form-guard.tsx'
 import { ModelPicker } from '../../components/model-picker.tsx'
@@ -45,7 +45,7 @@ function StorySubagentForm({ story, disabled, done }: { story: StorySnapshot; di
   const describe = (route: ModelRoute | undefined) => {
     if (!route) return uiT('尚未选择模型')
     const model = models.data?.models.find(item => item.provider === route.provider && item.model === route.model)
-    return [model?.label ?? route.model, model?.thinkingLevels.some(level => level !== 'off') ? uiT('思考：%{level}', { level: route.reasoningEffort ?? 'off' }) : null,
+    return [model?.label ?? route.model,
       models.data && (!model || !model.configured) ? uiT('当前不可用') : null].filter(Boolean).join(' · ')
   }
   const change = (id: string, route: ModelSelection | undefined) => {
@@ -56,9 +56,13 @@ function StorySubagentForm({ story, disabled, done }: { story: StorySnapshot; di
   if (!catalog.data) return <ErrorNotice error={catalog.error} retry={() => void catalog.refetch()} retrying={catalog.isFetching} />
   const picker = (id: string, name: string, globalRoute: ModelSelection, layout: 'row' | 'compact') => {
     const route = id === 'writer' ? writerRoute : routes[id]
+    const globalModel = globalRoute.kind === 'fixed' ? globalRoute : main ? resolveModelSelection(globalRoute, main) : undefined
     return <ModelPicker label={uiT('%{name} 模型', { name })} layout={layout} value={route?.kind === 'fixed' ? route : null}
-      defaultChoice={{ selected: route === undefined, label: uiT('使用全局默认'), detail: describe(globalRoute.kind === 'fixed' ? globalRoute : main), onSelect: () => change(id, undefined) }}
+      defaultChoice={{ selected: route === undefined, label: uiT('使用全局默认'), detail: describe(globalModel), onSelect: () => change(id, undefined) }}
       inheritLabel={uiT('跟随本会话主模型')} inheritDetail={describe(main)}
+      inheritedReasoning={{ route: (route === undefined ? globalModel : main) ?? null, value: route?.reasoningEffort,
+        label: route === undefined ? uiT('使用全局默认') : uiT('跟随本会话主模型'),
+        onChange: reasoningEffort => change(id, route === undefined && reasoningEffort === undefined ? undefined : { ...(route ?? globalRoute), reasoningEffort }) }}
       onChange={next => change(id, next ? { kind: 'fixed', ...next } : { kind: 'inherit' })} />
   }
   const tasksPaused = preferences.data && !preferences.data.preferences.subagentsEnabled

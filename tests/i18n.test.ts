@@ -5,6 +5,7 @@ import englishErrors from '../apps/web/src/locales/en-errors.json'
 import englishWriterHistory from '../apps/web/src/locales/en-writer-history.json'
 import englishModelServices from '../apps/web/src/locales/en-model-services.json'
 import englishComposer from '../apps/web/src/locales/en-composer.json'
+import englishReasoning from '../apps/web/src/locales/en-reasoning.json'
 
 afterEach(() => setUiLanguage('zh'))
 
@@ -34,7 +35,7 @@ it('interpolates counts and user names literally without translating data or con
 
 it('preserves every interpolation field in the English catalog', () => {
   const fields = (text: string) => [...text.matchAll(/%\{([^}]+)\}/g)].map(match => match[1]).sort()
-  for (const [source, translated] of Object.entries({ ...english, ...englishErrors, ...englishWriterHistory, ...englishModelServices, ...englishComposer })) {
+  for (const [source, translated] of Object.entries({ ...english, ...englishErrors, ...englishWriterHistory, ...englishModelServices, ...englishComposer, ...englishReasoning })) {
     expect(translated.trim(), source).not.toBe('')
     expect(fields(translated), source).toEqual(fields(source))
   }

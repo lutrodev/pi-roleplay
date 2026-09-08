@@ -4,12 +4,13 @@ import type { StoryProfile } from '../types.ts'
 export function normalizeSessionModelRoute(input: unknown): ModelSelection {
   if (input === null || typeof input !== 'object' || Array.isArray(input)) throw new Error('Model route must be an object')
   const route = input as Record<string, unknown>
-  if (route.kind === 'inherit' && Object.keys(route).length === 1) return { kind: 'inherit' }
-  if (route.kind !== 'fixed' || Object.keys(route).some(key => !['kind', 'provider', 'model', 'reasoningEffort'].includes(key))) throw new Error('Model route must select inherit or a complete fixed model')
   const text = (value: unknown, max: number) => {
     if (typeof value !== 'string' || !value.trim() || [...value.trim()].length > max) throw new Error('Model route contains an invalid field')
     return value.trim()
   }
+  if (route.kind === 'inherit' && Object.keys(route).every(key => ['kind', 'reasoningEffort'].includes(key))) return { kind: 'inherit',
+    ...(route.reasoningEffort === undefined ? {} : { reasoningEffort: text(route.reasoningEffort, 64) }) }
+  if (route.kind !== 'fixed' || Object.keys(route).some(key => !['kind', 'provider', 'model', 'reasoningEffort'].includes(key))) throw new Error('Model route must select inherit or a complete fixed model')
   return { kind: 'fixed', provider: text(route.provider, 64), model: text(route.model, 200),
     ...(route.reasoningEffort === undefined ? {} : { reasoningEffort: text(route.reasoningEffort, 64) }) }
 }

@@ -42,6 +42,14 @@ export class ModelCatalogService {
       })),
     })) }
   }
+  /** Local metadata lookup only: no credentials, network calls, or model generation. */
+  previewReasoning(input: { provider: string; model: string; connection: unknown }) {
+    const connection = validateConnection(input.connection)
+    const registry = new ModelRegistry([{ ...connection, provider: input.provider, model: input.model,
+      keyEnv: 'MODEL_PREVIEW', contextWindow: 128000, maxTokens: 8192 }], { env: () => undefined })
+    const { thinkingLevels, defaultThinkingLevel, reasoningSource } = registry.list()[0]!
+    return { thinkingLevels, defaultThinkingLevel, reasoningSource }
+  }
   update(expectedRevision: number, input: unknown, create = false) {
     objectInput(input)
     requireValue(Object.keys(input).every(key => ['id', 'label', 'models', 'apiKey', 'clearKey', 'connection'].includes(key)) && typeof input.id === 'string' && /^[a-z0-9][a-z0-9._-]{0,63}$/.test(input.id), 'MODEL_CONFIG_INVALID', '提供方标识需要小写字母、数字、点、下划线或连字符。')

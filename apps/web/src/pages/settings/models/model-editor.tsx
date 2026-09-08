@@ -7,6 +7,7 @@ import { Button, ErrorNotice, Field, Input, Select, Textarea } from '../../../co
 import { useAction } from '../../../lib/api.ts'
 import { uiT } from '../../../lib/i18n.ts'
 import { fields, freshModel, saveModels, type ModelFields, type Provider } from './catalog.ts'
+import { ModelReasoning } from './reasoning.tsx'
 
 export function ProtocolSelect({ value, onChange }: { value: ModelFields['api']; onChange: (value: ModelFields['api']) => void }) {
   return <Select value={value ?? ''} onChange={event => onChange(event.target.value as ModelFields['api'] || undefined)}><option value="">{uiT('Pi 内置提供方默认协议')}</option><option value="openai-completions">OpenAI Chat Completions</option><option value="openai-responses">OpenAI Responses</option><option value="anthropic-messages">Anthropic Messages</option></Select>
@@ -25,7 +26,8 @@ export function ModelEditor({ provider, modelId, revision, done }: { provider: P
     <div className="connection-caption">{uiT('服务连接')}<strong>{provider.label}</strong></div>
     <Field label={uiT('模型 ID')} help={original ? uiT('模型 ID 是现有会话的引用标识。要使用另一个 ID，请添加新模型。') : uiT('与服务返回的模型 ID 完全一致。')}><Input autoFocus={!original} required disabled={!!original} maxLength={200} value={model.model} onChange={event => patch({ model: event.target.value })} placeholder="model-id" /></Field>
     <Field label={uiT('显示名称')} help={uiT('留空使用模型 ID。')}><Input autoFocus={!!original} maxLength={200} value={model.label ?? ''} onChange={event => patch({ label: event.target.value })} /></Field>
-    <SettingsGroup><SettingToggle label={uiT('支持图片输入')} checked={model.input?.includes('image') ?? false} onChange={event => patch({ input: event.target.checked ? ['text', 'image'] : ['text'] })} /><SettingToggle label={uiT('支持思考强度')} checked={model.reasoning ?? false} onChange={event => patch({ reasoning: event.target.checked })} /></SettingsGroup>
+    <SettingsGroup><SettingToggle label={uiT('支持图片输入')} checked={model.input?.includes('image') ?? false} onChange={event => patch({ input: event.target.checked ? ['text', 'image'] : ['text'] })} /></SettingsGroup>
+    <ModelReasoning provider={provider.id} model={model} onChange={reasoning => patch({ reasoning })} />
     <details className="provider-advanced"><summary>{uiT('连接覆盖')}<small>{override ? uiT('这个模型使用独立的协议或地址') : uiT('使用服务连接的协议、地址和密钥')}</small></summary><div className="stack"><SettingToggle label={uiT('为这个模型单独设置协议和地址')} checked={override} onChange={event => { setOverride(event.target.checked); if (!event.target.checked) patch(provider.connection) }} />{override && <><Field label={uiT('API 协议')}><ProtocolSelect value={model.api} onChange={api => patch({ api })} /></Field><Field label={uiT('API 基础地址')}><Input type="url" required={!!model.api} value={model.baseUrl ?? ''} onChange={event => patch({ baseUrl: event.target.value || undefined })} /></Field></>}</div></details>
     <ModelParameters model={model} onChange={setModel} />
     <ErrorNotice error={action.error} /><div className="form-actions sticky-actions"><CancelButton onCancel={done} /><Button tone="primary" type="submit" disabled={action.busy || !!original && JSON.stringify(model) === baseline}>{action.busy ? uiT('正在保存…') : uiT('保存模型')}</Button></div>

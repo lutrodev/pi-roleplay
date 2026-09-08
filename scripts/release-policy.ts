@@ -1,7 +1,7 @@
 import { extname } from 'node:path'
 
 const rootFiles = new Set(['README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'CONTRIBUTING.md', 'SECURITY.md', 'AGENTS.md', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'vite.config.ts', 'vitest.config.ts', '.gitignore', '.dockerignore', '.gitattributes', 'dev.sh', 'deploy.sh'])
-const documents = new Set(['docs/architecture.md', 'docs/deployment.md', 'docs/development.md', 'docs/open-source.md', 'docs/ui-states.md', 'docs/writer-history.md', 'docs/source-provenance.json', 'docs/background-prompts.json', 'docs/dependency-licenses.json'])
+const documents = new Set(['docs/architecture.md', 'docs/deployment.md', 'docs/development.md', 'docs/open-source.md', 'docs/ui-states.md', 'docs/writer-history.md', 'docs/model-reasoning.md', 'docs/source-provenance.json', 'docs/background-prompts.json', 'docs/dependency-licenses.json'])
 const localRoots = new Set(['node_modules', '.git', '.dev', '.deploy', '.cache', '.playwright-cli', 'output', 'state', 'data', 'secrets', 'config', 'backups', 'coverage', 'test-results', 'playwright-report'])
 const generatedDirectories = new Set(['node_modules', 'dist', 'output', '__pycache__'])
 const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.mjs', '.json', '.css', '.html', '.md', '.py', '.sh', '.yaml', '.yml'])

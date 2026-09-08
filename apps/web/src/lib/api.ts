@@ -31,7 +31,7 @@ export async function api<T>(path: string, method = 'GET', body?: unknown, signa
   return value as T
 }
 export interface Settings { revision: number; preferences: Preferences }
-export interface ModelInfo extends ModelRoute { label: string; configured: boolean; input: string[]; contextWindow: number; maxTokens: number; thinkingLevels: string[] }
+export interface ModelInfo extends ModelRoute { label: string; configured: boolean; input: string[]; contextWindow: number; maxTokens: number; thinkingLevels: string[]; defaultThinkingLevel: string; reasoningSource: 'catalog' | 'unknown' | 'manual' }
 export type AssetItem = Omit<AssetRecord, 'data' | 'sourceHash'> & { description?: string; contentCharacters?: number | null }
 export type StoryData = { story: StorySnapshot; runs: RunRecord[]; activeTools: ActiveTool[]; history: { before: string | null; total: number }; latestReplyId: string | null; forkSourceAvailable?: boolean }
 export function notifyStoryDeleted(storyId: string) { window.dispatchEvent(new CustomEvent('rp-story-deleted', { detail: storyId })) }

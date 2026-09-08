@@ -2,7 +2,7 @@ import { objectInput } from '../input.ts'
 import { requireValue } from '../errors.ts'
 import type { ModelRoute } from '../types.ts'
 
-export type ModelSelection = { kind: 'inherit' } | ({ kind: 'fixed' } & ModelRoute)
+export type ModelSelection = { kind: 'inherit'; reasoningEffort?: string } | ({ kind: 'fixed' } & ModelRoute)
 export interface TaskSubagentInput {
   name: string
   description: string
@@ -17,12 +17,17 @@ export interface SubagentCatalog { version: 1; writer: { revision: number; route
 export function normalizeModelSelection(input: unknown): ModelSelection {
   objectInput(input)
   if (input.kind === 'inherit') {
-    requireValue(Object.keys(input).length === 1, 'INVALID_MODEL_ROUTE', '跟随主模型时不能同时填写固定模型参数。')
-    return { kind: 'inherit' }
+    requireValue(Object.keys(input).every(key => ['kind', 'reasoningEffort'].includes(key)), 'INVALID_MODEL_ROUTE', '跟随主模型时不能同时填写固定模型参数。')
+    return { kind: 'inherit', ...(input.reasoningEffort === undefined ? {} : { reasoningEffort: text(input.reasoningEffort, '思考强度', 64) }) }
   }
   requireValue(input.kind === 'fixed' && Object.keys(input).every(key => ['kind', 'provider', 'model', 'reasoningEffort'].includes(key)), 'INVALID_MODEL_ROUTE', '请选择跟随主模型或完整的固定模型配置。')
   return { kind: 'fixed', provider: text(input.provider, '提供商', 64), model: text(input.model, '模型', 200),
     ...(input.reasoningEffort === undefined ? {} : { reasoningEffort: text(input.reasoningEffort, '思考强度', 64) }) }
+}
+
+export function resolveModelSelection(selection: ModelSelection, main: ModelRoute): ModelRoute {
+  return selection.kind === 'fixed' ? selection : { ...main,
+    ...(selection.reasoningEffort === undefined ? {} : { reasoningEffort: selection.reasoningEffort }) }
 }
 
 export function normalizeTaskSubagent(input: unknown, enabled = true): TaskSubagentInput {

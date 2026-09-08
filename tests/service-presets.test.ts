@@ -62,7 +62,8 @@ it('applies compatibility defaults only to the exact matching endpoint and proto
   expect(freshModel(connection, 'new-model').compat).toEqual(gemini.compat)
   expect(freshModel({ ...connection, api: 'anthropic-messages' }, 'new-model').compat).toBeUndefined()
   expect(freshModel({ ...connection, baseUrl: 'https://example.test/v1beta/openai' }, 'new-model').compat).toBeUndefined()
-  expect(freshModel(connection, 'vision-by-name-only')).toMatchObject({ input: ['text'], reasoning: false })
+  expect(freshModel(connection, 'vision-by-name-only').input).toEqual(['text'])
+  expect(freshModel(connection, 'vision-by-name-only').reasoning).toBeUndefined()
 })
 
 it('keeps an existing ClinePass connection and its settings when another service is added', () => {

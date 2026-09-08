@@ -5,6 +5,8 @@ import { openAIResponsesApi } from '@earendil-works/pi-ai/api/openai-responses.l
 import { anthropicMessagesApi } from '@earendil-works/pi-ai/api/anthropic-messages.lazy'
 import { requireValue } from '../../../../packages/rp-core/src/errors.ts'
 import type { ModelRoute, StoryProfile } from '../../../../packages/rp-core/src/types.ts'
+import { resolveModelSelection, type ModelSelection } from '../../../../packages/rp-core/src/agents/catalog.ts'
+import { catalogReasoning, defaultThinkingLevel } from './model-reasoning.ts'
 
 export interface ModelRegistration {
   provider: string
@@ -16,6 +18,7 @@ export interface ModelRegistration {
   contextWindow?: number
   maxTokens?: number
   input?: ('text' | 'image')[]
+  /** Omitted means automatic catalog detection; booleans are explicit overrides. */
   reasoning?: boolean
   outputTokens?: number
   temperature?: number
@@ -43,16 +46,17 @@ export class ModelRegistry {
       const key = routeKey(registration)
       requireValue(!this.entries.has(key), 'MODEL_CONFIG_INVALID', '同一个提供商和模型不能重复配置。')
       const known = builtins.getModel(registration.provider, registration.model)
+      const detected = catalogReasoning(registration)
       requireValue(known || (registration.api && registration.baseUrl && registration.contextWindow && registration.maxTokens),
         'MODEL_CONFIG_INVALID', '目录之外的模型需要配置 API 类型、地址、上下文窗口和输出上限。')
       const model: Model<Api> = {
         id: registration.model, provider: registration.provider, name: registration.label?.trim() || registration.model,
         api: registration.api ?? known!.api, baseUrl: registration.baseUrl ?? known!.baseUrl,
         contextWindow: registration.contextWindow ?? known!.contextWindow, maxTokens: registration.maxTokens ?? known!.maxTokens,
-        input: registration.input ?? known?.input ?? ['text'], reasoning: registration.reasoning ?? known?.reasoning ?? false,
+        input: registration.input ?? known?.input ?? ['text'], reasoning: registration.reasoning ?? detected?.reasoning ?? false,
         cost: known?.cost ?? { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        ...(registration.compat ? { compat: registration.compat } : known?.compat && (!registration.api || registration.api === known.api) ? { compat: known.compat } : {}),
-        ...(known?.thinkingLevelMap ? { thinkingLevelMap: known.thinkingLevelMap } : {}),
+        compat: { ...(known?.compat && (!registration.api || registration.api === known.api) ? known.compat : {}), ...detected?.compat, ...registration.compat },
+        ...(detected?.thinkingLevelMap ? { thinkingLevelMap: detected.thinkingLevelMap } : {}),
       }
       let url: URL | undefined
       try { url = new URL(model.baseUrl) } catch { /* validation below */ }
@@ -77,6 +81,8 @@ export class ModelRegistry {
       provider: model.provider, model: model.id, label: model.name, input: model.input,
       contextWindow: model.contextWindow, maxTokens: model.maxTokens,
       thinkingLevels: getSupportedThinkingLevels(model), configured: !!this.key(registration.keyEnv),
+      defaultThinkingLevel: defaultThinkingLevel(model),
+      reasoningSource: registration.reasoning === undefined ? catalogReasoning(registration) ? 'catalog' as const : 'unknown' as const : 'manual' as const,
     }))
   }
 
@@ -88,7 +94,7 @@ export class ModelRegistry {
   registrations(): ModelRegistration[] {
     return [...this.entries.values()].map(({ registration, model }) => ({ ...structuredClone(registration),
       label: model.name, api: registration.api, baseUrl: model.baseUrl, contextWindow: model.contextWindow, maxTokens: model.maxTokens,
-      input: model.input, reasoning: model.reasoning,
+      input: model.input,
     }))
   }
 
@@ -97,17 +103,17 @@ export class ModelRegistry {
     requireValue(entry, 'MODEL_NOT_CONFIGURED', '这个模型尚未在服务端配置，请检查模型设置。')
     requireValue(this.key(entry.registration.keyEnv), 'MODEL_KEY_MISSING', '所选模型的 API 密钥尚未配置。')
     requireValue(images.length === 0 || entry.model.input.includes('image'), 'MODEL_VISION_REQUIRED', '所选模型不支持图片；请更换支持图片的模型或移除图片。')
-    const thinkingLevel = route.reasoningEffort ?? 'off'
+    const thinkingLevel = route.reasoningEffort ?? defaultThinkingLevel(entry.model)
     requireValue(getSupportedThinkingLevels(entry.model).includes(thinkingLevel as ModelThinkingLevel), 'MODEL_REASONING_UNSUPPORTED', '所选模型不支持这个思考强度。')
     return { model: entry.model, thinkingLevel: thinkingLevel as ModelThinkingLevel }
   }
 
-  routes(profile: StoryProfile, defaults: { main: ModelRoute; writer?: ModelRoute }) {
+  routes(profile: StoryProfile, defaults: { main: ModelRoute; writer?: ModelRoute | ModelSelection }) {
     const selected = profile.runtime.provider && profile.runtime.model
       ? { provider: profile.runtime.provider, model: profile.runtime.model } : defaults.main
     const main = { ...selected, ...(profile.runtime.reasoningEffort === undefined ? {} : { reasoningEffort: profile.runtime.reasoningEffort }) }
-    const writer = profile.runtime.writerRoute?.kind === 'fixed' ? profile.runtime.writerRoute
-      : profile.runtime.writerRoute?.kind === 'inherit' ? main : defaults.writer ?? main
+    const selection = profile.runtime.writerRoute ?? defaults.writer
+    const writer = selection && 'kind' in selection ? resolveModelSelection(selection, main) : selection ?? main
     this.resolve(main); this.resolve(writer)
     return { main, writer }
   }

@@ -79,8 +79,11 @@ export async function checkModel(registration: ModelRegistration, apiKey: string
   const start = Date.now()
   try {
     const registry = new ModelRegistry([registration], { ...options, env: () => apiKey })
-    const { model } = registry.resolve({ provider: registration.provider, model: registration.model })
-    const result = await registry.stream(model, { messages: [{ role: 'user', content: 'Reply with OK.', timestamp: start }] }, { signal, maxRetries: 0, timeoutMs: 15000, maxTokens: Math.min(32, model.maxTokens) }).result()
+    const { model, thinkingLevel } = registry.resolve({ provider: registration.provider, model: registration.model })
+    const result = await registry.stream(model, { messages: [{ role: 'user', content: 'Reply with OK.', timestamp: start }] }, {
+      signal, maxRetries: 0, timeoutMs: 15000, reasoning: thinkingLevel === 'off' ? undefined : thinkingLevel,
+      maxTokens: Math.min(thinkingLevel === 'off' ? 32 : 1024, model.maxTokens),
+    }).result()
     if (result.stopReason === 'error' || result.stopReason === 'aborted') throw new Error(result.errorMessage || result.stopReason)
     return { status: 'passed', checkedAt: new Date().toISOString(), durationMs: Date.now() - start, message: '模型调用成功。' }
   } catch (error) {
