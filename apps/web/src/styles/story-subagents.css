@@ -1,0 +1,49 @@
+.story-subagents-modal { width: min(680px, calc(100vw - 32px)); }
+.story-subagents-form > .editor-form-fields { display: flex; flex-direction: column; gap: 20px; }
+.story-subagent-list { display: flex; flex-direction: column; gap: 28px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.story-subagent-list .settings-group-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.story-subagent-list .settings-group-heading > div:first-child { display: contents; }
+.story-subagent-list .settings-group-heading h3 { grid-column: 1; grid-row: 1; }
+.story-subagent-list .settings-group-heading p { grid-column: 1 / -1; grid-row: 2; margin: 0; }
+.story-subagent-list .settings-group-actions { grid-column: 2; grid-row: 1; }
+.story-agent-scope { padding: 3px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 11px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+.story-writer-section { padding: 18px; border: 1px solid var(--border); border-radius: 14px; background: color-mix(in srgb, var(--soft) 55%, var(--surface)); }
+.story-writer-section > .settings-group-heading { margin-bottom: 16px; }
+.story-writer-title { display: flex; align-items: center; gap: 12px; font-size: 17px; font-weight: 600; }
+.story-writer-title small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); margin-top: 1px; }
+.story-writer-mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: var(--accent); color: var(--on-accent); }
+.story-writer-section > .settings-group-body { background: transparent; border: 0; border-top: 1px solid var(--border); border-radius: 0; padding: 12px 0 0; }
+.story-writer-section .setting-row { min-height: 0; padding: 0; gap: 16px; }
+.story-writer-section .setting-control { width: 340px; max-width: 72%; }
+.story-writer-section .setting-control > .model-picker-trigger { width: 100%; background: var(--surface); }
+.story-writer-section .model-picker > .setting-row + .setting-row { margin-top: 12px; padding-top: 12px; }
+.story-task-title { display: flex; align-items: center; gap: 8px; }
+.story-task-section > .settings-group-body { background: var(--surface); }
+.story-subagent { padding-block: 16px; min-width: 0; }
+.story-subagent-row { display: grid; grid-template-columns: minmax(112px, 1fr) minmax(0, 340px); gap: 18px; align-items: center; }
+.story-subagent-identity { min-width: 0; overflow-wrap: anywhere; }
+.story-subagent-identity h4 { margin: 0; font-size: 14px; font-weight: 550; line-height: 1.5; }
+.story-subagent-identity > span { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
+.story-subagent .model-picker { min-width: 0; }
+.story-subagent .model-picker > .setting-row { margin-top: 10px; padding: 0; min-height: 36px; gap: 12px; }
+.story-subagent .setting-label { font-size: 12px; color: var(--muted); }
+.story-subagent-contract { color: var(--muted); margin-top: 4px; }
+.story-subagents-modal .story-subagent-contract > summary { width: fit-content; min-height: 32px; padding: 6px 20px 6px 0; color: var(--muted); font-size: 12px; }
+.story-subagents-modal .story-subagent-contract > summary::after { top: 13px; }
+.story-subagent-contract p { margin: 4px 0 0; padding: 12px; border-radius: 8px; background: var(--soft); font-size: 12px; line-height: 1.75; overflow-wrap: anywhere; }
+.story-subagents-empty { padding-block: 18px; color: var(--muted); font-size: 13px; line-height: 1.65; }
+.story-subagents-form .form-actions > .button-quiet { margin-right: auto; font-size: 12px; }
+@media (max-width: 540px) {
+  .story-subagents-modal { width: 100%; }
+  .story-subagent-list { gap: 24px; }
+  .story-writer-section { padding: 16px; }
+  .story-writer-section > .settings-group-heading { gap: 10px; }
+  .story-writer-section .setting-row { gap: 10px; }
+  .story-writer-section .setting-control { width: 100%; max-width: none; }
+  .story-subagent-row { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .story-subagent-identity { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; }
+  .story-subagent-identity > span { margin-top: 0; }
+  .story-subagents-modal .story-subagent-contract > summary { min-height: 44px; padding-block: 12px; }
+  .story-subagents-modal .story-subagent-contract > summary::after { top: 19px; }
+  .story-subagents-form .form-actions > .button-quiet { padding-inline: 4px; }
+}

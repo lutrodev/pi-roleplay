@@ -1,0 +1,112 @@
+name: ${COMPOSE_PROJECT_NAME:-pi-roleplay}
+
+x-logging: &logging
+  driver: json-file
+  options: {max-size: 10m, max-file: "3"}
+
+services:
+  caddy:
+    profiles: [caddy]
+    image: caddy:2.11.4-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648
+    restart: unless-stopped
+    ports:
+      - "${RP_BIND_IP:-0.0.0.0}:${RP_HTTP_PORT:-80}:80"
+      - "${RP_BIND_IP:-0.0.0.0}:${RP_HTTPS_PORT:-443}:443"
+      - "${RP_BIND_IP:-0.0.0.0}:${RP_HTTPS_PORT:-443}:443/udp"
+    environment:
+      RP_SITE_ADDRESS: ${RP_SITE_ADDRESS:?Set RP_SITE_ADDRESS}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app: {condition: service_healthy}
+    networks: [web]
+    healthcheck:
+      test: [CMD, wget, -q, --spider, "http://127.0.0.1:2019/config/"]
+      interval: 15s
+      timeout: 4s
+      start_period: 10s
+      retries: 4
+    mem_limit: 192m
+    cpus: 0.25
+    pids_limit: 128
+    logging: *logging
+
+  app:
+    image: ${RP_APP_IMAGE:-pi-roleplay-app:0.1.0}
+    build: {context: ., dockerfile: deploy/Dockerfile.app}
+    restart: unless-stopped
+    read_only: true
+    user: "10001:10001"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "${RP_APP_BIND_IP:-127.0.0.1}:${RP_APP_PORT:-18767}:3091"
+    environment:
+      RP_PUBLIC_ORIGIN: ${RP_PUBLIC_ORIGIN:?Set RP_PUBLIC_ORIGIN}
+      RP_SESSION_KEY_FILE: /run/secrets/session_key
+      RP_TOOL_TOKEN_FILE: /run/secrets/tool_token
+      RP_MODELS_FILE: /config/models.json
+      RP_TOOLS_URL: http://tools:3092
+      NODE_OPTIONS: --max-old-space-size=1024
+    env_file: [./secrets/models.env]
+    secrets: [session_key, tool_token]
+    volumes:
+      - ${RP_STORAGE_DIR:-./state}/app:/data
+      - ./config/models.json:/config/models.json:ro
+      - ./skills/custom:/skills/custom:ro
+    tmpfs: ["/tmp:rw,nosuid,noexec,size=128m,uid=10001,gid=10001,mode=700", "/run/rp:rw,nosuid,noexec,size=1m,uid=10001,gid=10001,mode=700"]
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3091/health',{signal:AbortSignal.timeout(2000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 4s
+      start_period: 30s
+      retries: 4
+    depends_on:
+      tools: {condition: service_healthy}
+    networks: [web, execution]
+    mem_limit: 1536m
+    cpus: 1.25
+    pids_limit: 128
+    stop_grace_period: 30s
+    logging: *logging
+
+  tools:
+    image: ${RP_TOOLS_IMAGE:-pi-roleplay-tools:0.1.0}
+    build: {context: ., dockerfile: deploy/Dockerfile.tools}
+    restart: unless-stopped
+    read_only: true
+    user: "10001:10001"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    secrets: [tool_token]
+    volumes:
+      - ${RP_STORAGE_DIR:-./state}/workspaces:/workspaces
+      - ${RP_STORAGE_DIR:-./state}/app/inputs:/inputs:ro
+      - ./skills/custom:/skills/custom:ro
+    tmpfs: ["/tmp:rw,nosuid,noexec,size=256m,uid=10001,gid=10001,mode=700"]
+    healthcheck:
+      test: [CMD, node, -e, "const fs=require('fs');fetch('http://127.0.0.1:3092/health',{headers:{authorization:'Bearer '+fs.readFileSync('/run/secrets/tool_token','utf8').trim()},signal:AbortSignal.timeout(2000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 4s
+      start_period: 20s
+      retries: 4
+    networks: [execution]
+    mem_limit: 1024m
+    cpus: 1
+    pids_limit: 128
+    stop_grace_period: 15s
+    logging: *logging
+
+networks:
+  web:
+  execution:
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+secrets:
+  session_key: {file: ./secrets/session_key}
+  tool_token: {file: ./secrets/tool_token}

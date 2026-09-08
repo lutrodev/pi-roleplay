@@ -1,0 +1,60 @@
+/* A separate bottom layer; never apply image opacity to the app or shared controls. */
+.app-shell { position: relative; isolation: isolate; background: var(--canvas); }
+.background-surface { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.background-surface > img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.background-load-error { position: absolute; left: 16px; bottom: 8px; color: var(--muted); font-size: 12px; }
+.app-shell:has(> .background-surface) .sidebar { background: color-mix(in srgb, var(--sidebar) 70%, transparent); }
+.app-shell:has(> .background-surface) .page-bar { background: color-mix(in srgb, var(--canvas) 80%, transparent); }
+.background-current { display: flex; align-items: center; gap: 12px; }
+.background-current > .content-image, .background-current-empty { width: 60px; height: 40px; border-radius: 6px; object-fit: cover; flex-shrink: 0; }
+.background-current-empty { display: grid; place-items: center; background: var(--soft); color: var(--muted); }
+.background-current > span:last-child { overflow-wrap: anywhere; }
+.background-manager { width: min(760px, calc(100vw - 48px)); }
+.background-form > .editor-form-fields { display: flex; flex-direction: column; gap: 16px; }
+.background-preview { position: relative; isolation: isolate; overflow: hidden; background: var(--canvas); border: 1px solid var(--border); border-radius: 12px; min-height: 180px; }
+.background-preview-copy { padding: 24px 28px; width: min(480px, 100%); margin: auto; }
+.background-preview-copy > small { color: var(--muted); font-size: 11px; }
+.background-preview-copy p { margin: 8px 0 20px; font-size: 17px; line-height: 1.7; }
+.background-preview-copy > div { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 12px 16px; color: var(--muted); font-size: 13px; }
+.background-preview-copy > div > span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--soft); font-size: 18px; }
+.background-strength > .settings-group-body { border: 0; background: none; padding: 0; }
+.background-strength .setting-row { padding-block: 0; min-height: 36px; }
+.background-library-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 8px; }
+.background-library-heading > div { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.background-library-heading h3 { font-size: 14px; }
+.background-library-heading small, .background-upload-hint { color: var(--muted); font-size: 12px; }
+.background-upload-hint { margin-top: -10px; }
+.background-library { display: flex; flex-direction: column; gap: 16px; }
+.background-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 12px; }
+.background-preset-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.background-tile-description { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+.background-tile { min-width: 0; }
+.background-tile-choice { display: block; position: relative; cursor: pointer; }
+.background-tile-choice > input { position: absolute; opacity: 0; width: 100%; height: 100%; inset: 0; margin: 0; cursor: pointer; }
+.background-tile-picture { display: grid; position: relative; place-items: center; aspect-ratio: 16/10; overflow: hidden; border-radius: 10px; border: 1px solid var(--border); background: var(--soft); color: var(--muted); pointer-events: none; }
+.background-tile-picture > .content-image { width: 100%; height: 100%; object-fit: cover; }
+.background-tile-choice > input:checked + .background-tile-picture { outline: 2px solid var(--accent); outline-offset: 2px; }
+.background-tile-choice > input:focus-visible + .background-tile-picture { outline: 2px solid var(--accent); outline-offset: 4px; }
+.background-tile-check { display: grid; place-items: center; position: absolute; top: 7px; right: 7px; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--on-accent); }
+.background-tile-picture > small { position: absolute; left: 7px; bottom: 7px; border-radius: 4px; padding: 1px 6px; background: var(--surface); color: var(--text); font-size: 10px; }
+.background-tile-name { display: block; margin-top: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.background-tile-actions { display: flex; align-items: center; gap: 2px; margin-top: 3px; }
+.background-tile-actions small { flex: 1; color: var(--muted); font-size: 11px; }
+.background-tile-actions .icon-button { width: 30px; min-height: 30px; }
+.background-add-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; aspect-ratio: 16/10; align-self: start; border: 1px dashed var(--border); border-radius: 10px; background: transparent; color: var(--muted); font-size: 13px; }
+.background-add-tile:hover { color: var(--text); background: var(--soft); }
+.background-actions { position: sticky; bottom: -20px; z-index: 1; background: var(--surface); border-top: 1px solid var(--border); padding-block: 16px 4px; margin-top: 8px; }
+.background-actions > span { margin-right: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 12px; }
+@media (max-width: 800px), (pointer: coarse) {
+  .background-tile-actions .icon-button { width: 44px; min-height: 44px; }
+}
+@media (max-width: 540px) {
+  .background-manager { width: 100%; }
+  .background-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .background-preview-copy { padding: 20px 16px; }
+  .background-preview-copy p { font-size: 15px; }
+  .background-tile-actions { flex-wrap: wrap; }
+  .background-tile-actions small { flex-basis: 100%; }
+  .background-tile-actions .icon-button:first-of-type { margin-left: auto; }
+  .background-actions { bottom: -16px; padding-bottom: max(4px, env(safe-area-inset-bottom)); }
+}

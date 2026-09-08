@@ -1,0 +1,31 @@
+# Dedicated development project. Never reads the production .env or mounts state/secrets.
+services:
+  tools:
+    image: ${RP_DEV_TOOLS_IMAGE:?Managed by scripts/dev.ts}
+    build: {context: ., dockerfile: deploy/Dockerfile.tools}
+    user: "${RP_DEV_UID:?}:${RP_DEV_GID:?}"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment: {HOME: /tmp}
+    ports: ["127.0.0.1::3092"]
+    volumes:
+      - ./.dev/workspaces:/workspaces
+      - ./.dev/data/inputs:/inputs:ro
+      - ./.dev/skills:/skills/custom:ro
+    secrets: [tool_token]
+    tmpfs:
+      - "/tmp:rw,nosuid,noexec,size=256m,uid=${RP_DEV_UID},gid=${RP_DEV_GID},mode=700"
+    healthcheck:
+      test: [CMD, node, -e, "const fs=require('fs');fetch('http://127.0.0.1:3092/health',{headers:{authorization:'Bearer '+fs.readFileSync('/run/secrets/tool_token','utf8').trim()},signal:AbortSignal.timeout(2000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 4s
+      start_period: 10s
+      retries: 10
+    mem_limit: 1024m
+    cpus: 1
+    pids_limit: 128
+    stop_grace_period: 15s
+    logging: {driver: json-file, options: {max-size: 10m, max-file: "2"}}
+secrets:
+  tool_token: {file: ./.dev/tool_token}

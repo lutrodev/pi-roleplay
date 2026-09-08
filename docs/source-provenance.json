@@ -1,0 +1,455 @@
+{
+  "project": "pi-roleplay",
+  "sourceDescription": "迁入前的 Roleplay 插件实现",
+  "sourceNotice": "../THIRD_PARTY_NOTICES.md",
+  "sourceHead": "e736f86f78ce927a75b543eb829cb4e9cf3103a1",
+  "sourceIncludesWorkingChanges": true,
+  "copiedAt": "2026-09-05T03:02:38.279Z",
+  "files": [
+    {
+      "source": "plugins/rp-character-card/src/character-card.js",
+      "target": "packages/rp-core/src/character/character-card.js",
+      "sourceSha256": "5e3c28c403f7ba64434bcd8546fce90f6c70b82c328ce3c8ee3f39964e4adef7",
+      "migratedSha256": "5e3c28c403f7ba64434bcd8546fce90f6c70b82c328ce3c8ee3f39964e4adef7"
+    },
+    {
+      "source": "plugins/rp-lore-book/src/activation.js",
+      "target": "packages/rp-core/src/lore/activation.js",
+      "sourceSha256": "db432e57f048602f48a76942dacffeca99e3937965b00c1ca1c00b78a9dca8e4",
+      "migratedSha256": "05589394370cb27e9d59307534d71b1d55f42b18a624d1e7393456cf003df428"
+    },
+    {
+      "source": "plugins/rp-core/src/context-build.js",
+      "target": "packages/rp-core/src/context/build.js",
+      "sourceSha256": "b0a1625c2f4bb32498c4e0fd4727a2ba4892c582bdc7607568fd5e5fdb935e71",
+      "migratedSha256": "14df1b08ad8536c86c3d2f86a0bef4df4131fddcc21ab233af428d3a19305c22"
+    },
+    {
+      "source": "plugins/rp-macro/src/syntax.js",
+      "target": "packages/rp-core/src/macro/syntax.js",
+      "sourceSha256": "5542ffa5d3fc7d57c0360450856a7e1a437891146ddcee2b6a6e4210109f2022",
+      "migratedSha256": "5542ffa5d3fc7d57c0360450856a7e1a437891146ddcee2b6a6e4210109f2022"
+    },
+    {
+      "source": "plugins/rp-dialogue-highlight/src/dialogue-ranges.js",
+      "target": "packages/rp-core/src/display/dialogue-ranges.js",
+      "sourceSha256": "cb9b06e1efdf8ebdd9b8da7047891207c63787c794c4073bf6e3d1a33fa8c5c3",
+      "migratedSha256": "cb9b06e1efdf8ebdd9b8da7047891207c63787c794c4073bf6e3d1a33fa8c5c3"
+    },
+    {
+      "source": "packages/rp-ui/src/json-patch.js",
+      "target": "packages/rp-core/src/json-patch.js",
+      "sourceSha256": "779530a1f5726de32da814284064addafb60ccaddf6ceb1bcaa63bfeb641f439",
+      "migratedSha256": "779530a1f5726de32da814284064addafb60ccaddf6ceb1bcaa63bfeb641f439"
+    },
+    {
+      "source": "plugins/rp-state/src/definition.js",
+      "target": "packages/rp-core/src/state/definition.js",
+      "sourceSha256": "c66e3bf9dea8b656b83d5373fd9d8bfe7defbc41b6b5121f78ef4ac9aad6274d",
+      "migratedSha256": "c66e3bf9dea8b656b83d5373fd9d8bfe7defbc41b6b5121f78ef4ac9aad6274d"
+    },
+    {
+      "source": "plugins/rp-state/src/schema.js",
+      "target": "packages/rp-core/src/state/schema.js",
+      "sourceSha256": "ffb6963f70ad78e403e0b4b75aa5ee9b59652b2c8c0138a1ebc0f77c57f1571c",
+      "migratedSha256": "ffb6963f70ad78e403e0b4b75aa5ee9b59652b2c8c0138a1ebc0f77c57f1571c"
+    },
+    {
+      "source": "plugins/rp-state/src/condition.js",
+      "target": "packages/rp-core/src/state/condition.js",
+      "sourceSha256": "7af5973af138c263701deb1d23f0e8d9678ba9071a605c121e559d61d25a4cd6",
+      "migratedSha256": "7af5973af138c263701deb1d23f0e8d9678ba9071a605c121e559d61d25a4cd6"
+    },
+    {
+      "source": "plugins/rp-state/src/update.js",
+      "target": "packages/rp-core/src/state/update.js",
+      "sourceSha256": "829a9a88cf20a5b9918dacac84f4df251c010a93bdecfb4a9549a99ff5885ac5",
+      "migratedSha256": "829a9a88cf20a5b9918dacac84f4df251c010a93bdecfb4a9549a99ff5885ac5"
+    },
+    {
+      "source": "plugins/rp-state/src/json-pointer.js",
+      "target": "packages/rp-core/src/state/json-pointer.js",
+      "sourceSha256": "5b9639005e17f351a71a24a06dda30cdde50912dd50811ce4cf86605e965e264",
+      "migratedSha256": "5b9639005e17f351a71a24a06dda30cdde50912dd50811ce4cf86605e965e264"
+    },
+    {
+      "source": "plugins/rp-compat-mvu/src/convert.js",
+      "target": "packages/rp-core/src/mvu/convert.js",
+      "sourceSha256": "d7e47161df293b63e63848627010fd69953ebc0c6ec84ca637738dd811f81ab2",
+      "migratedSha256": "d7e47161df293b63e63848627010fd69953ebc0c6ec84ca637738dd811f81ab2"
+    },
+    {
+      "source": "plugins/rp-compat-mvu/src/initial-value.js",
+      "target": "packages/rp-core/src/mvu/initial-value.js",
+      "sourceSha256": "7eec4e69fef742f14facf9e49c81341cf9aa9eff88cf5160283ba9f873305439",
+      "migratedSha256": "7eec4e69fef742f14facf9e49c81341cf9aa9eff88cf5160283ba9f873305439"
+    },
+    {
+      "source": "plugins/rp-compat-mvu/src/lore-adapter.js",
+      "target": "packages/rp-core/src/mvu/lore-adapter.js",
+      "sourceSha256": "bc54b9b79bef171b47c08c8db2ec6470751e6dd49a02fa2b375c56de048a1ba9",
+      "migratedSha256": "bc54b9b79bef171b47c08c8db2ec6470751e6dd49a02fa2b375c56de048a1ba9"
+    },
+    {
+      "source": "plugins/rp-compat-mvu/src/materialize.js",
+      "target": "packages/rp-core/src/mvu/materialize.js",
+      "sourceSha256": "c0999a7b77b313a2c573c642071e25da56ef0bcf5a2b335167bf71d2217730cb",
+      "migratedSha256": "ac956c84ba762d3a59ebf28041808770622f71e4287d0a90ec69ef4e4e7003c1"
+    },
+    {
+      "source": "plugins/rp-compat-mvu/src/mvu-control.js",
+      "target": "packages/rp-core/src/mvu/mvu-control.js",
+      "sourceSha256": "3830141f792a513422b2c951c345118751ead6cf3b2bb63575de65f0f725bdb7",
+      "migratedSha256": "3830141f792a513422b2c951c345118751ead6cf3b2bb63575de65f0f725bdb7"
+    },
+    {
+      "source": "plugins/rp-compat-mvu/src/mvu-type.js",
+      "target": "packages/rp-core/src/mvu/mvu-type.js",
+      "sourceSha256": "d5149b9f3d8d96c4bc9a562401cc10e78235f877d21c79c44901f67486e7725d",
+      "migratedSha256": "d5149b9f3d8d96c4bc9a562401cc10e78235f877d21c79c44901f67486e7725d"
+    },
+    {
+      "source": "plugins/rp-compat-mvu/src/native-state.js",
+      "target": "packages/rp-core/src/mvu/native-state.js",
+      "sourceSha256": "b9e5058ee797c07a845dd22d4241f38d0496f845bb7b524982e12fb385c6dd25",
+      "migratedSha256": "f97b7517cc6829bf55c08053a90d4462f45a7ceef64036f8408ba518bdb14758"
+    },
+    {
+      "source": "plugins/rp-compat-mvu/src/opening-command-parser.js",
+      "target": "packages/rp-core/src/mvu/opening-command-parser.js",
+      "sourceSha256": "7e16c1acf7eb45a0a3b210df9f7cc20c20d6b2ee9fa55eddc73bc79d9900bd54",
+      "migratedSha256": "7e16c1acf7eb45a0a3b210df9f7cc20c20d6b2ee9fa55eddc73bc79d9900bd54"
+    },
+    {
+      "source": "plugins/rp-compat-mvu/src/opening-operations.js",
+      "target": "packages/rp-core/src/mvu/opening-operations.js",
+      "sourceSha256": "551bfe13a0136a0f5c3edca8d74db8196f17749f1553556605acf3e837a99b5d",
+      "migratedSha256": "551bfe13a0136a0f5c3edca8d74db8196f17749f1553556605acf3e837a99b5d"
+    },
+    {
+      "source": "plugins/rp-compat-mvu/src/semantic-path.js",
+      "target": "packages/rp-core/src/mvu/semantic-path.js",
+      "sourceSha256": "b4a08e89cc6248cc018f4a8d21f3406ec58c0c8d80d95e7d8ea3197216340dc8",
+      "migratedSha256": "b4a08e89cc6248cc018f4a8d21f3406ec58c0c8d80d95e7d8ea3197216340dc8"
+    },
+    {
+      "source": "plugins/rp-compat-mvu/src/semantic-rules.js",
+      "target": "packages/rp-core/src/mvu/semantic-rules.js",
+      "sourceSha256": "b096de390312779e83f9d13ec8f852ad16a9a023fc0baed95513a0b47b278ac4",
+      "migratedSha256": "b096de390312779e83f9d13ec8f852ad16a9a023fc0baed95513a0b47b278ac4"
+    },
+    {
+      "source": "plugins/rp-compat-mvu/src/state-template.js",
+      "target": "packages/rp-core/src/mvu/state-template.js",
+      "sourceSha256": "3ab30ca7b351b70f47f6340e22f0d5638128942b22026668cc0acdb426a55f7b",
+      "migratedSha256": "3ab30ca7b351b70f47f6340e22f0d5638128942b22026668cc0acdb426a55f7b"
+    },
+    {
+      "source": "plugins/rp-preset/src/index.js",
+      "target": "packages/rp-core/src/seeds/preset.js",
+      "sourceSha256": "05e212a8a0cf7be1b0011009a01e36ac8756edbddff07ba3e548ee77be8b2aa2",
+      "migratedSha256": "821b3f0303d8144589defb081ee92fbb182800adfd009ee30d285db0baf4c35d",
+      "namingNote": "2026-09-07: project naming and comments updated; executable code is unchanged; original attribution is retained in THIRD_PARTY_NOTICES.md."
+    },
+    {
+      "source": "plugins/rp-writing-style/src/index.js",
+      "target": "packages/rp-core/src/seeds/writing-style.js",
+      "sourceSha256": "8fa5043595717c36a6c7a108dd9ae9a57714a2691fd503fca245f9a31e028274",
+      "migratedSha256": "b0a32c6a816c09528052047e51e62dc91b8de9019fccd0b0f0fbdb03ba957a71",
+      "namingNote": "2026-09-07: project naming and comments updated; executable code is unchanged; original attribution is retained in THIRD_PARTY_NOTICES.md."
+    },
+    {
+      "source": "plugins/rp-character-card/test/character-card.test.js",
+      "target": "packages/rp-core/test/character/character-card.test.js",
+      "sourceSha256": "eb33430f287dc921b04347bbf53582093e22525b82738f5dcd3775c2c73a8f86",
+      "migratedSha256": "ffa45dcd676942562ffdc4c8a8f8eaeaff82f3c76b372b075c9295e5ded11893"
+    },
+    {
+      "source": "plugins/rp-lore-book/test/activation.test.js",
+      "target": "packages/rp-core/test/lore/activation.test.js",
+      "sourceSha256": "fece54061e998af392b201e2bf9177c8547dec00c14dfcd6a90c11079507e98a",
+      "migratedSha256": "704215c8fa1c2cfa1e1d1c4a2bf14af763c760edd3a1faa0360ac0992d44b291"
+    },
+    {
+      "source": "plugins/rp-core/test/context-build.test.js",
+      "target": "packages/rp-core/test/context/build.test.js",
+      "sourceSha256": "42b33b4c9cef46eaf1a83f6570a287a579c875b95b6a4c8bee48f9f19d41a5d8",
+      "migratedSha256": "30932f634ff635776d1b7c0726b940e240bcde394f43c0dd4d4b56ecfabac13d"
+    },
+    {
+      "source": "plugins/rp-macro/test/syntax.test.js",
+      "target": "packages/rp-core/test/macro/syntax.test.js",
+      "sourceSha256": "b60a4ecf92498c078dbafc261762cdb88bf3b54f1096565c27a696fc9979da94",
+      "migratedSha256": "dc9219f23c983d09afefce71dbbbc998367ee17811a9aa41a9010b2c212ef877"
+    },
+    {
+      "source": "plugins/rp-state/test/schema-condition.test.js",
+      "target": "packages/rp-core/test/state/schema-condition.test.js",
+      "sourceSha256": "c2f9b46ed1f12dcf9ff1bb24d31d49964cfb17ceab3aaf1ff27e927b09440d82",
+      "migratedSha256": "d144818498cdad546977da47915864a6e570027c7713aca4c383d3b4d6cae119"
+    },
+    {
+      "source": "plugins/rp-state/test/update.test.js",
+      "target": "packages/rp-core/test/state/update.test.js",
+      "sourceSha256": "3fca8915d28590a0e1d2b7e571d666f3dfd64e7fa2ddd403b62b87bf537eb411",
+      "migratedSha256": "d03e8f8504abbb2d9332bee75407822ca3cd9f61c13bbeaa2007fec1a3817a8a"
+    },
+    {
+      "source": "plugins/rp-compat-mvu/test/convert.test.js",
+      "target": "packages/rp-core/test/mvu/convert.test.js",
+      "sourceSha256": "4b08cf72c45c3728f274fa0b32c28943e04daabe28b9c5a4998b7be0d6aefda1",
+      "migratedSha256": "967447f99fea4bf3895537ed94c9c3df8f0fbcfc9f6d8a892d5c615ed6eb40d7"
+    },
+    {
+      "source": "plugins/rp-dialogue-highlight/test/dialogue-ranges.test.js",
+      "target": "packages/rp-core/test/display/dialogue-ranges.test.js",
+      "sourceSha256": "7636a3f2bcd5848c1eb4cd0e2b4a7096f08b60c86c2b93b2d106e8a46d1e526d",
+      "migratedSha256": "00eb122935edd9a485451f75bbd183eedf13459b848be36f0c9e0b3b8ee02b85"
+    },
+    {
+      "source": "packages/rp-ui/test/json-patch.test.js",
+      "target": "packages/rp-core/test/shared/json-patch.test.js",
+      "sourceSha256": "e3578ac3f05858a0ba0ec5d7c7518a995b9c08f03196b52a6a266187a63b4a91",
+      "migratedSha256": "480146284c01bec3e5302eba5555f694246e6d677cce8f211473cb6304f413c7"
+    },
+    {
+      "source": "LICENSE",
+      "target": "LICENSE",
+      "sourceSha256": "9bba9ae23a6d1e9d13622a07b265c8c29654de5e8412a64d43221957cf3554d9",
+      "migratedSha256": "9bba9ae23a6d1e9d13622a07b265c8c29654de5e8412a64d43221957cf3554d9"
+    },
+    {
+      "source": "plugins/rp-dialogue-highlight/src/dom-highlight.js",
+      "target": "packages/rp-core/src/display/dom-highlight.js",
+      "sourceSha256": "cdb2eec5b3a0c0c362690ffd530c4dc7f485ff6c8268c3e3c8151a00883c050d",
+      "migratedSha256": "f274b88059d1710dc0e7ef1fea74799356bc4bba7b3686ea55e1bf441d19c8ae",
+      "namingNote": "2026-09-07: project naming and comments updated; executable code is unchanged; original attribution is retained in THIRD_PARTY_NOTICES.md."
+    },
+    {
+      "source": "plugins/rp-session/src/index.js",
+      "target": "packages/rp-core/src/story/profile.js",
+      "extracted": [
+        "normalizeProfile"
+      ],
+      "sourceSha256": "e893e5d67208d051dc3f37a61f05e85bdbace2f25086bd6914eebce32e784e24",
+      "migratedSha256": "bb36b11d16ac54a8103c24c70b984f40984606dbbcd12ada2a7459dc41985054"
+    },
+    {
+      "source": "plugins/rp-preset/src/index.js",
+      "target": "packages/rp-core/src/assets/preset.js",
+      "extracted": [
+        "normalizePreset",
+        "validateEditablePreset"
+      ],
+      "sourceSha256": "05e212a8a0cf7be1b0011009a01e36ac8756edbddff07ba3e548ee77be8b2aa2",
+      "migratedSha256": "f5020c9eb2fc9684a5490ba1ad41738ec758b45972bb38ceedc48b0dd6fd73ce"
+    },
+    {
+      "source": "plugins/rp-writing-style/src/index.js",
+      "target": "packages/rp-core/src/assets/writing-style.js",
+      "extracted": [
+        "normalizeStyle",
+        "validateEditableStyle"
+      ],
+      "sourceSha256": "8fa5043595717c36a6c7a108dd9ae9a57714a2691fd503fca245f9a31e028274",
+      "migratedSha256": "31224bfec5519a353b0b8fd657571cc4d11ccfd638ddee49e059a0580c6750b3"
+    },
+    {
+      "source": "plugins/rp-persona/src/index.js",
+      "target": "packages/rp-core/src/assets/persona.js",
+      "extracted": [
+        "normalizePersona",
+        "validateEditablePersona",
+        "renderPersona"
+      ],
+      "sourceSha256": "3daf0347c671aba82d5f4082194ac23b47a6bc528366363b2db4ef905a75718d",
+      "migratedSha256": "7d494cc5c1c722d268f4e1dfe3fc2813b78f97933ad2973eceb8f42117003d89"
+    },
+    {
+      "source": "plugins/rp-core/src/commit-retry.js",
+      "target": "packages/rp-core/src/story/commit-retry.js",
+      "sourceSha256": "008f1d21815ceb42cca6f54469667cd678865a27a23776c735eaf306d9cb10eb",
+      "migratedSha256": "6609786118f8b9e6c3ba4316e8ad59c71bc522bd4ceb8157f7c039c53ca2a9ce"
+    },
+    {
+      "source": "plugins/rp-core/test/commit-retry.test.js",
+      "target": "packages/rp-core/test/story/commit-retry.test.js",
+      "sourceSha256": "c70e7aec1858e98e4c1ec40966807a3276fe102fb385dbf0ca59b9d1bfdd0587",
+      "migratedSha256": "8091251d6ba0524d1a20261826b1191fbdb94c118671cadf48db0d0084532d54"
+    },
+    {
+      "source": "plugins/rp-core/src/prompts.js",
+      "target": "packages/rp-core/src/context/prompts.js",
+      "sourceSha256": "696ae71aa0ca81dfe26082e73fcdd58d74f8a5399592cb05b980f342572eadc7",
+      "migratedSha256": "fd411523a6d0074ce0ffe172930d3b99d137aa807995c32de86ca929b20ed806",
+      "notes": "Runtime prompt contracts only; previous host settings projection and platform shell reference removed. Real ClinePass verification clarified Writer-only prose responsibilities and explicit Chat commit/discussion finalization."
+    },
+    {
+      "source": "plugins/rp-character-card/skills/rp-guide-character-card/SKILL.md",
+      "target": "skills/builtin/rp-guide-character-card/SKILL.md",
+      "sourceSha256": "83e2410cd9ce48be7b62fd9fda1d06b1339e809092ceeb851b276a07ae1447b2",
+      "migratedSha256": "83e2410cd9ce48be7b62fd9fda1d06b1339e809092ceeb851b276a07ae1447b2",
+      "notes": "Reviewed Roleplay guidance; loaded by this application, with references available read-only in the tools container."
+    },
+    {
+      "source": "plugins/rp-lore-book/skills/rp-guide-lorebook/SKILL.md",
+      "target": "skills/builtin/rp-guide-lorebook/SKILL.md",
+      "sourceSha256": "660b64a54b75b6ac9b688095153cce430f15d042f92ef5b5fe87afe5daf5ced5",
+      "migratedSha256": "660b64a54b75b6ac9b688095153cce430f15d042f92ef5b5fe87afe5daf5ced5",
+      "notes": "Reviewed Roleplay guidance; loaded by this application, with references available read-only in the tools container."
+    },
+    {
+      "source": "plugins/rp-persona/skills/rp-guide-persona/SKILL.md",
+      "target": "skills/builtin/rp-guide-persona/SKILL.md",
+      "sourceSha256": "04e5ef237ed5924414b09fdbe9acbeb9b01a6b95dee740a38d4b7e9ef4953100",
+      "migratedSha256": "04e5ef237ed5924414b09fdbe9acbeb9b01a6b95dee740a38d4b7e9ef4953100",
+      "notes": "Reviewed Roleplay guidance; loaded by this application, with references available read-only in the tools container."
+    },
+    {
+      "source": "plugins/rp-preset/skills/rp-guide-preset/SKILL.md",
+      "target": "skills/builtin/rp-guide-preset/SKILL.md",
+      "sourceSha256": "02f66806121dd6507694a3789ef7252fbb0d695a39d85fc1a2454fa5f745e9db",
+      "migratedSha256": "02f66806121dd6507694a3789ef7252fbb0d695a39d85fc1a2454fa5f745e9db",
+      "notes": "Reviewed Roleplay guidance; loaded by this application, with references available read-only in the tools container."
+    },
+    {
+      "source": "plugins/rp-preset/skills/rp-guide-preset-sillytavern/SKILL.md",
+      "target": "skills/builtin/rp-guide-preset-sillytavern/SKILL.md",
+      "sourceSha256": "a981a886783e12caca47b6c755a2002dd0c80c3d8a6668800bfee04d2fa64852",
+      "migratedSha256": "a981a886783e12caca47b6c755a2002dd0c80c3d8a6668800bfee04d2fa64852",
+      "notes": "Reviewed Roleplay guidance; loaded by this application, with references available read-only in the tools container."
+    },
+    {
+      "source": "plugins/rp-writing-style/skills/rp-guide-writing-style/SKILL.md",
+      "target": "skills/builtin/rp-guide-writing-style/SKILL.md",
+      "sourceSha256": "0d37c1a73fa325524f1768ae580c59d6340935d3631c9a902c3bf74aa3447e21",
+      "migratedSha256": "0d37c1a73fa325524f1768ae580c59d6340935d3631c9a902c3bf74aa3447e21",
+      "notes": "Reviewed Roleplay guidance; loaded by this application, with references available read-only in the tools container."
+    },
+    {
+      "source": "plugins/rp-state/skills/rp-guide-state/SKILL.md",
+      "target": "skills/builtin/rp-guide-state/SKILL.md",
+      "sourceSha256": "db24374ae52ab8d176a68da304d01fab25c7dd1f6700e9b3fe6a3a3c4e6a4741",
+      "migratedSha256": "db24374ae52ab8d176a68da304d01fab25c7dd1f6700e9b3fe6a3a3c4e6a4741",
+      "notes": "Reviewed Roleplay guidance; loaded by this application, with references available read-only in the tools container."
+    },
+    {
+      "source": "plugins/rp-state/skills/rp-guide-state/references/protocol.md",
+      "target": "skills/builtin/rp-guide-state/references/protocol.md",
+      "sourceSha256": "10c3f694ff1c82ce747f3c8fbf83224a6366d66b1106a3b92bec577135b90c3c",
+      "migratedSha256": "10c3f694ff1c82ce747f3c8fbf83224a6366d66b1106a3b92bec577135b90c3c",
+      "notes": "Reviewed Roleplay guidance; loaded by this application, with references available read-only in the tools container."
+    },
+    {
+      "source": "plugins/rp-state/skills/rp-guide-state/references/mvu.md",
+      "target": "skills/builtin/rp-guide-state/references/mvu.md",
+      "sourceSha256": "858c5f00442a68d4ad8645cba6744b525a48bb7aeda151d1a6656a035028d949",
+      "migratedSha256": "858c5f00442a68d4ad8645cba6744b525a48bb7aeda151d1a6656a035028d949",
+      "notes": "Reviewed Roleplay guidance; loaded by this application, with references available read-only in the tools container."
+    },
+    {
+      "source": "plugins/rp-feature-manager/cordis.patch.yml",
+      "target": "packages/rp-core/src/seeds/subagents.ts",
+      "sourceSha256": "5db5299dc2b7528647d856ff4149c5d36134326149a756117ef761dd56b7e40b",
+      "migratedSha256": "a8a34571c911eac95ff06d7cd23b978c566b444836ca78e53359e4959e657154",
+      "notes": "Only the two reviewed initial task-subagent definitions; no previous host configuration, environment paths or runtime references."
+    },
+    {
+      "source": "plugins/rp-quick-replies/src/protocol.js",
+      "target": "packages/rp-core/src/interaction/quick-replies.js",
+      "sourceSha256": "dec1404496ce3c9f47e8dbe17e5c5a0e9146d2b768276aad16918ca081b91cbb",
+      "migratedSha256": "19aa3d8125e670a05eb6db1c63d022ec515ea650d7ecdc63319782e04c3083bb"
+    },
+    {
+      "source": "plugins/rp-reply-options/src/protocol.js",
+      "target": "packages/rp-core/src/interaction/reply-options.js",
+      "sourceSha256": "946882ec39938ecbf433f29d7d84d28e3043d6664fa108decffa6fa5960569f0",
+      "migratedSha256": "946882ec39938ecbf433f29d7d84d28e3043d6664fa108decffa6fa5960569f0"
+    },
+    {
+      "source": "plugins/rp-feature-manager/src/catalog.js",
+      "target": "packages/rp-core/src/settings/features.ts",
+      "sourceSha256": "6f69e185d3ea91d8e610d822c2df456d99a02d831274cd1f78cc9fb09aa5f69d",
+      "migratedSha256": "08c538b6730ab676b48e9c0caeee4fe530f313a8d63ac36a060d3db5056b5d6d",
+      "adaptation": "Retained feature IDs and dependency semantics; removed previous host package/loader and obsolete saved-configuration migration paths."
+    },
+    {
+      "source": "plugins/rp-feature-manager/src/selection.js",
+      "target": "packages/rp-core/src/settings/features.ts",
+      "sourceSha256": "ba44d9f7ca9a18728af4f7697dfe20f0a73c16fa55e3d102c4e9ccf78627784e",
+      "migratedSha256": "08c538b6730ab676b48e9c0caeee4fe530f313a8d63ac36a060d3db5056b5d6d",
+      "adaptation": "Retained feature IDs and dependency semantics; removed previous host package/loader and obsolete saved-configuration migration paths."
+    },
+    {
+      "source": "plugins/rp-conversation-summary/src/summarizer.js",
+      "target": "packages/rp-core/src/context/summary.ts",
+      "sourceSha256": "f4b70bbb7649af5a3c9786ee1770dccc5c4aa20012e843a9318cc457b9baaf03",
+      "note": "Preserved summary semantics in the standalone event-journal runtime; no previous host compaction dependency.",
+      "migratedSha256": "c93987183b10f3152b257a9742f517f8bf642d0bba51259e397861b7ddb6ffc0"
+    },
+    {
+      "source": "plugins/rp-conversation-summary/src/engine.js",
+      "target": "apps/server/src/services/summary-service.ts",
+      "sourceSha256": "083721406b88b5e02c3de525958495cda9f3199e827caca92a8622957560c73d",
+      "note": "Preserved summary semantics in the standalone event-journal runtime; no previous host compaction dependency.",
+      "migratedSha256": "2d64733c3798b907eb71a5890d24e6106b7cbe496cd6cc3b6663d706fc78e665"
+    },
+    {
+      "source": "plugins/rp-persona/src/index.js",
+      "target": "packages/rp-core/src/seeds/persona.ts",
+      "sourceSha256": "3daf0347c671aba82d5f4082194ac23b47a6bc528366363b2db4ef905a75718d",
+      "migratedSha256": "07a5d3d5def5313a24ccc51f7bef9ec4b5e000be0090e25e85636771b802259a",
+      "note": "Extracted MIT default persona seed; host registration is replaced by AssetRepository.ensureDefaults.",
+      "namingNote": "2026-09-07: project naming and comments updated; executable code is unchanged; original attribution is retained in THIRD_PARTY_NOTICES.md."
+    }
+  ],
+  "omittedHostTests": [
+    {
+      "source": "plugins/rp-character-card/test/character-card.test.js",
+      "declaration": "Host-only import",
+      "reason": "Filesystem storage is replaced by SQLite and immutable attachments; asset, file-service and HTTP integration tests now cover atomic persistence, import, trust choices and avatar cleanup."
+    },
+    {
+      "source": "plugins/rp-character-card/test/character-card.test.js",
+      "declaration": "persists source, normalized character, manifest, and clean avatar atomically",
+      "reason": "Filesystem storage is replaced by SQLite and immutable attachments; asset, file-service and HTTP integration tests now cover atomic persistence, import, trust choices and avatar cleanup."
+    },
+    {
+      "source": "plugins/rp-compat-mvu/test/convert.test.js",
+      "declaration": "Host-only import",
+      "reason": "Cordis hook registration is removed; materialization behavior remains in migrated tests."
+    },
+    {
+      "source": "plugins/rp-compat-mvu/test/convert.test.js",
+      "declaration": "registers only public adapters and never scans conversation output for control blocks",
+      "reason": "Cordis hook registration is removed; materialization behavior remains in migrated tests."
+    },
+    {
+      "source": "plugins/rp-dialogue-highlight/test/dialogue-ranges.test.js",
+      "declaration": "projects a stable streaming anchor and settles it with the assistant message",
+      "reason": "previous host node/stream registration is removed; previous host projection hooks are replaced by React rendering; see docs/evidence/browser.md and docs/evidence/browser-fixes.md for streaming/recovery checks."
+    },
+    {
+      "source": "plugins/rp-dialogue-highlight/test/dialogue-ranges.test.js",
+      "declaration": "resets the streaming anchor on retry and settles interrupted output",
+      "reason": "previous host node/stream registration is removed; previous host projection hooks are replaced by React rendering; see docs/evidence/browser.md and docs/evidence/browser-fixes.md for streaming/recovery checks."
+    },
+    {
+      "source": "plugins/rp-dialogue-highlight/test/dialogue-ranges.test.js",
+      "declaration": "resolves the assistant row across other projection nodes",
+      "reason": "previous host node/stream registration is removed; previous host projection hooks are replaced by React rendering; see docs/evidence/browser.md and docs/evidence/browser-fixes.md for streaming/recovery checks."
+    },
+    {
+      "source": "plugins/rp-dialogue-highlight/test/dialogue-ranges.test.js",
+      "declaration": "keeps styles, projection, and node registration active until unload",
+      "reason": "previous host node/stream registration is removed; previous host projection hooks are replaced by React rendering; see docs/evidence/browser.md and docs/evidence/browser-fixes.md for streaming/recovery checks."
+    },
+    {
+      "source": "plugins/rp-dialogue-highlight/test/dialogue-ranges.test.js",
+      "declaration": "client entry mounts from a public streaming conversation node",
+      "reason": "Source-inspection test of retired UI hooks from the previous host; replacement browser checks are recorded in docs/evidence/browser.md and docs/evidence/browser-fixes.md."
+    }
+  ],
+  "verifiedAt": "2026-09-06T06:23:29.577897+00:00",
+  "latestAdaptation": "Agent final prose is explicit in rp_commit_turn.narrative; see docs/evidence/workspaces-tools.md. Original source hashes remain unchanged."
+}

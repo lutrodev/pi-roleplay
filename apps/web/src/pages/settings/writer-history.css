@@ -1,0 +1,9 @@
+.writer-history-steps { display: grid; gap: 1rem; min-width: 0; }
+.writer-history-step { display: grid; gap: 1rem; min-width: 0; margin: 0; padding: 1rem; border: 1px solid var(--border); border-radius: 12px; }
+.writer-history-step legend { padding: 0 .4rem; font-weight: 600; }
+.writer-history-step-actions { display: flex; justify-content: flex-end; gap: .25rem; }
+.writer-history-template-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.writer-history-json, .writer-history-preview { font-family: var(--font-mono, monospace); font-size: .85rem; }
+.writer-history-preview { max-height: 28rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 1rem; background: var(--soft); border-radius: 8px; }
+.writer-history-validation ul { padding-inline-start: 1.3rem; }
+@media (max-width: 600px) { .writer-history-step { padding: .75rem; } .writer-history .form-grid { grid-template-columns: minmax(0, 1fr); } }

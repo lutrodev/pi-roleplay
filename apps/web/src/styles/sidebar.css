@@ -1,0 +1,66 @@
+.sidebar { width: var(--sidebar-width); height: 100%; display: flex; flex-direction: column; padding: 12px; background: var(--sidebar); border-right: 1px solid var(--border); min-height: 0; }
+.sidebar-brand { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 8px; min-height: 44px; margin-bottom: 12px; padding-left: 10px; }
+.brand { display: inline-flex; align-items: center; color: var(--text); }
+.brand > span { font-size: 20px; font-weight: 600; letter-spacing: -.035em; }
+.sidebar-brand-actions { display: flex; align-items: center; gap: 2px; }
+.sidebar-brand-actions .icon-button { width: 30px; min-width: 30px; min-height: 32px; padding: 6px; color: var(--muted); }
+.main-nav, .sidebar-footer { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+.main-nav a, .main-nav .button, .sidebar-footer .button, .sidebar-footer a { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; min-height: 40px; padding: 9px 10px; border: 0; border-radius: 7px; color: var(--text); font-size: 14px; font-weight: 400; line-height: 20px; }
+.main-nav .new-story-button { font-weight: 500; }
+.main-nav svg, .sidebar-footer svg { flex-shrink: 0; stroke-width: 1.7; }
+.main-nav a.active, .main-nav .button.active, .sidebar-footer a.active { background: var(--hover); font-weight: 500; }
+.main-nav a:hover, .main-nav .button:hover, .sidebar-footer a:hover, .sidebar-footer .button:hover { background: var(--soft); }
+.story-list { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; padding: 22px 0 12px; overscroll-behavior: contain; }
+.sidebar-section + .sidebar-section { margin-top: 22px; }
+.sidebar-section-heading { display: flex; align-items: center; gap: 6px; min-height: 30px; color: var(--muted); font-size: 12px; font-weight: 500; padding-left: 10px; margin-bottom: 4px; }
+.sidebar-view-button { min-height: 30px; padding: 4px 6px; margin-left: -6px; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 500; }
+.sidebar-story { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 30px; align-items: center; border-radius: 7px; }
+.sidebar-story:hover { background: var(--soft); }
+.sidebar-story:has(> a.active) { background: var(--hover); }
+.sidebar-story > a { display: flex; align-items: center; gap: 7px; min-width: 0; min-height: 36px; padding: 8px 4px 8px 10px; font-size: 14px; line-height: 20px; border-radius: 7px; }
+.sidebar-story > a.active { color: var(--text); font-weight: 500; }
+.sidebar-story-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-story > a > svg { flex-shrink: 0; color: var(--muted); }
+.sidebar-story-state { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--muted); }
+.sidebar-story-state[data-status="running"], .sidebar-story-state[data-status="waiting_user"] { color: var(--text); }
+.sidebar-story-state[data-status="failed"] { color: var(--danger); }
+.sidebar-story > .story-actions-trigger { width: 30px; min-width: 30px; min-height: 32px; padding: 6px; color: var(--muted); }
+.sidebar-story:hover > .story-actions-trigger, .sidebar-story:focus-within > .story-actions-trigger { color: var(--text); }
+.story-action-error { grid-column: 1 / -1; padding: 4px; min-width: 0; }
+.sidebar-hint { color: var(--muted); font-size: 12px; padding: 10px; }
+.sidebar-more { font-size: 12px; color: var(--muted); justify-content: flex-start; width: 100%; padding-left: 10px; }
+.sidebar-footer { padding-top: 8px; border-top: 1px solid var(--border); }
+.sidebar-footer .button, .sidebar-footer a { color: var(--muted); }
+.sidebar-footer a.active, .sidebar-footer a:hover, .sidebar-footer .button:hover { color: var(--text); }
+.sidebar-workspace + .sidebar-workspace { margin-top: 10px; }
+.sidebar-workspace-heading { display: flex; align-items: center; min-width: 0; }
+.sidebar-workspace-heading > button:first-child { flex: 1; display: flex; align-items: center; gap: 9px; text-align: left; background: none; border: 0; min-width: 0; min-height: 36px; color: var(--text); padding: 8px 10px; cursor: pointer; font-size: 14px; font-weight: 500; line-height: 20px; border-radius: 7px; }
+.sidebar-workspace-heading > button:first-child:hover { background: var(--soft); }
+.sidebar-workspace-heading > button:first-child > span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-workspace-heading > button:first-child > svg { flex-shrink: 0; stroke-width: 1.7; }
+.sidebar-workspace-chevron { color: var(--muted); }
+.sidebar-workspace-heading > button[aria-expanded="false"] .sidebar-workspace-chevron { transform: rotate(-90deg); }
+.sidebar-workspace-heading > .icon-button { width: 30px; min-width: 30px; min-height: 32px; flex-shrink: 0; color: var(--muted); }
+.sidebar-workspace-rows { margin-left: 27px; }
+.sidebar-workspace [hidden] { display: none; }
+.sidebar-workspace-heading button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.navigation-drawer .modal-heading { align-items: center; padding: 12px 12px 8px 22px; border-bottom: 0; }
+.navigation-drawer .modal-heading h2 { font-size: 20px; letter-spacing: -.035em; }
+.navigation-drawer .modal-body { padding: 8px 12px 12px; overflow: hidden; }
+/* Pointer-only controls stay reachable when tabbing, using a menu, or viewing a touch layout. */
+@media (min-width: 801px) and (hover: hover) and (pointer: fine) {
+  .sidebar-story > .story-actions-trigger, .sidebar-workspace-heading > .icon-button { opacity: 0; }
+  .sidebar-story:hover > .story-actions-trigger, .sidebar-story:focus-within > .story-actions-trigger, .sidebar-story:has(> a.active) > .story-actions-trigger, .sidebar-story > .story-actions-trigger[data-state="open"], .sidebar-workspace-heading:hover > .icon-button, .sidebar-workspace-heading:focus-within > .icon-button { opacity: 1; }
+}
+@media (max-width: 800px), (pointer: coarse) {
+  .sidebar-story { grid-template-columns: minmax(0, 1fr) 44px; }
+  .sidebar-story > a, .sidebar-story > .story-actions-trigger, .sidebar-workspace-heading > .icon-button, .sidebar-workspace-heading > button:first-child, .sidebar-view-button, .sidebar-more, .main-nav a, .main-nav .button, .sidebar-footer .button, .sidebar-footer a, .navigation-drawer .modal-heading .icon-button { min-height: 44px; }
+  .sidebar-story > .story-actions-trigger, .sidebar-workspace-heading > .icon-button, .navigation-drawer .modal-heading .icon-button { width: 44px; min-width: 44px; }
+}
+/* On short windows, one scrollable navigation surface keeps every destination reachable. */
+@media (max-height: 500px) {
+  .sidebar { overflow-y: auto; overscroll-behavior: contain; }
+  .sidebar .story-list, .navigation-drawer .story-list { flex: none; overflow: visible; }
+  .navigation-drawer .modal-body { overflow-y: auto; }
+  .navigation-drawer .mobile-sidebar { flex: 0 0 auto; }
+}

@@ -1,0 +1,10 @@
+# Optional connection to an existing reverse proxy network. tools never joins it.
+services:
+  app:
+    networks:
+      proxy:
+        aliases: ["${COMPOSE_PROJECT_NAME:-pi-roleplay}-app"]
+networks:
+  proxy:
+    external: true
+    name: ${RP_PROXY_NETWORK:?Set an existing Docker proxy network}

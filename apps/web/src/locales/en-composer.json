@@ -1,0 +1,19 @@
+{
+  "整理总结": "Compact",
+  "压缩上下文，保留原始对话": "Condense context, keep the original conversation",
+  "文件和图片": "Files and images",
+  "添加本地附件": "Attach local files",
+  "选择、拖拽或粘贴附件": "Choose, drop or paste attachments",
+  "查找快捷指令": "Find a command",
+  "添加已有上下文": "Add existing context",
+  "文件 %{name} 为空，请选择有内容的文件。": "The file %{name} is empty. Choose a file with content.",
+  "文件 %{name} 超过 25 MB，请选择较小的文件。": "The file %{name} exceeds 25 MB. Choose a smaller file.",
+  "待发送附件": "Attachments to send",
+  "预览图片 %{name}": "Preview image %{name}",
+  "等待上传": "Queued",
+  "上传中": "Uploading",
+  "上传失败，请重试。": "Upload failed. Please try again.",
+  "重试上传 %{name}：%{error}": "Retry uploading %{name}: %{error}",
+  "上传失败 · 重试": "Failed · Retry",
+  "图片预览": "Image preview"
+}

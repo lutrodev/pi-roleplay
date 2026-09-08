@@ -1,0 +1,109 @@
+/* Shared settings geometry. No page selector is needed to opt into it. */
+.settings-group { min-width: 0; container-type: inline-size; }
+.settings-group-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.settings-group-heading > div:first-child { min-width: 0; }
+.settings-group-heading h3 { font-size: 14px; line-height: 1.5; font-weight: 600; }
+.settings-group-heading p { margin-top: 5px; color: var(--muted); font-size: 13px; line-height: 1.65; }
+.settings-group-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.settings-group-body { min-width: 0; border: 1px solid var(--border); border-radius: 14px; background: var(--canvas); padding: 0 18px; }
+.settings-group-rows > .settings-group-body > * + * { border-top: 1px solid var(--border); }
+.settings-group-form > .settings-group-body { display: flex; flex-direction: column; gap: 16px; padding: 18px; }
+.settings-group-form > .settings-group-body > .setting-row { padding-block: 0; min-height: 36px; }
+.settings-group-rows > .settings-group-body > :is(.field, .check, fieldset, p, .button) { margin-block: 14px; }
+.settings-group-rows > .settings-group-body > .button { border: 1px solid var(--border); }
+.settings-group legend { font-size: 13px; margin-bottom: 10px; }
+
+.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-width: 0; min-height: 60px; padding: 12px 0; color: var(--text); }
+.setting-row + .setting-row { border-top: 1px solid var(--border); }
+.setting-copy { display: block; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.setting-label { display: block; font-size: 14px; font-weight: 500; line-height: 1.5; }
+.setting-help { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; font-weight: 400; line-height: 1.6; }
+.setting-control { display: flex; align-items: center; justify-content: flex-end; flex: 0 1 auto; gap: 8px; min-width: 0; max-width: 48%; }
+.setting-control > * { min-width: 0; max-width: 100%; }
+.setting-row-field .setting-control { flex-basis: auto; flex-wrap: wrap; }
+.setting-row-field .field-validation { justify-content: flex-end; text-align: right; }
+.setting-control > .input { width: 230px; min-height: 36px; padding: 6px 10px; font-size: 13px; line-height: 1.6; }
+.setting-control > .select { width: auto; max-width: 100%; padding-right: 30px; }
+.setting-control > input[type="number"] { width: 100px; text-align: right; font-variant-numeric: tabular-nums; }
+.setting-control > .button { white-space: normal; }
+.setting-control > .model-picker-trigger { width: 260px; }
+.setting-control > .default-model-choice { width: 240px; }
+.setting-row-toggle { cursor: pointer; }
+.setting-switch-target { display: grid; place-items: center; flex-shrink: 0; min-width: 36px; min-height: 36px; cursor: pointer; }
+.setting-row-toggle:has(.setting-switch:disabled) > .setting-copy { opacity: .5; cursor: default; }
+.setting-switch { position: relative; appearance: none; width: 34px; height: 20px; min-width: 34px; margin: 0; border: 1px solid color-mix(in srgb, var(--text) 15%, transparent); border-radius: 999px; background: var(--hover); transition: background-color .14s; cursor: pointer; }
+.setting-switch::before { content: ''; position: absolute; width: 14px; height: 14px; top: 2px; left: 2px; background: #fff; border-radius: 50%; box-shadow: 0 1px 3px #0003; transition: translate .14s; }
+.setting-switch:checked { background: var(--accent); border-color: var(--accent); }
+.setting-switch:checked::before { translate: 14px 0; background: var(--on-accent); }
+.setting-switch:disabled { opacity: .5; cursor: default; }
+.segmented-control { display: inline-flex; padding: 3px; border-radius: 9px; background: var(--soft); }
+.segmented-control label { position: relative; display: flex; cursor: pointer; }
+.segmented-control input { position: absolute; opacity: 0; inset: 0; margin: 0; width: 100%; height: 100%; cursor: pointer; }
+.segmented-control span { display: grid; place-items: center; padding: 5px 12px; min-height: 30px; border-radius: 6px; font-size: 13px; line-height: 1.5; color: var(--muted); white-space: nowrap; }
+.segmented-control input:checked + span { background: var(--surface); box-shadow: 0 1px 3px #00000012; color: var(--text); }
+.segmented-control input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 1px; }
+.segmented-control:has(input:disabled) { opacity: .5; }
+.setting-row-slider .setting-control { flex-basis: 260px; gap: 16px; }
+.setting-slider { appearance: none; width: 100%; height: 24px; min-width: 48px; padding: 0; margin: 0; cursor: pointer; background: transparent; border: 0; }
+.setting-slider::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: linear-gradient(to right, var(--accent) var(--slider-progress), var(--border) var(--slider-progress)); }
+.setting-slider::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 50%; background: var(--accent); border: 0; }
+.setting-slider::-moz-range-track { height: 4px; border-radius: 4px; background: var(--border); }
+.setting-slider::-moz-range-progress { height: 4px; border-radius: 4px; background: var(--accent); }
+.setting-slider::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 50%; background: var(--accent); }
+.setting-slider:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; border-radius: 4px; }
+.setting-value { flex: 0 0 6ch; text-align: right; font-size: 13px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.setting-status { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: 13px; line-height: 1.6; text-align: right; overflow-wrap: anywhere; }
+.setting-status small { color: var(--muted); }
+/* Text actions share the status text edge while retaining a full-height hit target. */
+.setting-text-action.button { justify-content: flex-end; padding-inline: 12px 0; border: 0; font-weight: 400; line-height: 1.6; text-align: right; }
+.settings-group .model-row-meta { padding-bottom: 8px; }
+.settings-group .skill-row { padding-bottom: 12px; }
+.settings-group .skill-row details > summary { font-size: 12px; }
+
+.reading-preview { overflow: hidden; border-radius: 10px; border: 1px solid var(--border); }
+.reading-preview > header { display: flex; justify-content: space-between; gap: 12px; padding: 10px 18px; font-size: 12px; border-bottom: 1px solid var(--border); }
+.reading-preview > header strong { font-weight: 500; }
+.reading-preview > header small { color: var(--muted); }
+.reading-preview[data-preview-theme="dark"] { --sidebar: #19191b; --text: #eeedf0; --muted: #a2a2ac; --border: #37373d; --dialogue: var(--dialogue-dark); color: var(--text); background: var(--sidebar); }
+.reading-preview[data-preview-theme="light"] { --sidebar: #f6f6f7; --text: #242427; --muted: #6c6c73; --border: #e8e8eb; --dialogue: var(--dialogue-light); color: var(--text); background: var(--sidebar); }
+.reading-preview .reading-sample { padding: 22px; margin-top: 0; border: 0; background: var(--sidebar); }
+.settings-group .dialogue-color-options { padding-block: 14px; margin: 0; }
+.dialogue-color-options legend { float: left; width: 100%; font-weight: 500; }
+.dialogue-color-palette { clear: both; display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 8px; }
+.dialogue-color-palette label { position: relative; cursor: pointer; }
+.dialogue-color-palette input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.dialogue-color-option { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; min-height: 66px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); font-size: 12px; pointer-events: none; }
+.dialogue-color-option i { width: 20px; height: 20px; border-radius: 50%; background: var(--swatch-color); box-shadow: inset 0 0 0 1px #00000012; }
+.dialogue-color-check { position: absolute; right: 5px; top: 5px; visibility: hidden; }
+.dialogue-color-palette input:checked + .dialogue-color-option { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.dialogue-color-palette input:checked + .dialogue-color-option .dialogue-color-check { visibility: visible; }
+.dialogue-color-palette input:focus-visible + .dialogue-color-option { outline: 2px solid var(--accent); outline-offset: 3px; }
+.dialogue-color-options:disabled { opacity: .5; }
+.dialogue-color-options:disabled :is(label, input) { cursor: not-allowed; }
+
+/* Reflow from the actual group width, including desktop drawers and nested dialogs. */
+@container (max-width: 440px) {
+  .setting-row:is(.setting-row-field, .setting-row-segmented, .setting-row-slider, .setting-row-with-actions) { flex-direction: column; align-items: stretch; gap: 10px; }
+  .setting-row:is(.setting-row-field, .setting-row-segmented, .setting-row-slider, .setting-row-with-actions) > .setting-control { max-width: none; width: 100%; flex-basis: auto; }
+  .setting-row-field .setting-control > :is(.input, .button, .asset-picker) { width: 100%; max-width: 100%; }
+  .setting-row-slider .setting-control { justify-content: stretch; }
+  .settings-group-heading { flex-wrap: wrap; gap: 10px; }
+}
+@media (max-width: 540px) {
+  .setting-row:is(.setting-row-field, .setting-row-segmented, .setting-row-slider, .setting-row-with-actions) { flex-direction: column; align-items: stretch; gap: 10px; }
+  .setting-row:is(.setting-row-field, .setting-row-segmented, .setting-row-slider, .setting-row-with-actions) > .setting-control { max-width: none; width: 100%; flex-basis: auto; }
+  .setting-row-field .setting-control > :is(.input, .button, .asset-picker) { width: 100%; max-width: 100%; }
+  .setting-control > .input { font-size: 16px; min-height: 44px; }
+  .settings-group-body { padding-inline: 16px; }
+  .settings-group-form > .settings-group-body { padding: 16px; }
+  .settings-group-heading { flex-wrap: wrap; gap: 10px; }
+}
+@media (max-width: 800px), (pointer: coarse) {
+  .setting-row { min-height: 64px; }
+  .setting-switch-target { min-width: 44px; min-height: 44px; }
+  .setting-slider { height: 44px; }
+  .setting-control > .input { min-height: 44px; }
+  .segmented-control span { min-height: 38px; }
+}
+
+@media (prefers-reduced-motion: reduce) { .setting-switch, .setting-switch::before { transition: none; } }

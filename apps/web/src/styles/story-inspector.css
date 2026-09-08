@@ -1,0 +1,53 @@
+.story-inspector { min-width: 0; min-height: 0; --stack-gap: 16px; --field-gap: 6px; }
+.inspector-heading { align-items: center; }
+.inspector-body { flex: 1; min-height: 0; padding: 18px 20px 24px; overflow-y: auto; overflow-x: clip; overscroll-behavior: contain; scrollbar-width: thin; font-size: 13px; }
+.inspector-navigation { display: flex; flex-shrink: 0; align-items: center; gap: 2px; padding: 8px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.inspector-navigation > .button { padding: 5px 10px; min-height: 34px; font-size: 13px; font-weight: 400; color: var(--muted); }
+.inspector-navigation > .button[aria-pressed=true] { background: var(--soft); color: var(--text); }
+.inspector-navigation > .inspector-secondary-nav { margin-left: auto; gap: 5px; font-size: 12px; }
+.inspector-secondary-nav .inspector-more-icon { display: none; }
+.inspector-body .prose { font-size: 14px; line-height: 1.75; }
+.inspector-body .section-heading { flex-wrap: wrap; gap: 6px; }
+.inspector-body .section-heading > :first-child { flex: 1; }
+.inspector-body .button { font-size: 12px; }
+.inspector-body .empty-state { padding: 26px 6px; }
+.inspector-body .empty-state h2 { font-size: 15px; }
+.inspector-body .empty-state p { font-size: 12px; }
+.inspector-body .trace-call { border-radius: 7px; }
+.inspector-body .trace-call-body { padding: 9px; }
+.inspector-body .trace-actions .button { padding-inline: 8px; }
+.inspector-body .trace-actions { gap: 4px; }
+.inspector-body .form-actions { flex-wrap: wrap; }
+.inspector-body .asset-details-heading { align-items: start; gap: 8px; }
+.inspector-body .asset-details-heading h3 { font-size: 14px; }
+.inspector-body .asset-details-heading .asset-cover { width: 40px; height: 48px; }
+.inspector-body .asset-metadata { grid-template-columns: minmax(0, 1fr); }
+.conversation-history { display: flex; flex-direction: column; }
+.conversation-history > button { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 14px 6px; border: 0; border-bottom: 1px solid var(--border); background: transparent; font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.conversation-history > button:hover { background: var(--soft); }
+.conversation-history small { color: var(--muted); font-size: 11px; }
+.context-record { min-width: 0; }
+.context-record > header { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 4px 0 12px; }
+.context-record > header h3 { font-size: 13px; font-weight: 550; }
+.context-record > header small { color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+.context-section { border-top: 1px solid var(--border); }
+.context-section > summary { display: flex; align-items: center; gap: 8px; padding: 12px 2px; list-style: none; font-size: 13px; }
+.context-section > summary::-webkit-details-marker { display: none; }
+.context-section > summary::before { content: '›'; color: var(--muted); font-size: 17px; line-height: 1; transition: rotate var(--motion-fast) ease; }
+.context-section[open] > summary::before { rotate: 90deg; }
+.context-section > summary small { margin-left: auto; color: var(--muted); font-size: 11px; }
+.context-section > pre, .context-messages pre { margin: 0 0 14px; padding: 14px; max-height: 45dvh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; border-radius: 8px; background: var(--soft); font: 12px/1.8 ui-monospace, SFMono-Regular, Consolas, monospace; scrollbar-width: thin; }
+.context-section > .json-view { margin: 0 0 14px; }
+.context-messages > div > small, .context-raw > summary { color: var(--muted); }
+.context-messages > div > small { display: block; font-size: 11px; margin-bottom: 6px; }
+@media (max-width: 800px), (pointer: coarse) {
+  .inspector-navigation > .button, .inspector-body .button { min-height: 44px; }
+}
+@media (max-width: 540px) {
+  .inspector-body { padding: 16px 18px max(20px, env(safe-area-inset-bottom)); }
+  .inspector-navigation { padding-inline: 12px; gap: 0; }
+  .inspector-navigation > .button { padding-inline: 9px; }
+  :root[lang=en] .inspector-navigation > .button { padding-inline: 7px; min-width: 44px; font-size: 12px; }
+  :root[lang=en] .inspector-secondary-nav .inspector-nav-label, :root[lang=en] .inspector-secondary-nav .inspector-more-chevron { display: none; }
+  :root[lang=en] .inspector-secondary-nav .inspector-more-icon { display: block; }
+}

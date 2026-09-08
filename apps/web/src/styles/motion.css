@@ -1,0 +1,32 @@
+/* Motion marks actions and spatial relationships. The transcript never animates on SSE updates. */
+:root { --motion-fast: 120ms; --motion-normal: 180ms; --motion-overlay: 220ms; --ease-out: cubic-bezier(.22, 1, .36, 1); }
+.button, .tab-trigger, .main-nav a, .sidebar-footer a, .story-list a, .home-story-row, .continue-story, .command-result { transition: background-color var(--motion-fast) ease, border-color var(--motion-fast) ease, color var(--motion-fast) ease; }
+.app-shell { transition: grid-template-columns var(--motion-overlay) var(--ease-out); }
+.sidebar { transition: opacity var(--motion-normal) ease, transform var(--motion-overlay) var(--ease-out); }
+.sidebar-collapsed .sidebar { opacity: 0; transform: translateX(-12px); }
+.composer, .composer-surface { transition: border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease; }
+.message-actions { transition: opacity var(--motion-fast) ease; }
+.send-button, .composer-add { transition: background-color var(--motion-fast) ease, color var(--motion-fast) ease, transform var(--motion-fast) var(--ease-out); }
+.send-button:active:not(:disabled), .composer-add:active:not(:disabled) { transform: scale(.94); }
+.overlay[data-state="open"] { animation: surface-fade-in var(--motion-normal) ease; }
+.overlay[data-state="closed"] { animation: surface-fade-out var(--motion-fast) ease; }
+.modal { --surface-enter: translateY(8px) scale(.98); }
+.drawer { --surface-enter: translateX(20px); }
+.story-inspector { --surface-enter: translateX(100%); }
+.drawer-left { --surface-enter: translateX(-20px); }
+.modal[data-state="open"] { animation: surface-in var(--motion-overlay) var(--ease-out); }
+.modal[data-state="closed"] { animation: surface-out var(--motion-fast) ease; }
+.menu { --surface-enter: scale(.98) translateY(-3px); transform-origin: var(--radix-dropdown-menu-content-transform-origin); }
+.menu[data-state="open"] { animation: surface-in var(--motion-normal) var(--ease-out); }
+.menu[data-state="closed"] { animation: surface-out var(--motion-fast) ease; }
+.jump-latest, .composer-drop-target, .message-actions [aria-label="已复制"] svg { animation: surface-fade-in var(--motion-fast) ease; }
+@keyframes surface-in { from { opacity: 0; transform: var(--surface-enter); } to { opacity: 1; transform: none; } }
+@keyframes surface-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: var(--surface-enter); } }
+@keyframes surface-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes surface-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  :root { --motion-fast: .001ms; --motion-normal: .001ms; --motion-overlay: .001ms; }
+  .modal, .menu { --surface-enter: none; }
+  .spinner { animation: none; }
+  .send-button:active:not(:disabled), .composer-add:active:not(:disabled), .sidebar-collapsed .sidebar { transform: none; }
+}

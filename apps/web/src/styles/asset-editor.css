@@ -1,0 +1,34 @@
+.persona-editor-modal { --modal-width: 680px; }
+.avatar-editor { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: center; gap: 18px; }
+.avatar-editor-fields { min-width: 0; }
+.avatar-picker { width: 88px; }
+.avatar-picker-frame.button { position: relative; display: block; width: 88px; height: 88px; min-height: 0; padding: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: var(--sidebar); color: var(--muted); }
+.avatar-picker-character .avatar-picker-frame.button { height: 114px; border-radius: 8px; }
+.avatar-picker-frame:hover { border-color: var(--muted); }
+.avatar-picker-frame .content-image { display: block; width: 100%; height: 100%; object-fit: cover; }
+.avatar-picker-placeholder { display: flex; align-items: center; justify-content: center; height: 100%; padding-bottom: 20px; }
+.avatar-picker-caption { position: absolute; inset: auto 0 0; display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 26px; padding: 4px; background: var(--soft); font-size: 11px; line-height: 1.5; font-weight: 400; }
+.avatar-picker-frame:has(.content-image) .avatar-picker-caption { background: #18181bb3; color: #fff; }
+.avatar-picker-pending { position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--surface); }
+.persona-description { display: grid; gap: 8px; }
+.persona-description-surface { overflow: hidden; min-width: 0; border: 1px solid color-mix(in srgb, var(--text) 12%, transparent); border-radius: 12px; background: var(--surface); }
+.persona-description-surface:focus-within { border-color: var(--muted); }
+.persona-description-surface > textarea { display: block; width: 100%; min-width: 0; min-height: 172px; max-height: 340px; field-sizing: content; resize: none; border: 0; border-radius: 0; background: transparent; color: var(--text); padding: 14px; font-size: 14px; line-height: 1.8; }
+.persona-description-surface > textarea::placeholder { color: var(--muted); }
+.persona-description-surface > textarea:focus-visible { outline: 2px solid color-mix(in srgb, var(--text) 22%, transparent); outline-offset: -2px; }
+.description-labels { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; padding: 10px 12px 12px; border-top: 1px solid var(--border); }
+.description-labels > span { margin-right: 4px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.description-labels .button { min-height: 28px; padding: 4px 9px; border: 0; border-radius: 6px; background: var(--soft); color: var(--muted); font-size: 12px; font-weight: 400; }
+.description-labels .button:hover { background: var(--hover); color: var(--text); }
+@media (max-width: 800px), (pointer: coarse) {
+  .description-labels .button { min-height: 44px; min-width: 44px; }
+}
+@media (max-width: 540px) {
+  .avatar-editor { grid-template-columns: 80px minmax(0, 1fr); gap: 14px; }
+  .avatar-picker, .avatar-picker-frame.button { width: 80px; }
+  .avatar-picker-frame.button { height: 80px; }
+  .avatar-picker-character .avatar-picker-frame.button { height: 104px; }
+  .persona-description-surface > textarea { font-size: 16px; min-height: 180px; max-height: 42dvh; }
+  .description-labels { padding: 8px; gap: 4px; }
+  .description-labels > span { flex-basis: 100%; padding: 2px 4px; }
+}

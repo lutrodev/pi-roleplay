@@ -1,0 +1,19 @@
+{
+  "models": [
+    {
+      "provider": "clinepass",
+      "model": "cline-pass/deepseek-v4-flash",
+      "label": "DeepSeek V4 Flash · ClinePass",
+      "keyEnv": "RP_CLINEPASS_API_KEY",
+      "api": "openai-completions",
+      "baseUrl": "https://api.cline.bot/api/v1",
+      "contextWindow": 128000,
+      "maxTokens": 8192,
+      "outputTokens": 4096,
+      "input": ["text"],
+      "reasoning": true,
+      "compat": { "maxTokensField": "max_tokens", "supportsStore": false }
+    }
+  ],
+  "main": { "provider": "clinepass", "model": "cline-pass/deepseek-v4-flash", "reasoningEffort": "low" }
+}

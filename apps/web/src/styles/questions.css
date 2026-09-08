@@ -1,0 +1,22 @@
+.question-card { margin: 12px 0 28px; padding: 18px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.question-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.question-card-heading > div { min-width: 0; }
+.question-card-heading h3 { font-size: 15px; font-weight: 550; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+.question-card-heading h3:focus { outline: none; }
+.question-context { display: block; color: var(--muted); font-size: 11px; line-height: 1.6; margin-bottom: 4px; }
+.question-custom { position: relative; margin-top: 10px; }
+.question-custom textarea { min-height: 48px; max-height: 112px; padding: 10px 36px 10px 12px; border-radius: 10px; font-size: 13px; line-height: 1.7; resize: none; }
+.question-custom textarea:focus-visible { outline: 1px solid var(--muted); outline-offset: 0; }
+.question-custom .icon-button { position: absolute; top: 5px; right: 5px; width: 26px; min-height: 26px; color: var(--muted); }
+.question-card-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; }
+.question-card-footer .question-custom-toggle { font-size: 12px; font-weight: 400; color: var(--muted); padding: 6px 3px; min-height: 32px; gap: 6px; }
+.question-navigation { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.question-navigation > small { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.question-navigation .button-primary { min-height: 32px; padding: 6px 12px; border-radius: 9px; font-size: 12px; font-weight: 500; gap: 7px; }
+.question-navigation .icon-button { width: 30px; min-height: 32px; }
+@media (max-width: 800px) {
+  .question-card { padding: 14px; border-radius: 14px; }
+  .question-card-footer .button, .question-navigation .icon-button { min-height: 44px; }
+  .question-custom textarea { font-size: 16px; }
+  .question-custom .icon-button { width: 32px; min-height: 32px; }
+}

@@ -1,0 +1,30 @@
+FROM node:24.20.0-bookworm-slim@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e AS build
+COPY scripts/install-system-packages.sh /usr/local/bin/rp-install-packages
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked sh /usr/local/bin/rp-install-packages python3 make g++
+RUN npm install --global pnpm@11.23.0
+WORKDIR /build
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/rp-core/package.json packages/rp-core/package.json
+COPY apps/tools/package.json apps/tools/package.json
+COPY scripts/prepare-native.mjs scripts/prepare-native.mjs
+RUN pnpm install --frozen-lockfile
+COPY apps/tools/src apps/tools/src
+COPY packages/protocol/src packages/protocol/src
+COPY packages/rp-core/src/errors.ts packages/rp-core/src/workspace.ts packages/rp-core/src/
+COPY scripts/build-tools.mjs scripts/build-tools.mjs
+COPY LICENSE THIRD_PARTY_NOTICES.md ./
+RUN node scripts/build-tools.mjs && pnpm --filter @pi-roleplay/tools deploy --prod /out/tools
+
+FROM node:24.20.0-bookworm-slim@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e
+COPY scripts/install-system-packages.sh /usr/local/bin/rp-install-packages
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked sh /usr/local/bin/rp-install-packages bash python3 curl ca-certificates git ripgrep jq file unzip procps tini
+RUN useradd --uid 10001 --user-group --create-home --shell /bin/bash rp && mkdir -p /workspaces /inputs /skills/custom && chown 10001:10001 /workspaces /inputs /skills /skills/custom
+WORKDIR /opt/rp-tools
+COPY --from=build --chown=10001:10001 /out/tools ./
+COPY --chown=10001:10001 skills/builtin/ /skills/builtin/
+COPY LICENSE THIRD_PARTY_NOTICES.md ./
+COPY docs/dependency-licenses.json ./dependency-licenses.json
+USER 10001:10001
+EXPOSE 3092
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["node", "dist/main.js"]

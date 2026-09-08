@@ -1,0 +1,26 @@
+.run-activity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 4px 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.run-activity > span { min-width: 0; overflow-wrap: anywhere; }
+.run-activity-icon { flex-shrink: 0; }
+.run-activity-duration { margin-left: auto; white-space: nowrap; font-variant-numeric: tabular-nums; font-size: 11px; }
+.run-progress { margin: 8px 0 18px; min-width: 0; }
+.run-progress-line { display: flex; align-items: center; min-height: 28px; max-width: 100%; padding: 4px 0; color: var(--muted); font-size: 14px; }
+.run-progress-text { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; line-height: 1.6; }
+.run-progress-text[data-animated="true"] { background: linear-gradient(100deg, var(--muted) 25%, var(--text) 45%, var(--muted) 65%); background-size: 250% 100%; background-clip: text; -webkit-background-clip: text; color: transparent; animation: run-progress-shimmer 2.6s linear infinite; }
+@keyframes run-progress-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (max-width: 600px) {
+  .run-progress-line { min-height: 44px; padding-block: 10px; }
+  .run-progress { margin-block: 0 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .run-progress-text[data-animated="true"] { animation: none; background: none; color: var(--muted); } }
+@media (prefers-reduced-motion: reduce) { .run-activity .spinner { animation: none; } }

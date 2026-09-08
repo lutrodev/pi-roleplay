@@ -1,0 +1,18 @@
+{
+  "models": [
+    {
+      "provider": "custom",
+      "model": "replace-with-provider-model-id",
+      "label": "我的模型（请修改配置）",
+      "keyEnv": "RP_MODEL_API_KEY",
+      "api": "openai-completions",
+      "baseUrl": "https://api.example.com/v1",
+      "contextWindow": 131072,
+      "maxTokens": 8192,
+      "outputTokens": 4096,
+      "input": ["text"],
+      "reasoning": false
+    }
+  ],
+  "main": {"provider": "custom", "model": "replace-with-provider-model-id", "reasoningEffort": "off"}
+}

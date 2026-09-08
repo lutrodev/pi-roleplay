@@ -1,0 +1,8 @@
+{
+  "name": "@pi-roleplay/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "dependencies": { "yaml": "2.9.0", "ajv": "8.20.0" }
+}

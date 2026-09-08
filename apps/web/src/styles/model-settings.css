@@ -1,0 +1,111 @@
+.model-settings { --stack-gap: 28px; padding-bottom: 32px; }
+.default-model-choice { min-width: 0; justify-content: space-between; gap: 20px; text-align: left; padding: 9px 12px; }
+.default-model-choice > span { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.default-model-choice svg { flex-shrink: 0; color: var(--muted); }
+.model-catalog-tabs > .tabs { gap: 24px; }
+.model-toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+.model-toolbar .search-field { flex: 1; min-width: 0; }
+.model-toolbar .search-field .input { width: 100%; }
+/* The search frame owns the control height, including its border and focus ring. */
+:is(.model-toolbar, .connection-wizard) .search-field { --search-height: 36px; min-height: var(--search-height); padding-inline: 10px; gap: 8px; }
+:is(.model-toolbar, .connection-wizard) .search-field .input { min-height: calc(var(--search-height) - 2px); padding: 0; box-shadow: none; }
+:is(.model-toolbar, .connection-wizard) .search-field > svg { flex-shrink: 0; }
+:is(.model-toolbar, .connection-wizard) .search-field:focus-within { outline-offset: -2px; }
+.catalog-caption { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 4px; line-height: 1.6; }
+.model-rows { border-bottom: 1px solid var(--border); }
+.model-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 12px; min-height: 76px; padding: 14px 0; border-top: 1px solid var(--border); }
+.model-row:first-child, .connection-row:first-child { border-top: 0; }
+.model-row-main { display: flex; flex-direction: column; gap: 5px; min-width: 0; padding: 0; border: 0; background: none; text-align: left; color: var(--text); cursor: pointer; border-radius: 5px; }
+.model-row-main:hover .model-row-title { text-decoration: underline; text-underline-offset: 3px; }
+.model-row-title { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+.model-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.model-tag { padding: 2px 6px; border-radius: 4px; background: var(--soft); color: var(--muted); font-size: 10px; font-weight: 400; text-decoration: none; }
+.model-state { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.model-state-passed { color: #277553; }
+.model-state-failed, .model-state-missing { color: var(--danger); }
+[data-theme="dark"] .model-state-passed { color: #7acda4; }
+.connection-row { display: flex; align-items: center; gap: 12px; padding: 18px 0; border-top: 1px solid var(--border); }
+.connection-row .model-row-main { flex: 1; }
+.connection-url { display: block; max-width: 100%; font-size: 12px; color: var(--muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+.service-symbol { display: grid; place-items: center; flex-shrink: 0; width: 38px; height: 38px; background: var(--soft); color: var(--text); font-size: 19px; font-weight: 500; border: 1px solid var(--border); border-radius: 10px; }
+.service-logo { width: 30px; height: 30px; }
+.service-option .service-logo { width: 26px; height: 26px; }
+.model-dialog { --modal-width: 600px; }
+.model-editor { --stack-gap: 16px; }
+.model-editor .muted, .connection-complete .muted { font-size: 12px; line-height: 1.7; }
+.model-editor .provider-advanced { border-top: 1px solid var(--border); }
+.connection-caption { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+.connection-caption strong { color: var(--text); font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+.connection-steps { display: flex; justify-content: space-between; gap: 8px; padding: 0 0 20px; margin: 0; list-style: none; border-bottom: 1px solid var(--border); }
+.connection-steps li { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.connection-steps li > span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--soft); font-size: 10px; }
+.connection-steps li[aria-current="step"] { color: var(--text); font-weight: 500; }
+.connection-steps li[aria-current="step"] > span, .connection-steps li[data-complete="true"] > span { background: var(--accent); color: var(--on-accent); }
+.service-picker { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.service-picker > .search-field .input { min-width: 0; width: 100%; }
+.service-results { height: clamp(160px, 40dvh, 350px); overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; scrollbar-width: thin; padding: 4px; }
+.service-group + .service-group { margin-top: 16px; }
+.service-group h3 { display: flex; align-items: center; gap: 8px; margin: 0 10px 4px; color: var(--muted); font-size: 11px; font-weight: 500; line-height: 1.8; }
+.service-group h3 > span { font-variant-numeric: tabular-nums; font-size: 10px; opacity: .7; }
+.service-option { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+.service-option:hover, .service-option:focus-visible { background: var(--hover); }
+.service-option .service-symbol { width: 30px; height: 30px; font-size: 14px; border-radius: 8px; }
+.service-option-copy { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.service-option strong { display: block; font-size: 13px; font-weight: 500; line-height: 1.5; }
+.service-option small { display: block; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.service-option > svg { flex-shrink: 0; color: var(--muted); }
+.service-custom { padding-top: 8px; border-top: 1px solid var(--border); }
+.service-empty { display: flex; height: 100%; flex-direction: column; justify-content: center; align-items: center; gap: 8px; padding: 24px; text-align: center; font-size: 13px; }
+.service-empty strong { font-weight: 500; }
+.service-empty p { color: var(--muted); font-size: 12px; line-height: 1.7; }
+.service-connection-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding-bottom: 8px; }
+.service-connection-summary > div { flex: 1; min-width: 0; }
+.service-connection-summary strong { display: block; font-size: 14px; font-weight: 500; }
+.service-connection-summary small { display: block; color: var(--muted); font-size: 12px; line-height: 1.6; margin-top: 4px; }
+.service-connection-summary > a { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); text-underline-offset: 3px; padding-block: 8px; }
+.service-connection-summary > a:hover { color: var(--text); }
+.model-source-switch { display: flex; gap: 4px; padding: 3px; background: var(--soft); border-radius: 8px; align-self: flex-start; }
+.model-source-switch .button { border-color: transparent; background: transparent; font-size: 12px; }
+.model-source-switch .button[aria-pressed="true"] { background: var(--surface); box-shadow: 0 1px 3px #00000012; }
+.discovered-models { max-height: 270px; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--border); border-radius: 8px; padding: 4px 12px; }
+.discovered-models .check { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.discovered-models .check:last-child { border-bottom: 0; }
+.discovered-models .check > span { min-width: 0; overflow-wrap: anywhere; }
+.discovered-models .check small { font-size: 11px; }
+.connection-wizard .section-heading > p { flex: 1; }
+.connection-complete h3 { font-size: 18px; font-weight: 550; }
+.completion-mark { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--soft); color: var(--text); }
+.model-picker-trigger { width: 100%; justify-content: space-between; text-align: left; gap: 16px; padding: 9px 12px; }
+.model-picker-trigger > span { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.model-picker-trigger strong, .model-option strong { display: block; font-size: 13px; font-weight: 500; }
+.model-picker-trigger small, .model-option small { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; line-height: 1.5; }
+.model-picker-trigger svg { flex-shrink: 0; }
+.model-options { max-height: 50dvh; overflow: auto; overscroll-behavior: contain; }
+.model-option { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 12px; background: transparent; color: var(--text); text-align: left; border: 0; border-radius: 8px; cursor: pointer; }
+.model-option > span { min-width: 0; overflow-wrap: anywhere; }
+.model-option > svg { flex-shrink: 0; }
+.model-option:hover, .model-option[aria-pressed="true"] { background: var(--soft); }
+.model-option:disabled { opacity: .5; cursor: not-allowed; }
+@media (max-width: 800px), (pointer: coarse) {
+  :is(.model-toolbar, .connection-wizard) .search-field { --search-height: 44px; }
+}
+@media (max-width: 540px) {
+  .model-dialog.modal-editor .modal-body { display: flex; flex-direction: column; flex: 1; }
+  .model-dialog .model-editor, .model-dialog .connection-complete { flex: 1 0 auto; }
+  .model-dialog .model-editor .sticky-actions, .model-dialog .connection-complete > .form-actions { margin-top: auto; }
+  .default-model-choice { max-width: none; width: 100%; }
+  .model-row { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; }
+  .model-row-main { grid-row: 1; grid-column: 1; }
+  .model-row > .icon-button { grid-row: 1 / 3; grid-column: 2; }
+  .model-row > .model-state { grid-row: 2; grid-column: 1; }
+  .model-configure { display: none; }
+  .catalog-caption > span { display: none; }
+  .connection-row > .service-symbol { display: none; }
+  .model-toolbar { gap: 8px; }
+  .model-toolbar > .button { padding-inline: 10px; }
+  .connection-steps { gap: 4px; }
+  .connection-steps li { font-size: 11px; gap: 5px; }
+}
+
+.default-model-choice strong { display: block; font-size: 13px; font-weight: 500; }
+.default-model-choice small { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); line-height: 1.5; }

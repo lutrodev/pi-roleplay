@@ -1,0 +1,21 @@
+* text=auto
+*.sh text eol=lf
+*.webp binary
+# A secondary guard for git archive; release:pack uses its own reviewed allowlist.
+/.dev export-ignore
+/.deploy export-ignore
+/.env* export-ignore
+/.env.example -export-ignore
+/secrets export-ignore
+/config export-ignore
+/state export-ignore
+/data export-ignore
+/backups export-ignore
+/output export-ignore
+/.cache export-ignore
+/.playwright-cli export-ignore
+/docs/evidence export-ignore
+/docs/migration.md export-ignore
+/design.md export-ignore
+/scripts/test-summary-v4f.ts export-ignore
+/skills/custom export-ignore

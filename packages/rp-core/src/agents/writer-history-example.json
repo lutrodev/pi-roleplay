@@ -1,0 +1,29 @@
+{
+  "enabled": false,
+  "rounds": [
+    {
+      "user": "请先读取写作要求，再根据下面的题材写一段故事。\n\n题材：\n",
+      "steps": [
+        {
+          "name": "read",
+          "argumentsJson": "{\n  \"file_path\": \"writing-requirements.md\"\n}",
+          "resultJson": "{\n  \"text\": \"# 写作要求\\n\\n- 围绕用户提供的题材展开。\\n- 通过人物行动、对话和具体细节推进情节。\\n- 最终回复直接呈现故事正文。\",\n  \"startLine\": 1,\n  \"truncated\": false\n}",
+          "isError": false
+        }
+      ],
+      "assistant": ""
+    },
+    {
+      "user": "这一轮请先读取叙述风格备忘，再根据下面的题材创作。\n\n题材：\n",
+      "steps": [
+        {
+          "name": "read",
+          "argumentsJson": "{\n  \"file_path\": \"style-notes.md\"\n}",
+          "resultJson": "{\n  \"text\": \"# 叙述风格备忘\\n\\n- 叙述视角保持一致。\\n- 人物语气符合其性格。\\n- 环境描写服务于当前情节，避免重复说明。\",\n  \"startLine\": 1,\n  \"truncated\": false\n}",
+          "isError": false
+        }
+      ],
+      "assistant": ""
+    }
+  ]
+}

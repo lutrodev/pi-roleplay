@@ -1,0 +1,34 @@
+.composer-wrap:has(.composer-attachments) { max-height: min(100%, max(280px, 60dvh)); }
+.composer-surface:has(.composer-attachments) { min-height: 168px; overflow: hidden; }
+.composer-surface:has(.composer-attachments) .reply-suggestions { flex: 1 1 0; }
+.composer:has(.composer-attachments) { display: flex; flex-direction: column; flex-shrink: 1; min-height: 120px; }
+.composer:has(.composer-attachments) .composer-input-area { min-height: 0; overflow-y: auto; scrollbar-width: thin; overscroll-behavior: contain; }
+.composer:has(.composer-attachments) .composer-toolbar { flex-shrink: 0; }
+.composer-input-area > .reference-chips { margin-bottom: 8px; max-height: 90px; overflow-y: auto; }
+@media (max-height: 620px) {
+  .composer-surface:has(.composer-attachments) .reply-suggestions[open] { min-height: 44px; }
+}
+.composer-attachments { display: flex; gap: 10px; padding: 4px 8px 12px; overflow-x: auto; scrollbar-width: thin; overscroll-behavior-x: contain; }
+.composer-attachment { position: relative; flex-shrink: 0; height: 96px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.attachment-image { width: 96px; }
+.attachment-thumbnail { display: block; width: 100%; height: 100%; padding: 0; border: 0; border-radius: inherit; background: var(--soft); overflow: hidden; cursor: zoom-in; }
+.attachment-thumbnail .content-image { width: 100%; height: 100%; object-fit: cover; }
+.attachment-file { width: 228px; max-width: 75vw; }
+.attachment-file-content { display: flex; align-items: center; gap: 10px; height: 100%; padding: 14px; }
+.attachment-file-content > svg { flex-shrink: 0; color: var(--muted); stroke-width: 1.5; }
+.attachment-file-content > span { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.attachment-file-content strong { padding-right: 8px; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attachment-file-content small { color: var(--muted); font-size: 11px; }
+.composer-attachment .attachment-remove { position: absolute; top: 2px; right: 2px; width: 28px; height: 28px; min-height: 28px; padding: 6px; border: 2px solid var(--surface); border-radius: 50%; background: var(--text); color: var(--surface); }
+.composer-attachment .attachment-remove:hover { background: color-mix(in srgb, var(--text) 80%, var(--surface)); }
+.attachment-status, .composer-attachment .attachment-retry { position: absolute; bottom: 0; inset-inline: 0; display: flex; justify-content: center; align-items: center; gap: 4px; min-height: 26px; padding: 4px; border: 0; border-radius: 0 0 13px 13px; background: var(--surface); color: var(--muted); font-size: 10px; white-space: nowrap; }
+.attachment-failed { border-color: var(--danger); }
+.composer-attachment .attachment-retry { color: var(--danger); }
+.attachment-upload-error { color: var(--danger); font-size: 12px; margin: 0 8px 10px; overflow-wrap: anywhere; }
+.attachment-preview .modal-body { display: grid; place-items: center; }
+.attachment-preview .modal-body > .content-image { display: block; max-width: 100%; max-height: 65dvh; object-fit: contain; border-radius: 8px; }
+@media (pointer: coarse) {
+  .composer-attachment .attachment-remove { width: 44px; height: 44px; min-height: 44px; padding: 14px; background: radial-gradient(circle, var(--text) 12px, transparent 13px); border: 0; top: 0; right: 0; }
+  .composer-attachment .attachment-remove:hover { background: radial-gradient(circle, var(--text) 12px, transparent 13px); }
+  .composer-attachment .attachment-retry { min-height: 44px; }
+}

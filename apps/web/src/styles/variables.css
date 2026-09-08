@@ -1,0 +1,61 @@
+.variable-settings { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.variable-settings .notice, .variable-compatibility > p { font-size: 12px; line-height: 1.7; }
+.variable-compatibility > summary { display: list-item; width: fit-content; min-height: 40px; padding-block: 10px; color: var(--muted); font-size: 13px; font-weight: 500; cursor: pointer; }
+.variable-compatibility > summary:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; border-radius: 4px; }
+.variable-compatibility .setting-row { padding-inline: 0; }
+.variable-compatibility > p { margin-top: 8px; }
+.variables-panel { min-width: 0; }
+.variables-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.variables-toolbar .check { align-items: center; margin: 0; font-size: 11px; color: var(--muted); }
+.variables-toolbar .check input { margin: 0; width: 14px; height: 14px; }
+.variable-section { margin-bottom: 24px; }
+.variable-section > header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.variable-section h3 { font-size: 14px; font-weight: 600; }
+.variable-section > header small { color: var(--muted); font-size: 11px; }
+.variable-section > p { margin-bottom: 14px; font-size: 12px; line-height: 1.7; }
+.variable-group + .variable-group { margin-top: 22px; }
+.variable-group > h4 { padding: 0 12px 7px; margin-top: 16px; font-weight: 600; font-size: 12px; color: var(--text); overflow-wrap: anywhere; }
+.variable-values { margin: 0; }
+.variable-row { display: grid; grid-template-columns: clamp(90px, 26%, 160px) minmax(0, 1fr); align-items: baseline; gap: 18px; padding: 10px 12px; line-height: 1.7; }
+.variable-row > dt { position: relative; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.variable-row > dt > small { display: block; font-size: 11px; line-height: 1.6; margin-top: 4px; }
+.variable-change-mark { position: absolute; top: 5px; left: -10px; width: 2px; height: 11px; border-radius: 1px; background: var(--muted); }
+.variable-row > dd { min-width: 0; margin: 0; }
+.variable-current-value { font-size: 14px; font-variant-numeric: tabular-nums; white-space: pre-wrap; overflow-wrap: anywhere; }
+.variable-current-value > small { margin-left: 8px; color: var(--muted); font-size: 10px; }
+.variable-previous { color: var(--muted); font-size: 11px; margin-top: 5px; }
+.variable-previous > summary { width: fit-content; }
+.variable-previous > div { margin-top: 6px; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.variable-definition { border-top: 1px solid var(--border); margin-top: 14px; padding-top: 12px; color: var(--muted); font-size: 11px; }
+.variable-card { margin-top: 12px; min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.variable-card-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 14px 20px; }
+.reply-variables-toggle[aria-expanded="true"] { color: var(--text); }
+.reply-variables-toggle .variable-card-chevron { transform: rotate(-90deg); transition: transform .16s ease; }
+.reply-variables-toggle[aria-expanded="true"] .variable-card-chevron { transform: rotate(0); }
+.variable-card-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; min-width: 0; }
+.variable-card-title strong { font-size: 13px; font-weight: 550; }
+.variable-card-title small { color: var(--muted); font-size: 11px; }
+.variable-card-changes { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.variable-card-motion { overflow: hidden; }
+.variable-card-body { padding: 16px 20px 20px; border-top: 1px solid var(--border); }
+.variable-card .variable-section { margin-bottom: 24px; }
+.variable-card .variable-section:last-child { margin-bottom: 0; }
+.variable-card .variable-section > header { margin-bottom: 12px; }
+.variable-card .variable-section h3 { font-size: 13px; }
+.variable-card .variable-group > h4 { margin-top: 18px; padding: 0 0 8px; font-size: 12px; }
+.variable-card .variable-row { padding: 8px 0; gap: 20px; }
+.variable-card .variable-row > dt { font-size: 12px; }
+.variable-inline-value { min-width: 0; font-size: 13px; line-height: 1.7; font-variant-numeric: tabular-nums; }
+.variable-value-main { display: flex; align-items: baseline; gap: 8px; }
+.variable-after { display: block; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.variable-row[data-changed] .variable-after { font-weight: 550; }
+.variable-value-note { flex: none; color: var(--muted); font-size: 11px; font-weight: 400; }
+.variable-before { display: flex; align-items: baseline; gap: 8px; margin-top: 3px; font-size: 11px; line-height: 1.6; color: var(--muted); }
+.variable-before-label { flex: none; }
+.variable-before-text { min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.variable-inline-value[data-long=true][data-expanded=false] .variable-before-text, .variable-inline-value[data-long=true][data-expanded=false] .variable-after { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.variable-value-toggle.button { min-height: 28px; padding: 2px 0; font-size: 11px; font-weight: 400; color: var(--muted); }
+@media (max-width: 800px), (pointer: coarse) { .variables-toolbar .check, .variable-value-toggle.button { min-height: 44px; } .variable-previous > summary { padding-block: 5px; } }
+@media (max-width: 540px) { .variable-row { grid-template-columns: minmax(76px, 27%) minmax(0, 1fr); gap: 12px; padding-inline: 10px; } .variable-card-heading { padding-inline: 16px; } .variable-card-body { padding-inline: 16px; } .variable-card .variable-row { gap: 12px; } }
+@media (max-width: 380px) { .variable-card-heading { padding-inline: 14px; } .variable-card-body { padding-inline: 14px; } .variable-card .variable-row { grid-template-columns: minmax(60px, 25%) minmax(0, 1fr); gap: 10px; } }
+@media (prefers-reduced-motion: reduce) { .reply-variables-toggle .variable-card-chevron { transition: none; } }
