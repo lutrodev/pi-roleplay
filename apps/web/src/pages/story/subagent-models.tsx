@@ -82,18 +82,19 @@ function StorySubagentForm({ story, disabled, done }: { story: StorySnapshot; di
   }}>
     {disabled && <StatusNotice compact tone="paused" title={uiT('子代理设置暂不可修改')}><p>{uiT('当前会话正在处理内容，结束后即可修改子代理模型。')}</p></StatusNotice>}
     <fieldset disabled={disabled} className="story-subagent-list">
-      <SettingsGroup className="story-writer-section" title={<span className="story-writer-title"><span className="story-writer-mark"><Feather size={20} aria-hidden="true" /></span><span>Writer<small>{uiT('正文写作')}</small></span></span>}
-        description={uiT('负责把角色、设定与写作要求写成故事正文。')} actions={<span className="story-agent-scope">Chat · Agent</span>}>
+      <SettingsGroup className="story-writer-section" title={<span className="story-writer-title"><Feather size={17} aria-hidden="true" /><span>Writer</span><small>{uiT('正文写作')}</small></span>}
+        actions={<span className="story-agent-scope">Chat · Agent</span>}>
         {picker('writer', 'Writer', catalog.data.writer.route, 'row')}
       </SettingsGroup>
       <SettingsGroup className="story-task-section" title={<span className="story-task-title"><Workflow size={17} aria-hidden="true" />{uiT('协作子代理')}</span>}
         description={taskDescription} actions={<span className="story-agent-scope">{uiT('仅 Agent 模式')}</span>}>
         {catalog.data.subagents.map(agent => <section className="story-subagent" key={agent.id} aria-label={agent.name}>
           <div className="story-subagent-row">
-            <div className="story-subagent-identity"><h4>{agent.name}</h4><span>{agent.enabled ? uiT('全局已启用') : uiT('全局已停用')}</span></div>
+            <div className="story-subagent-identity"><h4>{agent.name}</h4><span>{agent.enabled ? uiT('全局已启用') : uiT('全局已停用')}</span>
+              {agent.description && <details className="story-subagent-contract"><summary aria-label={uiT('查看%{name}的调用说明', { name: agent.name })}>{uiT('调用说明')}</summary><p>{agent.description}</p></details>}
+            </div>
             {picker(agent.id, agent.name, agent.route, 'compact')}
           </div>
-          {agent.description && <details className="story-subagent-contract"><summary aria-label={uiT('查看%{name}的调用说明', { name: agent.name })}>{uiT('调用说明')}</summary><p>{agent.description}</p></details>}
         </section>)}
         {!catalog.data.subagents.length && <p className="story-subagents-empty">{uiT('尚未添加协作子代理。可在全局设置的“子代理”中添加。')}</p>}
       </SettingsGroup>

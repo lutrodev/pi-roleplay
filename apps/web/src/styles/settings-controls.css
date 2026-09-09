@@ -2,10 +2,10 @@
 .settings-group { min-width: 0; container-type: inline-size; }
 .settings-group-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
 .settings-group-heading > div:first-child { min-width: 0; }
-.settings-group-heading h3 { font-size: 14px; line-height: 1.5; font-weight: 600; }
+.settings-group-heading h3 { font-size: var(--ui-section-size); line-height: 1.5; font-weight: 600; }
 .settings-group-heading p { margin-top: 5px; color: var(--muted); font-size: 13px; line-height: 1.65; }
 .settings-group-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.settings-group-body { min-width: 0; border: 1px solid var(--border); border-radius: 14px; background: var(--canvas); padding: 0 18px; }
+.settings-group-body { min-width: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--canvas); padding: 0 16px; }
 .settings-group-rows > .settings-group-body > * + * { border-top: 1px solid var(--border); }
 .settings-group-form > .settings-group-body { display: flex; flex-direction: column; gap: 16px; padding: 18px; }
 .settings-group-form > .settings-group-body > .setting-row { padding-block: 0; min-height: 36px; }
@@ -13,16 +13,16 @@
 .settings-group-rows > .settings-group-body > .button { border: 1px solid var(--border); }
 .settings-group legend { font-size: 13px; margin-bottom: 10px; }
 
-.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-width: 0; min-height: 60px; padding: 12px 0; color: var(--text); }
+.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-width: 0; min-height: 52px; padding: 10px 0; color: var(--text); }
 .setting-row + .setting-row { border-top: 1px solid var(--border); }
 .setting-copy { display: block; flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.setting-label { display: block; font-size: 14px; font-weight: 500; line-height: 1.5; }
-.setting-help { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; font-weight: 400; line-height: 1.6; }
+.setting-label { display: block; font-size: var(--ui-field-size); font-weight: 500; line-height: 1.5; }
+.setting-help { display: block; margin-top: 4px; color: var(--muted); font-size: var(--ui-caption-size); font-weight: 400; line-height: 1.6; }
 .setting-control { display: flex; align-items: center; justify-content: flex-end; flex: 0 1 auto; gap: 8px; min-width: 0; max-width: 48%; }
 .setting-control > * { min-width: 0; max-width: 100%; }
 .setting-row-field .setting-control { flex-basis: auto; flex-wrap: wrap; }
 .setting-row-field .field-validation { justify-content: flex-end; text-align: right; }
-.setting-control > .input { width: 230px; min-height: 36px; padding: 6px 10px; font-size: 13px; line-height: 1.6; }
+.setting-control > .input { width: 230px; min-height: 36px; padding: 6px 10px; font-size: var(--ui-field-size); line-height: 1.6; }
 .setting-control > .select { width: auto; max-width: 100%; padding-right: 30px; }
 .setting-control > input[type="number"] { width: 100px; text-align: right; font-variant-numeric: tabular-nums; }
 .setting-control > .button { white-space: normal; }
@@ -39,7 +39,7 @@
 .segmented-control { display: inline-flex; padding: 3px; border-radius: 9px; background: var(--soft); }
 .segmented-control label { position: relative; display: flex; cursor: pointer; }
 .segmented-control input { position: absolute; opacity: 0; inset: 0; margin: 0; width: 100%; height: 100%; cursor: pointer; }
-.segmented-control span { display: grid; place-items: center; padding: 5px 12px; min-height: 30px; border-radius: 6px; font-size: 13px; line-height: 1.5; color: var(--muted); white-space: nowrap; }
+.segmented-control span { display: grid; place-items: center; padding: 5px 12px; min-height: 30px; border-radius: 6px; font-size: var(--ui-field-size); line-height: 1.5; color: var(--muted); white-space: nowrap; }
 .segmented-control input:checked + span { background: var(--surface); box-shadow: 0 1px 3px #00000012; color: var(--text); }
 .segmented-control input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 1px; }
 .segmented-control:has(input:disabled) { opacity: .5; }
@@ -51,7 +51,7 @@
 .setting-slider::-moz-range-progress { height: 4px; border-radius: 4px; background: var(--accent); }
 .setting-slider::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 50%; background: var(--accent); }
 .setting-slider:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; border-radius: 4px; }
-.setting-value { flex: 0 0 6ch; text-align: right; font-size: 13px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.setting-value { flex: 0 0 6ch; text-align: right; font-size: var(--ui-field-size); line-height: 1.5; font-variant-numeric: tabular-nums; }
 .setting-status { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: 13px; line-height: 1.6; text-align: right; overflow-wrap: anywhere; }
 .setting-status small { color: var(--muted); }
 /* Text actions share the status text edge while retaining a full-height hit target. */

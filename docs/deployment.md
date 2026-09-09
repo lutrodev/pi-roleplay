@@ -52,14 +52,14 @@ python3 scripts/deploy.py configure https://rp.example.com
 
 ## 配置模型与首次启动
 
-`config/models.json` 初始为空。启动后可在网页“设置 → 模型”添加提供方、模型和 API 密钥，再选择默认主模型并保存。ClinePass 可直接选择 DeepSeek V4 Flash 快速填写项。修改立即生效，模型任务运行期间禁止改动提供方。
+`config/models.json` 初始为空。启动后可在网页“设置 → 模型”添加服务连接和 API 密钥，选择服务返回的模型，再保存默认主模型。未列出的服务可使用自定义连接，未列出的模型可手动填写完整 ID。修改立即生效，模型任务运行期间禁止改动提供方。
 
-新增模型自动识别思考能力，支持的模型默认开启；主会话、Writer 和任务子代理均可独立设置强度。入口、继承规则和旧版配置说明见[模型与思考强度](model-reasoning.md)。
+新增模型自动识别名称、图片输入、思考能力和长度规格，保留手动覆盖；支持思考的模型默认开启。主会话、Writer 和任务子代理使用同一份能力结果，并可独立设置强度。入口、继承规则和旧版配置说明见[模型与思考强度](model-reasoning.md)。
 
 也可在第一次启动前参照 `deploy/models.example.json` 填写初始清单；文件只在数据库尚未建立模型目录时导入。数据库中的模型目录随后是管理来源，重启不会覆盖网页修改。`provider` 是该路由的唯一分组名；`model` 是提供商实际接受的模型 ID。
 
 - `api` 可选 `openai-completions`、`openai-responses`、`anthropic-messages`。
-- `baseUrl`、`contextWindow`、`maxTokens` 和图片/思考能力应按照该提供商文档设置。
+- `baseUrl` 按照该提供商文档设置。`label`、`input`、`reasoning`、`contextWindow`、`maxTokens` 留空使用自动识别，填入值则手动覆盖。
 - `outputTokens` 控制一次输出上限；`keyEnv` 引用 `secrets/models.env` 中的变量名。
 - `main` 指向清单中的一个模型。系统设置与故事设置可再选择主模型、Writer 和任务子代理的路由。
 - 可选 `search` 使用独立的 Anthropic 兼容搜索地址、模型、`keyEnv` 与 `maxUses`；它需要支持结构化原生搜索工具，普通聊天端点不一定支持。未配置时搜索会明确报错。

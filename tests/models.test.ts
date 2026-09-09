@@ -62,8 +62,8 @@ describe('Pi model adapter and route validation', () => {
     expect(() => normalizeProfile({ ...profile(), runtime: { reasoningEffort: 3 } }, 0)).toThrow('reasoningEffort')
   })
 
-  it('requires complete custom model capabilities and keeps secrets out of endpoint URLs', () => {
-    expect(() => new ModelRegistry([{ provider: 'test', model: 'unknown', keyEnv: 'KEY' }])).toThrow('上下文窗口')
+  it('requires a complete custom connection and keeps secrets out of endpoint URLs', () => {
+    expect(() => new ModelRegistry([{ provider: 'test', model: 'unknown', keyEnv: 'KEY' }])).toThrow('API 类型和地址')
     expect(() => new ModelRegistry([{ ...custom, baseUrl: 'https://user:secret@model.test' }])).toThrow('凭据')
     expect(() => new ModelRegistry([{ ...custom, outputTokens: 50_000 }])).toThrow('输出上限')
     expect(() => new ModelRegistry([custom, custom])).toThrow('重复配置')

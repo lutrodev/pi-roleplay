@@ -12,6 +12,7 @@
   --reading-font: var(--font-sans); --reading-size: 16px; --reading-leading: 1.85; --reading-width: 640px;
   --serif: "Songti SC", "Noto Serif CJK SC", "STSong", Georgia, serif;
   --radius: 8px; --sidebar-width: 248px; --header-height: 56px;
+  --ui-field-size: 13px; --ui-caption-size: 12px; --ui-action-size: 13px; --ui-section-size: 14px; --ui-dialog-size: 16px; --ui-page-size: 20px;
 }
 :root[data-theme="dark"] {
   color-scheme: dark; --canvas: #19191b; --surface: #232326; --sidebar: #141416; --text: #eeedf0; --muted: #a2a2ac;
@@ -46,9 +47,12 @@ pre { margin: 0; }
 kbd { color: var(--muted); font: inherit; font-size: 11px; white-space: nowrap; }
 .muted, .field-help, .field small { color: var(--muted); }
 .eyebrow { font-size: 11px; letter-spacing: .1em; font-weight: 500; color: var(--muted); }
-.stack { display: flex; flex-direction: column; gap: var(--stack-gap, 22px); min-width: 0; }
+.stack { display: flex; flex-direction: column; gap: var(--stack-gap, 16px); min-width: 0; }
 .section-heading { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .section-heading > :first-child { margin-right: auto; min-width: 0; }
+@media (max-width: 540px) {
+  :root { --ui-field-size: 16px; --ui-caption-size: 13px; --ui-action-size: 14px; --ui-section-size: 16px; --ui-dialog-size: 18px; }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
 }

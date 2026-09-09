@@ -3,21 +3,14 @@ import { builtinModels } from '@earendil-works/pi-ai/providers/all'
 import type { ModelRegistration } from './models.ts'
 
 const catalog = builtinModels()
+const byId = new Map<string, Model<Api>[]>()
+for (const model of catalog.getModels()) byId.set(model.id, [...(byId.get(model.id) ?? []), model])
 type Identity = Pick<ModelRegistration, 'provider' | 'model' | 'api' | 'baseUrl'>
 type Reasoning = Pick<Model<Api>, 'reasoning' | 'thinkingLevelMap' | 'compat'>
 
 /** An exact catalog identity is evidence; a familiar substring or arbitrary alias is not. */
 export function catalogReasoning(route: Identity): Reasoning | undefined {
-  const matchesApi = (model: Model<Api>) => !route.api || model.api === route.api
-    || model.provider === 'openai' && model.api === 'openai-responses' && route.api === 'openai-completions'
-  const direct = catalog.getModel(route.provider, route.model)
-  if (direct && matchesApi(direct)) return reasoningFields(direct, route.api)
-  const candidates = catalog.getModels().filter(model => model.id === route.model && matchesApi(model))
-  const endpoint = candidates.find(model => normalizeUrl(model.baseUrl) === normalizeUrl(route.baseUrl))
-  if (endpoint) return reasoningFields(endpoint, route.api)
-  // Native catalog entries avoid importing a gateway's different effort map into another gateway.
-  const native = candidates.filter(model => ['openai', 'anthropic', 'deepseek', 'google', 'xai', 'moonshot', 'groq', 'mistral'].includes(model.provider))
-  const choices = native.length ? native : candidates
+  const choices = catalogCandidates(route)
   if (choices.length) {
     const first = reasoningFields(choices[0]!, route.api)
     if (choices.every(model => JSON.stringify(reasoningFields(model, route.api)) === JSON.stringify(first))) return first
@@ -28,6 +21,19 @@ export function catalogReasoning(route: Identity): Reasoning | undefined {
     return { reasoning: true, thinkingLevelMap: { off: null, minimal: null, low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh', max: 'max' } }
   }
   return undefined
+}
+
+export function catalogCandidates(route: Identity): Model<Api>[] {
+  const matchesApi = (model: Model<Api>) => !route.api || model.api === route.api
+    || model.provider === 'openai' && model.api === 'openai-responses' && route.api === 'openai-completions'
+  const direct = catalog.getModel(route.provider, route.model)
+  if (direct && matchesApi(direct)) return [direct]
+  const candidates = (byId.get(route.model) ?? []).filter(matchesApi)
+  const endpoint = candidates.find(model => normalizeUrl(model.baseUrl) === normalizeUrl(route.baseUrl))
+  if (endpoint) return [endpoint]
+  // Native catalog entries avoid importing a gateway's different effort map into another gateway.
+  const native = candidates.filter(model => ['openai', 'anthropic', 'deepseek', 'google', 'xai', 'moonshot', 'groq', 'mistral'].includes(model.provider))
+  return native.length ? native : candidates
 }
 
 function reasoningFields(model: Model<Api>, api: ModelRegistration['api']): Reasoning {

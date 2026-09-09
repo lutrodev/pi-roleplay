@@ -7,6 +7,7 @@ import type { ActiveTool, StoryNotice } from '../../../../packages/protocol/src/
 import { StoryFeed } from './story-feed.ts'
 import { ApiError } from './api-error.ts'
 import { createQueryClient, recoverFailedReads } from './query-client.ts'
+import type { MetadataSource, MetadataSources } from '../../../../apps/server/src/runtime/model-metadata.ts'
 
 export { ApiError } from './api-error.ts'
 export const queryClient = createQueryClient()
@@ -31,7 +32,7 @@ export async function api<T>(path: string, method = 'GET', body?: unknown, signa
   return value as T
 }
 export interface Settings { revision: number; preferences: Preferences }
-export interface ModelInfo extends ModelRoute { label: string; configured: boolean; input: string[]; contextWindow: number; maxTokens: number; thinkingLevels: string[]; defaultThinkingLevel: string; reasoningSource: 'catalog' | 'unknown' | 'manual' }
+export interface ModelInfo extends ModelRoute { label: string; providerLabel: string; configured: boolean; input: string[]; reasoning: boolean; sources: MetadataSources; contextWindow: number; maxTokens: number; thinkingLevels: string[]; defaultThinkingLevel: string; reasoningSource: MetadataSource }
 export type AssetItem = Omit<AssetRecord, 'data' | 'sourceHash'> & { description?: string; contentCharacters?: number | null }
 export type StoryData = { story: StorySnapshot; runs: RunRecord[]; activeTools: ActiveTool[]; history: { before: string | null; total: number }; latestReplyId: string | null; forkSourceAvailable?: boolean }
 export function notifyStoryDeleted(storyId: string) { window.dispatchEvent(new CustomEvent('rp-story-deleted', { detail: storyId })) }

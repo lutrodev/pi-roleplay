@@ -5,9 +5,10 @@ import { ToggleGroup } from 'radix-ui'
 import { ChevronDown, SlidersHorizontal } from 'lucide-react'
 import type { StoryProfile, StorySnapshot } from '../../../../../packages/rp-core/src/types.ts'
 import { useModels } from '../../lib/api.ts'
-import { ErrorNotice, Button, Menu, MenuItem, MenuLabel, MenuRadioGroup, MenuRadioItem, MenuSeparator } from '../../components/ui.tsx'
+import { Button, Menu, MenuItem, MenuSeparator } from '../../components/ui.tsx'
 import { compactModelLabel } from './model-label.ts'
 import { ReasoningControl } from '../../components/reasoning-control.tsx'
+import { ModelSelect } from '../../components/model-select.tsx'
 
 export function ComposerControls({ story, disabled, openSettings, openContext, menu, menuTrigger, onMenuCloseAutoFocus, shortcuts, trailing, onProfileChange }: {
   story: Pick<StorySnapshot, 'profile'>; disabled: boolean; openSettings: () => void; openContext?: () => void; onProfileChange: (profile: StoryProfile) => void
@@ -19,7 +20,6 @@ export function ComposerControls({ story, disabled, openSettings, openContext, m
   const model = models.data?.models.find(item => item.provider === effective?.provider && item.model === effective.model)
   const modelLabel = model?.label ?? effective?.model ?? uiT('默认模型')
   const modelName = model ? compactModelLabel(model) : modelLabel
-  const key = (provider?: string, model?: string) => provider && model ? JSON.stringify([provider, model]) : ''
   const save = (profile: StoryProfile) => {
     if (!disabled) onProfileChange(profile)
   }
@@ -43,14 +43,11 @@ export function ComposerControls({ story, disabled, openSettings, openContext, m
       <ToggleGroup.Item value="agent" asChild><Button tone="quiet" title={uiT('Agent · 使用工具')}>Agent</Button></ToggleGroup.Item>
     </ToggleGroup.Root>
     <div className="composer-utilities">{shortcuts}</div>
-    <div className="composer-model-controls"><Menu label={uiT("选择模型")} open={modelOpen} onOpenChange={setModelOpen} trigger={<Button tone="quiet" className="composer-selector model-selector" disabled={disabled} title={modelLabel} aria-label={uiT("选择模型：%{v0}", { v0: modelLabel })}><span className="model-label-full">{modelLabel}</span><span className="model-label-compact">{modelName}</span><ChevronDown size={12} /></Button>}>
-      <MenuLabel>{uiT("当前会话模型")}</MenuLabel><MenuRadioGroup value={key(runtime.provider, runtime.model)} onValueChange={value => {
-        const selected = models.data?.models.find(item => key(item.provider, item.model) === value)
-        const { provider: _provider, model: _model, reasoningEffort: _effort, ...rest } = runtime
-        save({ ...story.profile, runtime: { ...rest, ...(selected ? { provider: selected.provider, model: selected.model } : {}) } })
-      }}><MenuRadioItem value="">{uiT("跟随默认模型")}</MenuRadioItem>{models.data?.models.map(item => <MenuRadioItem key={key(item.provider, item.model)} value={key(item.provider, item.model)} disabled={!item.configured}><span>{item.label}<small className="menu-description">{item.provider}{item.configured ? '' : uiT(" · 尚未配置")}</small></span></MenuRadioItem>)}</MenuRadioGroup>
-      {openContext && <><MenuSeparator /><MenuItem onSelect={openContext}>{uiT("查看上下文占用")}</MenuItem></>}<ErrorNotice source="read" error={models.error} retry={() => void models.refetch()} retrying={models.isFetching} /><MenuSeparator /><MenuItem onSelect={openSettings}>{uiT('Writer 与高级设置')}</MenuItem>
-    </Menu>{model?.thinkingLevels.some(level => level !== 'off') && <ReasoningControl levels={model.thinkingLevels} value={runtime.reasoningEffort}
+    <div className="composer-model-controls">
+    <ModelSelect trigger={<Button tone="quiet" className="composer-selector model-selector" disabled={disabled} title={modelLabel} aria-label={uiT("选择模型：%{v0}", { v0: modelLabel })} aria-haspopup="dialog" onClick={() => setModelOpen(true)}><span className="model-label-full">{modelLabel}</span><span className="model-label-compact">{modelName}</span><ChevronDown size={12} /></Button>} open={modelOpen} onOpenChange={setModelOpen} value={runtime.provider && runtime.model ? { provider: runtime.provider, model: runtime.model } : null}
+      inheritLabel={uiT('跟随默认模型')} inheritDetail={models.data?.models.find(item => item.provider === models.data?.effectiveMain?.provider && item.model === models.data?.effectiveMain?.model)?.label}
+      onChange={route => { const { provider: _provider, model: _model, reasoningEffort: _effort, ...rest } = runtime; save({ ...story.profile, runtime: { ...rest, ...(route ?? {}) } }) }}
+      footer={<>{openContext && <Button tone="quiet" onClick={() => { setModelOpen(false); openContext() }}>{uiT('查看上下文占用')}</Button>}<Button tone="quiet" onClick={() => { setModelOpen(false); openSettings() }}>{uiT('Writer 与高级设置')}</Button></>} />{model?.thinkingLevels.some(level => level !== 'off') && <ReasoningControl levels={model.thinkingLevels} value={runtime.reasoningEffort}
       defaultLevel={(!runtime.model ? effective?.reasoningEffort : undefined) ?? model.defaultThinkingLevel}
       defaultLabel={runtime.model ? uiT('模型默认') : uiT('跟随默认设置')} disabled={disabled}
       onChange={reasoningEffort => save({ ...story.profile, runtime: { ...runtime, reasoningEffort } })} />}</div>

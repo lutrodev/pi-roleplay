@@ -18,10 +18,10 @@ function setup() {
 }
 it('previews reasoning without network or credential access and preserves automatic mode through edits and reopen', () => {
   const x = setup(), connection = { api: 'openai-completions', baseUrl: model.baseUrl }
-  expect(x.service.previewReasoning({ provider: 'provider-synthetic', model: 'gpt-6-astra', connection })).toMatchObject({ reasoningSource: 'catalog', defaultThinkingLevel: 'medium' })
+  expect(x.service.previewMetadata({ provider: 'provider-synthetic', model: 'gpt-6-astra', connection })).toMatchObject({ reasoningSource: 'catalog', defaultThinkingLevel: 'medium' })
   expect(x.requests).toEqual([])
   const updated = x.service.update(1, { id: 'provider-synthetic', label: '自动思考', apiKey: 'synthetic-key', models: [{ ...model, model: 'gpt-6-astra' }] }, true)
-  const entry = updated.providers[0]!.models[0]!, { configured: _configured, check: _check, ...fields } = entry
+  const entry = updated.providers[0]!.models[0]!, { configured: _configured, check: _check, effective: _effective, ...fields } = entry
   expect(fields.reasoning).toBeUndefined()
   x.service.update(2, { id: 'provider-synthetic', label: '改名', models: [fields] })
   const restored = new ModelCatalogService(x.assets, [], x.key, x.options)

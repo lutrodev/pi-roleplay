@@ -1,18 +1,18 @@
-.new-story-setup { height: min(880px, calc(100dvh - 64px)); }
+.new-story-setup { height: min(720px, calc(100dvh - 64px)); }
 .new-story-setup .modal-body { display: flex; flex: 1; overflow: clip; padding: 0; }
 .new-story-wizard { display: flex; flex-direction: column; width: 100%; min-width: 0; min-height: 0; }
-.new-story-steps { display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.new-story-steps { display: flex; align-items: center; gap: 12px; padding: 8px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .new-story-steps .button { gap: 9px; padding-inline: 0; }
 .new-story-steps [aria-current] { color: var(--text); }
 .step-number { display: grid; place-items: center; width: 23px; height: 23px; border-radius: 50%; background: var(--soft); font-size: 11px; }
 [aria-current] .step-number { background: var(--accent); color: var(--on-accent); }
 .step-connector { width: 28px; height: 1px; background: var(--border); }
-.new-story-step-content { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 24px; }
+.new-story-step-content { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 20px; }
 .new-story-assets { display: grid; grid-template-columns: minmax(0, 1fr) 208px; gap: 24px; min-height: 100%; }
 .new-story-catalog { min-width: 0; }
 .new-story-catalog .tab-group[data-orientation="vertical"] { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 18px; }
 .new-story-catalog .tab-group[data-orientation="vertical"] > .tabs { display: flex; flex-direction: column; align-items: stretch; border: 0; gap: 4px; }
-.new-story-catalog .tab-group[data-orientation="vertical"] .tab-trigger { border: 0; padding: 10px 8px; border-radius: 7px; white-space: normal; justify-content: space-between; }
+.new-story-catalog .tab-group[data-orientation="vertical"] .tab-trigger { border: 0; min-height: 34px; padding: 6px 8px; border-radius: 7px; white-space: normal; justify-content: space-between; }
 .new-story-catalog .tab-group[data-orientation="vertical"] .tab-trigger[data-state="active"] { background: var(--soft); }
 .new-story-catalog .asset-selection { gap: 14px; }
 .new-story-catalog .search-field:focus-within { outline-offset: -2px; }

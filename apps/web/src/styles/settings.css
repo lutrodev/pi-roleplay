@@ -6,16 +6,16 @@
 .settings-layout > .tabs { flex-shrink: 0; }
 .settings-layout[data-orientation="vertical"] { display: grid; grid-template-columns: 172px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 0; }
 .settings-layout[data-orientation="vertical"] > .tabs { display: flex; flex-direction: column; align-items: stretch; align-self: stretch; padding: 22px 12px; border: 0; border-right: 1px solid var(--border); border-radius: 0; gap: 3px; margin-bottom: 0; max-height: 100%; overflow: auto; overscroll-behavior-y: contain; }
-.settings-layout[data-orientation="vertical"] > .tabs .tab-trigger { justify-content: flex-start; gap: 10px; min-height: 38px; padding: 8px 12px; border: 0; border-radius: var(--radius); white-space: normal; text-align: left; overflow-wrap: anywhere; font-size: 13px; font-weight: 400; }
+.settings-layout[data-orientation="vertical"] > .tabs .tab-trigger { justify-content: flex-start; gap: 9px; min-height: 34px; padding: 6px 10px; border: 0; border-radius: var(--radius); white-space: normal; text-align: left; overflow-wrap: anywhere; font-size: 13px; font-weight: 400; }
 .settings-layout[data-orientation="vertical"] > .tabs .tab-trigger[data-state="active"] { background: var(--soft); font-weight: 500; }
-.settings-layout > .tab-content { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: thin; padding: 30px clamp(24px, 4vw, 52px) 0; margin: 0; scroll-padding-block: 24px 88px; }
+.settings-layout > .tab-content { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: thin; padding: 24px 32px 0; margin: 0; scroll-padding-block: 24px 88px; }
 .settings-layout > .tab-content:focus-visible { outline-offset: -2px; }
-.settings-layout > .tab-content > * { width: 100%; max-width: 720px; margin-inline: auto; }
-.settings-panel-heading { margin-bottom: 28px; }
-.settings-panel-heading h2 { font-size: 23px; font-weight: 550; line-height: 1.3; letter-spacing: -.025em; }
+.settings-layout > .tab-content > * { width: 100%; max-width: 1040px; margin-inline: auto; }
+.settings-panel-heading { margin-bottom: 20px; }
+.settings-panel-heading h2 { font-size: var(--ui-page-size); font-weight: 550; line-height: 1.3; letter-spacing: -.025em; }
 .settings-panel-heading p { color: var(--muted); font-size: 13px; line-height: 1.65; margin-top: 7px; }
-.settings-form { max-width: 720px; }
-.settings-form.stack { --stack-gap: 22px; }
+.settings-form { max-width: 1040px; }
+.settings-form.stack { --stack-gap: 16px; }
 .settings-form h2 { font-size: 16px; }
 .settings-form > .muted, .settings-form > .editor-form-fields > .muted { font-size: 13px; margin-top: -6px; }
 .settings-save-status { margin-right: auto; color: var(--muted); font-size: 12px; }
@@ -23,13 +23,13 @@
 .settings-draft-notice .button { flex-shrink: 0; }
 .status-refresh { font-size: 12px; }
 .settings-page .sticky-actions { background: var(--canvas); bottom: 0; padding: 16px 0; margin-top: 4px; border-top: 1px solid var(--border); }
-.settings-feature-groups { display: grid; gap: 28px; }
+.settings-feature-groups { display: grid; gap: 20px; }
 .settings-page .prompt-delivery { padding: 16px 20px 16px 34px; background: var(--sidebar); border-radius: 9px; font-size: 12px; line-height: 1.8; }
 .settings-page .prompt-delivery li + li { margin-top: 8px; }
 .settings-page .prompt-preview { font-size: 12px; }
-.settings-modal { --modal-padding: 24px; }
-.settings-modal .modal-heading { padding: 14px 24px 10px; border-bottom: 0; }
-.settings-modal .modal-heading h2 { font-size: 18px; font-weight: 550; }
+.settings-modal { --modal-padding: 20px; }
+.settings-modal .modal-heading { padding: 12px 20px 8px; border-bottom: 0; }
+.settings-modal .modal-heading h2 { font-size: var(--ui-dialog-size); font-weight: 550; }
 .settings-modal .modal-body { padding-top: 12px; padding-bottom: var(--modal-padding); }
 .settings-modal .form-actions { gap: 8px; }
 .settings-modal .sticky-actions { padding-block: 16px; }
@@ -46,7 +46,7 @@
   .settings-layout > .tabs .tab-trigger { gap: 7px; font-size: 13px; }
   .settings-layout > .tab-content { padding: 24px 20px 0; }
   .settings-panel-heading { margin-bottom: 22px; }
-  .settings-panel-heading h2 { font-size: 22px; }
+  .settings-panel-heading h2 { font-size: var(--ui-page-size); }
 }
 @media (max-width: 800px), (pointer: coarse) {
   .settings-layout[data-orientation="vertical"] > .tabs .tab-trigger { min-height: 44px; }

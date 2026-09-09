@@ -14,13 +14,13 @@
 .page-bar h1 { font-size: 14px; font-weight: 600; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .page-bar-detail { color: var(--muted); font-size: 11px; white-space: nowrap; padding-left: 12px; border-left: 1px solid var(--border); }
 .header-actions { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
-.page-content { min-height: 0; flex: 1; overflow-y: auto; padding: 40px clamp(24px, 4vw, 56px) 48px; scrollbar-width: thin; }
+.page-content { min-height: 0; flex: 1; overflow-y: auto; padding: 28px clamp(20px, 3vw, 40px) 32px; scrollbar-width: thin; }
 .page-inner { width: 100%; max-width: 1120px; margin: 0 auto; }
-.page-heading { margin-bottom: 28px; }
-.page-heading h2 { font-size: 24px; font-weight: 550; margin-bottom: 8px; letter-spacing: -.035em; }
+.page-heading { margin-bottom: 20px; }
+.page-heading h2 { font-size: var(--ui-page-size); font-weight: 550; margin-bottom: 6px; letter-spacing: -.025em; }
 .page-heading .muted { font-size: 13px; }
 .page-actions { display: flex; gap: 8px; }
-.home-page .page-inner { max-width: 960px; }
+.home-page .page-inner { max-width: 1120px; }
 .continue-story { display: flex; gap: 18px; align-items: center; padding: 22px 24px; border: 1px solid var(--border); border-radius: 12px; margin: 0 0 32px; background: var(--surface); }
 .continue-story:hover { background: var(--soft); }
 .continue-icon { display: grid; place-items: center; width: 44px; height: 52px; background: var(--sidebar); border-radius: 6px; }
@@ -60,9 +60,9 @@
   .page-bar { padding-inline: 10px; gap: 8px; }
   .page-bar-title { gap: 7px; }
   .page-bar-detail { display: none; }
-  .page-content { padding: 28px 20px 40px; }
-  .page-heading { margin-bottom: 24px; }
-  .page-heading h2 { font-size: 23px; }
+  .page-content { padding: 20px 16px 32px; }
+  .page-heading { margin-bottom: 20px; }
+  .page-heading h2 { font-size: var(--ui-page-size); }
   .continue-story { padding: 18px; gap: 12px; }
   .continue-action { font-size: 0; }
   .home-story-list { --home-action-width: 44px; }

@@ -48,7 +48,7 @@ export function Select({ onInvalid, onChange, ...props }: SelectHTMLAttributes<H
   const validation = useFieldValidation()
   return <><select {...props} className={clsx('input select', props.className)} aria-invalid={validation.error ? true : props['aria-invalid']} aria-describedby={validation.describedBy(props['aria-describedby'])} onInvalid={event => { onInvalid?.(event); validation.invalid(event) }} onChange={event => { onChange?.(event); validation.changed(event.currentTarget) }} />{validation.feedback}</>
 }
-export function Check({ label, help, indeterminate = false, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string; help?: string; indeterminate?: boolean }) {
+export function Check({ label, help, indeterminate = false, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string; help?: ReactNode; indeterminate?: boolean }) {
   useUiLanguage()
   return <label className="check"><input type="checkbox" {...props} ref={input => { if (input) input.indeterminate = indeterminate }} /><span>{label}{help && <small>{help}</small>}</span></label>
 }

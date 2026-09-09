@@ -1,9 +1,11 @@
 import type { ModelRegistration } from '../runtime/models.ts'
 import { ModelRegistry } from '../runtime/models.ts'
 import { RpError, requireValue } from '../../../../packages/rp-core/src/errors.ts'
+import { discoveryMetadata } from './model-discovery-metadata.ts'
+import type { ModelMetadata } from '../runtime/model-metadata.ts'
 
 export interface ModelConnection { api?: ModelRegistration['api']; baseUrl: string }
-export interface DiscoveredModel { model: string; label: string }
+export interface DiscoveredModel { model: string; label: string; metadata?: ModelMetadata }
 export interface ModelCheck { status: 'passed' | 'failed'; checkedAt: string; durationMs: number; code?: string; message: string }
 
 export function validateConnection(value: unknown): ModelConnection {
@@ -45,7 +47,7 @@ async function responseJson(response: Response) {
   catch { throw new RpError('MODEL_LIST_INVALID', '服务未返回有效的模型列表；可以手动填写模型 ID。', 422) }
 }
 
-/** Discovery lists identifiers only; receiving a list does not prove a model can generate. */
+/** Metadata describes capabilities; receiving a list does not prove a model can generate. */
 export async function discoverModels(connection: ModelConnection, apiKey: string, fetcher: typeof fetch, signal: AbortSignal) {
   requireValue(connection.api, 'MODEL_CONFIG_INVALID', '获取模型列表前请选择 API 协议。')
   const anthropic = connection.api === 'anthropic-messages'
@@ -62,7 +64,8 @@ export async function discoverModels(connection: ModelConnection, apiKey: string
       const value = item as Record<string, unknown>, id = value.id
       if (typeof id !== 'string' || !id.trim() || id.length > 200) continue
       const name = value.display_name ?? value.name
-      found.set(id, { model: id, label: typeof name === 'string' && name.trim() ? name.slice(0, 200) : id })
+      const metadata = discoveryMetadata(value, connection)
+      found.set(id, { model: id, label: typeof name === 'string' && name.trim() ? name.slice(0, 200) : id, ...(Object.keys(metadata).length ? { metadata } : {}) })
       if (found.size >= 10000) { truncated = true; break }
     }
     if (truncated || body.has_more !== true) break

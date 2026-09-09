@@ -18,7 +18,7 @@ export function ReasoningControl({ levels, value, defaultLevel, defaultLabel = u
   const title = unavailable ? uiT('当前档位不可用') : reasoningLabel(effective)
   return <Menu label={label} className="reasoning-menu" trigger={<Button tone="quiet" className="reasoning-trigger" disabled={disabled}
     aria-label={uiT('%{label}：%{level}', { label, level: title })} title={`${label} · ${title}${value === undefined ? ` · ${defaultLabel}` : ''}`}>
-    <span>{title}</span><ChevronDown size={12} />
+    <span>{value === undefined ? uiT('自动 · %{value}', { value: title }) : title}</span><ChevronDown size={12} />
   </Button>}>
     <MenuLabel>{label}</MenuLabel>
     <MenuRadioGroup value={value ?? 'default'} onValueChange={next => onChange(next === 'default' ? undefined : next)}>

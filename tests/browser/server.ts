@@ -14,6 +14,7 @@ import { seedTrajectoryScenario } from './trajectory-fixture.ts'
 import { streamingTextResponse } from '../streaming-response.ts'
 import { seedConversationBoundaries } from './boundary-fixture.ts'
 import { activityResponse } from './activity-response.ts'
+import { browserModelMetadata } from './model-metadata-fixture.ts'
 
 const persistentRoot = process.env.RP_BROWSER_FIXTURE_ROOT
 const root = persistentRoot ? resolve(persistentRoot) : await mkdtemp(join(tmpdir(), 'rp-browser-fixture-')), inputs = join(root, 'data/inputs'), skills = join(root, 'skills'), workspaces = join(root, 'workspaces')
@@ -41,7 +42,7 @@ const app = await createServer({ dataDirectory: join(root, 'data'), publicOrigin
   if (String(url).startsWith('https://synthetic.invalid/')) {
     const auth = new Headers(init?.headers).get('authorization')
     if (auth === 'Bearer browser-invalid-key') return Response.json({ error: { message: 'Invalid API key' } }, { status: 401 })
-    if (init?.method === 'GET') return Response.json({ data: [{ id: 'test-model', name: 'Synthetic Text' }, { id: 'test-vision-model', name: 'Synthetic Vision' }, { id: 'test-reasoning-model', name: 'Synthetic Reasoning' }, { id: 'gpt-6-astra', name: 'GPT-6 Astra · 合成验收' }] })
+    if (init?.method === 'GET') return Response.json({ data: browserModelMetadata })
   }
   if (!String(url).startsWith('https://synthetic.invalid/')) {
     const request = JSON.parse(String(init?.body)) as { model?: string }

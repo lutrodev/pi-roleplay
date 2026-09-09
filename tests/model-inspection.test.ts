@@ -25,7 +25,7 @@ it('migrates existing models without losing independent endpoints, parameters or
   const migrated = new ModelCatalogService(x.assets, [], x.key, x.options)
   expect(migrated.snapshot()).toMatchObject({ revision: 7, providers: [{ id: 'existing', connection, credentialConfigured: true, models: [{ model: 'custom', configured: true, check: null }, { model: 'other', baseUrl: 'https://other.test/api', configured: false }] }] })
   expect(migrated.models.registrations().map(model => model.keyEnv)).toEqual(['DEPLOY_KEY', 'OTHER_KEY'])
-  expect(x.assets.getSetting('models.catalog')).toMatchObject({ version: 2, registrations })
+  expect(x.assets.getSetting('models.catalog')).toMatchObject({ version: 3, registrations })
   expect(JSON.stringify(migrated.snapshot())).not.toContain('DEPLOY_KEY')
 })
 
@@ -122,8 +122,8 @@ it('exposes discovery and testing with strict HTTP inputs and revision checks', 
   const app = Fastify({ ajv: { customOptions: { removeAdditional: false } } }); registerModelCatalog(app, x.service)
   try {
     const preview = { connection, provider: 'synthetic', model: 'gpt-6-astra' }
-    expect((await app.inject({ method: 'POST', url: '/api/settings/models/reasoning', payload: preview })).json()).toMatchObject({ defaultThinkingLevel: 'medium', thinkingLevels: ['low', 'medium', 'high', 'xhigh', 'max'] })
-    expect((await app.inject({ method: 'POST', url: '/api/settings/models/reasoning', payload: { ...preview, apiKey: 'not-accepted' } })).statusCode).toBe(400)
+    expect((await app.inject({ method: 'POST', url: '/api/settings/models/metadata', payload: preview })).json()).toMatchObject({ defaultThinkingLevel: 'medium', thinkingLevels: ['low', 'medium', 'high', 'xhigh', 'max'] })
+    expect((await app.inject({ method: 'POST', url: '/api/settings/models/metadata', payload: { ...preview, apiKey: 'not-accepted' } })).statusCode).toBe(400)
     expect((await app.inject({ method: 'POST', url: '/api/settings/providers/discover', payload: { connection, apiKey: 'secret', arbitrary: true } })).statusCode).toBe(400)
     const list = await app.inject({ method: 'POST', url: '/api/settings/providers/discover', payload: { connection, apiKey: 'secret' } })
     expect(list.json()).toMatchObject({ models: [{ model: 'a' }] })

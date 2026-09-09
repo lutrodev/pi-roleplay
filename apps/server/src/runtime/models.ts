@@ -6,7 +6,8 @@ import { anthropicMessagesApi } from '@earendil-works/pi-ai/api/anthropic-messag
 import { requireValue } from '../../../../packages/rp-core/src/errors.ts'
 import type { ModelRoute, StoryProfile } from '../../../../packages/rp-core/src/types.ts'
 import { resolveModelSelection, type ModelSelection } from '../../../../packages/rp-core/src/agents/catalog.ts'
-import { catalogReasoning, defaultThinkingLevel } from './model-reasoning.ts'
+import { defaultThinkingLevel } from './model-reasoning.ts'
+import { resolveMetadata, type ModelIdentity, type ModelMetadata, type MetadataSources } from './model-metadata.ts'
 
 export interface ModelRegistration {
   provider: string
@@ -18,14 +19,14 @@ export interface ModelRegistration {
   contextWindow?: number
   maxTokens?: number
   input?: ('text' | 'image')[]
-  /** Omitted means automatic catalog detection; booleans are explicit overrides. */
+  /** Omitted means automatic metadata detection; booleans are explicit overrides. */
   reasoning?: boolean
   outputTokens?: number
   temperature?: number
   compat?: Model<Api>['compat']
 }
 
-interface RegisteredModel { registration: ModelRegistration; model: Model<Api>; streams: ProviderStreams }
+interface RegisteredModel { registration: ModelRegistration; model: Model<Api>; streams: ProviderStreams; sources: MetadataSources; providerLabel: string }
 
 /** Only explicitly configured routes are available. Secrets are resolved at request time and never returned by list(). */
 export class ModelRegistry {
@@ -33,6 +34,8 @@ export class ModelRegistry {
   constructor(registrations: ModelRegistration[], readonly options: {
     env?: (key: string) => string | undefined
     fetch?: SimpleStreamOptions['fetch']
+    metadata?: (route: ModelIdentity) => ModelMetadata | undefined
+    providerLabel?: (provider: string) => string
   } = {}) {
     requireValue(Array.isArray(registrations) && registrations.length <= 64, 'MODEL_CONFIG_INVALID', '最多配置 64 个模型。')
     const builtins = builtinModels()
@@ -46,14 +49,14 @@ export class ModelRegistry {
       const key = routeKey(registration)
       requireValue(!this.entries.has(key), 'MODEL_CONFIG_INVALID', '同一个提供商和模型不能重复配置。')
       const known = builtins.getModel(registration.provider, registration.model)
-      const detected = catalogReasoning(registration)
-      requireValue(known || (registration.api && registration.baseUrl && registration.contextWindow && registration.maxTokens),
-        'MODEL_CONFIG_INVALID', '目录之外的模型需要配置 API 类型、地址、上下文窗口和输出上限。')
+      const detected = resolveMetadata(registration, options.metadata?.(registration))
+      requireValue(known || (registration.api && registration.baseUrl),
+        'MODEL_CONFIG_INVALID', '目录之外的模型需要配置 API 类型和地址。')
       const model: Model<Api> = {
-        id: registration.model, provider: registration.provider, name: registration.label?.trim() || registration.model,
+        id: registration.model, provider: registration.provider, name: detected.label,
         api: registration.api ?? known!.api, baseUrl: registration.baseUrl ?? known!.baseUrl,
-        contextWindow: registration.contextWindow ?? known!.contextWindow, maxTokens: registration.maxTokens ?? known!.maxTokens,
-        input: registration.input ?? known?.input ?? ['text'], reasoning: registration.reasoning ?? detected?.reasoning ?? false,
+        contextWindow: detected.contextWindow, maxTokens: detected.maxTokens,
+        input: detected.input, reasoning: detected.reasoning,
         cost: known?.cost ?? { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
         compat: { ...(known?.compat && (!registration.api || registration.api === known.api) ? known.compat : {}), ...detected?.compat, ...registration.compat },
         ...(detected?.thinkingLevelMap ? { thinkingLevelMap: detected.thinkingLevelMap } : {}),
@@ -72,29 +75,28 @@ export class ModelRegistry {
       const provider = known && !registration.api ? builtins.getProvider(registration.provider) : undefined
       const streams = provider ?? customApis[model.api]
       requireValue(streams, 'MODEL_CONFIG_INVALID', '这个模型 API 暂不可用。')
-      this.entries.set(key, { registration: structuredClone(registration), model, streams })
+      this.entries.set(key, { registration: structuredClone(registration), model, streams, sources: detected.sources, providerLabel: options.providerLabel?.(registration.provider) ?? registration.provider })
     }
   }
 
   list() {
-    return [...this.entries.values()].map(({ registration, model }) => ({
-      provider: model.provider, model: model.id, label: model.name, input: model.input,
+    return [...this.entries.values()].map(({ registration, model, sources, providerLabel }) => ({
+      provider: model.provider, providerLabel, model: model.id, label: model.name, input: model.input, reasoning: model.reasoning, sources,
       contextWindow: model.contextWindow, maxTokens: model.maxTokens,
       thinkingLevels: getSupportedThinkingLevels(model), configured: !!this.key(registration.keyEnv),
       defaultThinkingLevel: defaultThinkingLevel(model),
-      reasoningSource: registration.reasoning === undefined ? catalogReasoning(registration) ? 'catalog' as const : 'unknown' as const : 'manual' as const,
+      reasoningSource: sources.reasoning,
     }))
   }
 
-  replace(registrations: ModelRegistration[]) {
-    const replacement = new ModelRegistry(registrations, this.options)
+  replace(registrations: ModelRegistration[], options = this.options) {
+    const replacement = new ModelRegistry(registrations, options)
     this.entries = replacement.entries
   }
 
   registrations(): ModelRegistration[] {
     return [...this.entries.values()].map(({ registration, model }) => ({ ...structuredClone(registration),
-      label: model.name, api: registration.api, baseUrl: model.baseUrl, contextWindow: model.contextWindow, maxTokens: model.maxTokens,
-      input: model.input,
+      api: registration.api, baseUrl: model.baseUrl,
     }))
   }
 
