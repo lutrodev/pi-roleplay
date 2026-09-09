@@ -522,6 +522,7 @@
   "干预当前回复": "Steer the current reply",
   "⌘ / Ctrl + Enter 使用另一种行为；空输入时干预全部待发消息。Shift + Enter 换行。": "⌘ / Ctrl + Enter uses the other action. With an empty input, it steers with all pending messages. Shift + Enter inserts a line break.",
   "阅读偏好": "Reading preferences",
+  "字体与排版应用于所有会话和资料正文，外观应用于整个界面。": "Font and text layout apply to all conversations and reading materials. Appearance applies to the entire interface.",
   "外观": "Appearance",
   "跟随系统": "Follow system",
   "浅色": "Light",

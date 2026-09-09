@@ -126,10 +126,9 @@
 .trajectory-detail-tabs [role=tab][aria-selected=true] { color: var(--trace-user); border-bottom-color: var(--trace-user); }
 .trajectory-detail-tabs > .icon-button { width: 28px; min-height: 28px; }
 .trajectory-detail-content { padding: 18px; overflow: auto; flex: 1; min-height: 0; min-width: 0; scrollbar-width: thin; overscroll-behavior: contain; }
-.trajectory-detail-content .prose { --reading-size: 13px; --reading-leading: 1.8; --reading-font: var(--font-sans); }
 .trajectory-detail-content .json-view { font-size: 11px; max-height: none; overflow-wrap: anywhere; white-space: pre-wrap; }
 .trajectory-content-section { margin-bottom: 22px; min-width: 0; }
-.trajectory-content-section h4 { font-size: 12px; color: var(--muted); font-weight: 500; margin: 0 0 10px; }
+.trajectory-content-section > h4 { font-size: 12px; color: var(--muted); font-weight: 500; margin: 0 0 10px; }
 .trajectory-content-section:last-child { margin-bottom: 0; }
 .trajectory-literal, .trajectory-fields pre { white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.85 ui-monospace, SFMono-Regular, Consolas, monospace; }
 .trajectory-fields { margin: 0; min-width: 0; }

@@ -19,7 +19,7 @@ export function ReadingControls({ value, onChange }: {
   const highlight = value.dialogueHighlight
   const theme = value.theme === 'system' ? systemDark ? 'dark' : 'light' : value.theme
   return <>
-    <SettingsGroup title={uiT('阅读偏好')}>
+    <SettingsGroup title={uiT('阅读偏好')} description={uiT('字体与排版应用于所有会话和资料正文，外观应用于整个界面。')}>
       <Field layout="row" label={uiT('正文字体')}><Select value={value.fontFamily} onChange={event => onChange({ fontFamily: event.target.value as Preferences['reading']['fontFamily'] })}><option value="sans">{uiT('清晰无衬线')}</option><option value="serif">{uiT('宋体阅读')}</option></Select></Field>
       <SegmentedSetting label={uiT('外观')} value={value.theme} onChange={theme => onChange({ theme })} options={[{ value: 'light', label: '浅色' }, { value: 'dark', label: '深色' }, { value: 'system', label: '跟随系统' }]} />
       <SettingSlider label={uiT('字号')} value={value.fontSize} min={14} max={26} displayValue={`${value.fontSize}px`} onChange={fontSize => onChange({ fontSize })} />
@@ -36,7 +36,7 @@ export function ReadingControls({ value, onChange }: {
         </label>)}</div>
       </fieldset>
     </SettingsGroup>
-    <section className="reading-preview" data-preview-theme={theme} style={dialogueColorStyle(value.dialogueColor)}><header><strong>{uiT('正文预览')}</strong><small>{uiT('保存后应用到会话')}</small></header><div className="reading-sample" style={{ '--reading-font': value.fontFamily === 'serif' ? 'var(--serif)' : 'var(--font-sans)', '--reading-size': `${value.fontSize}px`, '--reading-leading': value.lineHeight, maxWidth: value.maxWidth } as CSSProperties}><Markdown text={`${uiT('黄昏时，灯塔的门开了。来人站在门槛外，手里握着一封没有署名的信。')}\n\n${uiT('“你终于来了。”她说。')}`} highlight={highlight} /></div></section>
+    <section className="reading-preview" data-preview-theme={theme} style={dialogueColorStyle(value.dialogueColor)}><header><strong>{uiT('正文预览')}</strong><small>{uiT('保存后应用到会话')}</small></header><div className="reading-sample" style={{ '--reading-font': value.fontFamily === 'serif' ? 'var(--serif)' : 'var(--font-sans)', '--reading-size': `${value.fontSize}px`, '--reading-leading': value.lineHeight, '--reading-width': `${value.maxWidth}px` } as CSSProperties}><Markdown text={`${uiT('黄昏时，灯塔的门开了。来人站在门槛外，手里握着一封没有署名的信。')}\n\n${uiT('“你终于来了。”她说。')}`} highlight={highlight} /></div></section>
     <SettingsGroup title={uiT('消息显示')}>
       <SettingToggle label={uiT('显示消息头像')} help={uiT('在对话中显示角色与人设的头像。')} checked={value.showAvatars} onChange={event => onChange({ showAvatars: event.target.checked })} />
       <SettingToggle label={uiT('显示会话变量卡片')} help={uiT('在最新回复下方显示变量。隐藏卡片不会停止变量更新，仍可从资料中的变量页查看。')} checked={value.showStateCard} onChange={event => onChange({ showStateCard: event.target.checked })} />

@@ -34,7 +34,7 @@
 .material-reader-heading > .content-image { width: 52px; height: 64px; border-radius: 8px; object-fit: cover; }
 .material-reader-heading h3 { font-size: 21px; font-weight: 600; line-height: 1.5; margin-top: 3px; overflow-wrap: anywhere; }
 .material-text, .material-entry-group { min-width: 0; }
-.material-text h4, .material-entry-group > h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 12px; font-weight: 500; color: var(--muted); }
+.material-text > h4, .material-entry-group > h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 12px; font-weight: 500; color: var(--muted); }
 .material-entry-group > h4 small { font-size: 11px; font-weight: 400; }
 .material-fold { border-top: 1px solid var(--border); }
 .material-fold > summary { position: relative; padding: 13px 20px 13px 0; list-style: none; }

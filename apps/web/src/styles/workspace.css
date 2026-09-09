@@ -90,7 +90,6 @@
 .optional-resources > summary small { margin-left: 8px; font-size: 11px; }
 .optional-resources > .stack { padding-top: 14px; }
 .opening-preview { padding: 18px; background: var(--sidebar); border-radius: var(--radius); max-height: 200px; overflow-y: auto; }
-.opening-preview .prose { font-size: 15px; }
 .prompt-source { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .prompt-source > span { flex: 1; min-width: 140px; overflow-wrap: anywhere; font-size: 13px; }
 .prompt-source > select { width: min(100%, 180px); font-size: 12px; }
@@ -155,8 +154,7 @@
 .asset-editor-note .button { min-height: 32px; padding: 4px 8px; }
 .asset-editor-meta { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr); align-items: start; gap: 16px; }
 .asset-editor-meta textarea { min-height: 0; }
-.asset-detail-text h4 { font-size: 12px; font-weight: 500; color: var(--muted); margin: 0 0 6px; }
-.asset-detail-text .prose { font-size: 14px; line-height: 1.75; }
+.asset-detail-text > h4 { font-size: 12px; font-weight: 500; color: var(--muted); margin: 0 0 6px; }
 .asset-detail-preview { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 8px 0 0; font-size: 13px; line-height: 1.7; color: var(--muted); }
 @media (max-width: 640px) {
   .asset-editor-meta { grid-template-columns: minmax(0, 1fr); gap: 12px; }

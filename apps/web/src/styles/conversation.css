@@ -16,10 +16,14 @@
 .message-author > span:not(.avatar) { font-weight: 500; color: var(--text); }
 .message-kind { font-size: 11px; color: var(--muted); font-weight: 400; }
 .avatar { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; object-fit: cover; border-radius: 50%; font-size: 11px; }
-.prose { color: var(--text); font-family: var(--reading-font); font-size: var(--reading-size); line-height: var(--reading-leading); overflow-wrap: anywhere; }
+/* All rendered reading content shares these preferences, regardless of message kind or panel. */
+.prose { min-width: 0; max-width: min(100%, var(--reading-width)); color: var(--text); font-family: var(--reading-font); font-size: var(--reading-size); line-height: var(--reading-leading); overflow-wrap: anywhere; }
 .prose p { margin-bottom: .75em; }
 .prose > :last-child { margin-bottom: 0; }
-.prose h1, .prose h2, .prose h3 { margin: 1.3em 0 .7em; font-family: inherit; }
+.prose :is(h1, h2, h3, h4, h5, h6) { margin: 1.3em 0 .7em; font-family: inherit; font-size: 1em; font-weight: 600; line-height: inherit; }
+.prose h1 { font-size: 1.5em; }
+.prose h2 { font-size: 1.25em; }
+.prose h3 { font-size: 1.125em; }
 .prose ul, .prose ol { padding-left: 1.5em; margin: 1em 0; }
 .prose ul { list-style: disc; } .prose ol { list-style: decimal; } .prose li { margin: .25em 0; }
 .prose a { text-decoration: underline; text-underline-offset: 3px; }
@@ -35,7 +39,6 @@
 .user-message { position: relative; width: fit-content; max-width: 83%; margin-left: auto; }
 .user-message:not(.message-editing) > .message-body { background: var(--soft); border-radius: 18px 18px 5px 18px; padding: 11px 16px; }
 .user-avatar { position: absolute; right: -34px; top: 10px; }
-.user-message .prose, .discussion-message .prose { font-family: inherit; font-size: 15px; line-height: 1.8; }
 .discussion-message .message-author { color: var(--muted); }
 .draft-message { margin-block: 24px; }
 .draft-message .message-heading > span { display: flex; align-items: center; gap: 8px; }

@@ -25,14 +25,12 @@
 .summary-overview p { margin-top: 3px; color: var(--muted); font-size: 12px; line-height: 1.7; }
 .summary-overview small { align-self: start; margin-top: 2px; padding: 3px 8px; border-radius: 5px; background: var(--summary-blue-soft); color: var(--summary-blue); font-size: 11px; line-height: 1.6; white-space: nowrap; }
 .summary-checkpoint { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
-.summary-reader .prose { font-family: var(--font-sans); font-size: 14px; line-height: 1.8; }
-.summary-reader .prose p { margin: 0 0 9px; }
-.summary-reader .prose ul, .summary-reader .prose ol { margin: 8px 0 0; padding-left: 1.35em; }
-.summary-reader .prose li { margin: 7px 0; padding-left: 2px; }
+.summary-reader .prose p { margin: 0 0 .65em; }
+.summary-reader .prose ul, .summary-reader .prose ol { margin: .6em 0 0; padding-left: 1.35em; }
+.summary-reader .prose li { margin: .5em 0; padding-left: 2px; }
 .summary-reader .prose li::marker { color: var(--muted); }
-.summary-reader .prose li > ul, .summary-reader .prose li > ol { margin-top: 4px; }
+.summary-reader .prose li > ul, .summary-reader .prose li > ol { margin-top: .3em; }
 .summary-reader .prose strong { font-weight: 600; }
-.summary-reader .prose :is(h1, h2, h3, h4, h5, h6) { font-size: 15px; font-weight: 600; line-height: 1.6; margin: 22px 0 10px; }
 .summary-checkpoint > .prose { counter-reset: summary-section; }
 .summary-checkpoint > .prose > h2 { --section-ink: var(--summary-blue); --section-soft: var(--summary-blue-soft); display: flex; align-items: baseline; gap: 9px; margin: 22px 0 11px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--section-ink); }
 .summary-checkpoint > .prose > h2::before { counter-increment: summary-section; content: counter(summary-section, decimal-leading-zero) / ''; flex-shrink: 0; min-width: 25px; border-radius: 5px; background: var(--section-soft); color: var(--section-ink); font-size: 11px; line-height: 24px; font-weight: 500; text-align: center; font-variant-numeric: tabular-nums; }
@@ -64,6 +62,5 @@
   .summary-overview { grid-template-columns: 32px minmax(0, 1fr); column-gap: 10px; row-gap: 8px; padding-bottom: 16px; }
   .summary-overview-icon { width: 32px; height: 32px; border-radius: 9px; }
   .summary-overview small { grid-column: 2; justify-self: start; margin-top: 0; }
-  .summary-reader .prose { line-height: 1.85; }
   .summary-records > summary { min-height: 44px; }
 }

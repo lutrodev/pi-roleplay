@@ -71,7 +71,6 @@
 .new-opening-preview[open] .opening-preview-heading > svg { rotate: 0deg; }
 .new-opening-preview > div { padding: 4px 0 12px; }
 .opening-preview-heading strong { font-weight: 500; }
-.new-opening-preview .prose { font-size: var(--reading-size); line-height: var(--reading-leading); }
 .new-story-opening .textarea { min-height: 120px; max-height: 300px; resize: none; }
 .new-story-opening .textarea:focus-visible { outline: 1px solid var(--muted); outline-offset: 0; }
 .opening-skip { text-align: center; padding: 42px 16px; color: var(--muted); }

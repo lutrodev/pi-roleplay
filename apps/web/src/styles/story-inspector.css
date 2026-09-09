@@ -6,7 +6,6 @@
 .inspector-navigation > .button[aria-pressed=true] { background: var(--soft); color: var(--text); }
 .inspector-navigation > .inspector-secondary-nav { margin-left: auto; gap: 5px; font-size: 12px; }
 .inspector-secondary-nav .inspector-more-icon { display: none; }
-.inspector-body .prose { font-size: 14px; line-height: 1.75; }
 .inspector-body .section-heading { flex-wrap: wrap; gap: 6px; }
 .inspector-body .section-heading > :first-child { flex: 1; }
 .inspector-body .button { font-size: 12px; }
