@@ -137,12 +137,13 @@ export function MenuLabel({ children }: { children: ReactNode }) {
 export function MenuSeparator() {
   useUiLanguage(); return <DropdownMenu.Separator className="menu-separator" /> }
 
-export function TabGroup<T extends string>({ value, onChange, items, label, children, className, orientation = 'horizontal', contentRef }: {
-  value: T; onChange: (value: T) => void; items: readonly { value: T; label: string; icon?: ReactNode; disabled?: boolean }[]; label: string; children: ReactNode; className?: string; orientation?: 'horizontal' | 'vertical'; contentRef?: RefObject<HTMLDivElement | null>
+export function TabGroup<T extends string>({ value, onChange, items, label, children, className, orientation = 'horizontal', contentRef, actions }: {
+  value: T; onChange: (value: T) => void; items: readonly { value: T; label: string; icon?: ReactNode; disabled?: boolean }[]; label: string; children: ReactNode; className?: string; orientation?: 'horizontal' | 'vertical'; contentRef?: RefObject<HTMLDivElement | null>; actions?: ReactNode
 }) {
   useUiLanguage()
+  const tabs = <Tabs.List className="tabs" aria-label={label}>{items.map(item => <Tabs.Trigger className="tab-trigger" value={item.value} disabled={item.disabled} key={item.value}>{item.icon}{item.label}</Tabs.Trigger>)}</Tabs.List>
   return <Tabs.Root value={value} onValueChange={next => onChange(next as T)} className={clsx('tab-group', className)} orientation={orientation}>
-    <Tabs.List className="tabs" aria-label={label}>{items.map(item => <Tabs.Trigger className="tab-trigger" value={item.value} disabled={item.disabled} key={item.value}>{item.icon}{item.label}</Tabs.Trigger>)}</Tabs.List>
+    {actions ? <div className="tabs-toolbar">{tabs}<div className="tabs-actions">{actions}</div></div> : tabs}
     <Tabs.Content ref={contentRef} className="tab-content" value={value}>{children}</Tabs.Content>
   </Tabs.Root>
 }

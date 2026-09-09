@@ -2,11 +2,13 @@ import { randomUUID } from 'node:crypto'
 import { RpError, requireValue } from '../../../../packages/rp-core/src/errors.ts'
 import type { ToolCommand, ToolRequest, ToolWireEvent } from '../../../../packages/protocol/src/tools.ts'
 import type { WorkspaceTarget } from '../../../../packages/rp-core/src/workspace.ts'
+import { WorkspaceDispatch } from './workspace-dispatch.ts'
 
 interface ExecuteOptions { signal: AbortSignal; requestId?: string; onOutput?: (text: string) => void }
 
 export class ToolClient {
   private readonly endpoint: string
+  private readonly dispatch = new WorkspaceDispatch()
   constructor(baseUrl: string, private readonly token: string, private readonly fetcher: typeof fetch = fetch,
     private readonly workspaceFor: (storyId: string) => WorkspaceTarget = storyId => ({ directory: storyId, access: 'read-write', createIfMissing: true })) {
     const url = new URL(baseUrl)
@@ -17,8 +19,13 @@ export class ToolClient {
 
   async execute(storyId: string, command: ToolCommand, options: ExecuteOptions): Promise<unknown> {
     options.signal.throwIfAborted()
-    const id = options.requestId ?? randomUUID()
     const workspace = this.workspace(storyId)
+    const release = await this.dispatch.acquire(workspace.directory, command.kind === 'bash' || command.kind === 'edit', options.signal)
+    try { options.signal.throwIfAborted(); return await this.executeNow(storyId, workspace, command, options) }
+    finally { release() }
+  }
+  private async executeNow(storyId: string, workspace: WorkspaceTarget, command: ToolCommand, options: ExecuteOptions): Promise<unknown> {
+    const id = options.requestId ?? randomUUID()
     const request: ToolRequest = { id, storyId, workspace, command }
     const controller = new AbortController()
     let cancelRequest: Promise<unknown> | undefined

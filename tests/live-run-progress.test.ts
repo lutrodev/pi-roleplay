@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { RunActivitySnapshot } from '../packages/protocol/src/activity.ts'
 import type { RunRecord } from '../packages/rp-core/src/types.ts'
-import { RunProgressView, progressPresentation } from '../apps/web/src/pages/story/run-progress.tsx'
+import { RunProgressView, modelRequestsQueued, progressPresentation } from '../apps/web/src/pages/story/run-progress.tsx'
 import { RunActivity } from '../apps/web/src/pages/story/run-activity.tsx'
 import { beginModelProgress, modelProgress } from '../apps/server/src/runtime/live-progress.ts'
 import { ModelRegistry } from '../apps/server/src/runtime/models.ts'
@@ -108,5 +108,17 @@ describe('two distinct progress surfaces', () => {
     expect(render(run, snapshot(), 'reconnecting')).toBe('')
     expect(render({ ...run, status: 'waiting_user' })).toContain('需要你确认信息后继续')
     expect(render({ ...run, status: 'queued' })).toContain('请求已排队')
+  })
+  it('shows a queued Writer honestly in both progress surfaces and clears waiting when a request starts', () => {
+    const data = snapshot()
+    data.requests[0]!.scope = 'writer:call'; data.live[0]!.phase = 'queued'; data.live[0]!.text = ''
+    data.tools = [{ callId: 'writer', name: 'rp_write_turn', status: 'running', preview: '' }]
+    expect(progressPresentation(run, data).label).toBe('Writer 已排队，等待请求名额')
+    expect(modelRequestsQueued(run, data)).toBe(true)
+    const html = renderToStaticMarkup(createElement(RunActivity, { story: { archived: false, messages: [], maintenance: {} }, run, activeTools: [], requestsQueued: modelRequestsQueued(run, data) }))
+    expect(html).toContain('等待开始'); expect(html).not.toContain('正在构思')
+    data.live.push({ requestId: 'parallel-child', phase: 'responding', text: '' })
+    expect(modelRequestsQueued(run, data)).toBe(false)
+    expect(modelRequestsQueued({ ...run, id: 'another' }, data)).toBe(false)
   })
 })

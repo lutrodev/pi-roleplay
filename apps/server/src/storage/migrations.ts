@@ -138,4 +138,7 @@ export const migrations = [{
       deleted_at TEXT NOT NULL
     );
   `,
+}, {
+  version: 9,
+  sql: `DROP INDEX runs_one_active_global;`,
 }] as const

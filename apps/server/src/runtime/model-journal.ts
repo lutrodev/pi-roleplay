@@ -23,7 +23,7 @@ export function journalStream(journal: RunJournal, models: ModelRegistry, scope:
         requestId, scope, parentCallId, elapsedMs: Math.round(performance.now() - started), firstTokenMs, response,
       })
       try {
-        const source = models.stream(model, context, options)
+        const source = models.stream(model, context, { ...options, onQueued: value => progress.queued(value) })
         for await (const event of source) {
           progress.update(event)
           if (firstTokenMs === undefined && event.type.endsWith('_delta')) firstTokenMs = Math.round(performance.now() - started)

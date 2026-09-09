@@ -17,6 +17,7 @@ export function beginModelProgress(stories: StoryRepository, runId: string, requ
   active.set(requestId, progress)
   let closed = false
   return {
+    queued(value: boolean) { if (!closed) progress.phase = value ? 'queued' : 'waiting' },
     update(event: AssistantMessageEvent) {
       if (closed) return
       if (event.type === 'thinking_delta') progress.phase = 'thinking'

@@ -65,11 +65,15 @@ describe('tools HTTP boundary', () => {
     const running = client.execute(branchId, { kind: 'bash', command: 'printf "%01000d" 0; sleep 30' }, { signal: controller.signal, onOutput: () => markStarted() })
       .catch(error => error)
     await started
-    await expect(client.execute(storyId, { kind: 'edit', command: 'create', path: 'blocked.txt', fileText: 'blocked' }, { signal: signal() })).rejects.toMatchObject({ code: 'WORKSPACE_BUSY' })
+    let written = false
+    const waitingWrite = client.execute(storyId, { kind: 'edit', command: 'create', path: 'blocked.txt', fileText: 'after cancellation' }, { signal: signal() }).then(() => { written = true })
     await expect(client.reset(branchId)).rejects.toMatchObject({ code: 'WORKSPACE_BUSY' })
     await client.reset(storyId)
     expect((await client.health()).active).toBe(1)
+    expect(written).toBe(false)
     controller.abort(); expect(await running).toMatchObject({ code: 'TOOL_CANCELLED' })
+    await waitingWrite
+    expect(await client.execute(branchId, { kind: 'read', path: 'blocked.txt' }, { signal: signal() })).toMatchObject({ text: 'after cancellation' })
     await expect.poll(async () => (await client.health()).active).toBe(0)
     await client.execute(storyId, { kind: 'edit', command: 'create', path: 'released.txt', fileText: 'released' }, { signal: signal() })
     expect(await client.execute(branchId, { kind: 'read', path: 'released.txt' }, { signal: signal() })).toMatchObject({ text: 'released' })

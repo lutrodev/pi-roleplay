@@ -52,6 +52,42 @@ async function setup(replies: Reply[], onRequest?: (index: number, signal?: Abor
 }
 
 describe('assembled single-process application', () => {
+  it('shares a configurable request limit while a waiting conversation releases its slot for another', async () => {
+    const x = await setup([
+      { call: { name: 'ask_user_question', arguments: { questions: [{ id: 'direction', question: '往哪里走？' }] } } },
+      { call: { name: 'rp_reply', arguments: { text: 'B 独立完成。' } } },
+      { call: { name: 'rp_reply', arguments: { text: 'A 收到回答后完成。' } } },
+    ])
+    expect((await fetch(x.url + '/api/settings/concurrency')).status).toBe(401)
+    const original = (await x.call('/api/settings/concurrency')).body
+    expect(original.settings).toEqual({ maxRequests: 4, maxRequestsPerConnection: 2 })
+    const payload = { expectedRevision: original.revision, settings: { maxRequests: 1, maxRequestsPerConnection: 1 } }
+    expect((await x.call('/api/settings/concurrency', 'PUT', payload)).status).toBe(200)
+    expect((await x.call('/api/settings/concurrency', 'PUT', payload)).status).toBe(409)
+    expect((await x.call('/api/settings/concurrency', 'PUT', { ...payload, settings: { ...payload.settings, maxRequests: 0 } })).status).toBe(400)
+    const preferences = x.settings.snapshot()
+    x.settings.update(preferences.revision, { ...preferences.preferences, replyOptionsEnabled: false })
+    const a = x.service.create('A 等待回答'), b = x.service.create('B 独立运行')
+    x.service.updateProfile(a.id, a.revision, { ...a.profile, runtime: { ...a.profile.runtime, executionMode: 'agent' } })
+    const send = async (storyId: string, text: string) => (await x.call(`/api/stories/${storyId}/messages`, 'POST', { requestId: randomUUID(), inputs: [{ text, attachmentIds: [] }] })).body.run
+    const first = await send(a.id, 'A 的输入')
+    await expect.poll(() => x.stories.run(first.id).status).toBe('waiting_user')
+    const second = await send(b.id, 'B 的输入')
+    await expect.poll(() => x.stories.run(second.id).status).toBe('completed')
+    expect(x.stories.run(first.id).status).toBe('waiting_user')
+    expect((await x.call('/api/system/status')).body.concurrency).toEqual({ maxRequests: 1, maxRequestsPerConnection: 1, active: 0, queued: 0 })
+    const question = x.stories.snapshot(a.id).questions[0]!, answers = { answers: [{ id: 'direction', selected: [], custom: '灯塔' }] }
+    expect((await x.call(`/api/stories/${a.id}/questions/${question.id}/answer`, 'POST', answers)).status).toBe(200)
+    await x.queue.idle()
+    expect(x.stories.run(first.id).status).toBe('completed')
+    expect((await x.call(`/api/stories/${a.id}/questions/${question.id}/answer`, 'POST', answers)).body.duplicate).toBe(true)
+    expect(x.stories.snapshot(a.id).messages.map(item => item.text).join('\n')).toContain('A 收到回答后完成。')
+    expect(x.stories.snapshot(b.id).messages.map(item => item.text).join('\n')).toContain('B 独立完成。')
+    expect(JSON.stringify(x.requests[1])).not.toContain('A 的输入')
+    expect(JSON.stringify(x.requests[2])).not.toContain('B 的输入')
+    expect(x.requests).toHaveLength(3)
+  })
+
   it('starts sessions writable and advertises only permitted Pi tools after changing one session to readonly', async () => {
     const text = '只读会话可以继续写作。'
     const x = await setup([{ call: { name: 'read', arguments: { file_path: '.' } } }, { call: { name: 'rp_write_turn', arguments: { action: 'write' } } }, { text }, { call: { name: 'rp_commit_turn', arguments: { narrative: text, runSummary: '只读工作区中完成创作。' } } }])

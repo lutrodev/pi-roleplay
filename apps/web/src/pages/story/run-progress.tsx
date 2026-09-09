@@ -23,6 +23,7 @@ export function progressPresentation(run: RunRecord, snapshot?: RunActivitySnaps
   let title = uiT('正在准备本轮请求')
   if (run.status === 'queued') title = uiT('请求已排队，等待模型开始')
   else if (run.status === 'waiting_user') title = uiT('需要你确认信息后继续')
+  else if (live?.phase === 'queued') title = uiT('%{name} 已排队，等待请求名额', { name: owner })
   else if (live?.phase === 'tool') title = uiT('准备调用：%{name}', { name: activityToolName(live.toolName ?? '') })
   else if (live?.phase === 'thinking') title = uiT('%{name} 正在思考', { name: owner })
   else if (request?.scope === 'main') title = run.draft ? uiT('主模型正在处理写作结果') : live?.phase === 'responding' ? uiT('主模型正在回应') : uiT('主模型正在处理请求')
@@ -34,7 +35,7 @@ export function progressPresentation(run: RunRecord, snapshot?: RunActivitySnaps
   const text = characters.length ? (characters.length > 160 ? '…' : '') + characters.slice(-160).join('') : undefined
   const tool = tools.findLast(tool => !['rp_write_turn', 'rp_run_subagent'].includes(tool.name))
   const toolText = tool && `${activityToolName(tool.name)}${tool.preview ? ` · ${tool.preview}` : ''}`
-  return { title, text, label: run.status === 'waiting_user' || run.status === 'queued' ? title : toolText ?? text ?? title }
+  return { title, text, label: run.status === 'waiting_user' || run.status === 'queued' || live?.phase === 'queued' ? title : toolText ?? text ?? title }
 }
 
 export function RunProgressView({ run, snapshot, connection, unavailable }: {
@@ -54,10 +55,13 @@ export function RunProgressView({ run, snapshot, connection, unavailable }: {
   </section>
 }
 
-export function RunProgress({ run, connection, visible = true }: { run: RunRecord; connection: 'connecting' | 'live' | 'reconnecting'; visible?: boolean }) {
-  const active = visible && ['queued', 'running', 'waiting_user'].includes(run.status)
-  const query = useQuery({ queryKey: ['run-activity', run.id], queryFn: ({ signal }) => api<RunActivitySnapshot>(`/runs/${run.id}/activity`, 'GET', undefined, signal),
+export function modelRequestsQueued(run: RunRecord | undefined, snapshot?: RunActivitySnapshot) {
+  return run?.status === 'running' && snapshot?.runId === run.id && snapshot.live.length > 0 && snapshot.live.every(item => item.phase === 'queued')
+}
+
+export function useLiveRunActivity(run: RunRecord | undefined, connection: 'connecting' | 'live' | 'reconnecting', visible: boolean) {
+  const active = !!run && visible && ['queued', 'running', 'waiting_user'].includes(run.status)
+  return useQuery({ queryKey: ['run-activity', run?.id], queryFn: ({ signal }) => api<RunActivitySnapshot>(`/runs/${run!.id}/activity`, 'GET', undefined, signal),
     enabled: active && connection === 'live', staleTime: 0, refetchInterval: active && connection === 'live' ? 750 : false,
   })
-  return <RunProgressView run={run} snapshot={query.data} connection={connection} unavailable={!!query.error} />
 }

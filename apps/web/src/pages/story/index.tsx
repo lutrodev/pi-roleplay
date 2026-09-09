@@ -19,7 +19,7 @@ import { ReplySuggestions } from './reply-suggestions.tsx'
 import { StoryPanel, type StoryPanelTarget } from './panel.tsx'
 import { RunFeedback } from './run-feedback.tsx'
 import { RunActivity } from './run-activity.tsx'
-import { RunProgress } from './run-progress.tsx'
+import { RunProgressView, modelRequestsQueued, useLiveRunActivity } from './run-progress.tsx'
 import { RoundProcess } from './process.tsx'
 import { roundTraceEntries, RoundTraceLink } from './trace-entry.tsx'
 import { TracePanel } from './trace.tsx'
@@ -48,6 +48,7 @@ function StoryReader({ storyId }: { storyId: string }) {
   const summaryRequest = useRef<{ expectedRevision: number; requestId: string } | undefined>(undefined)
   const data = query.data, preferences = settings.data?.preferences, story = data?.story, runs = data?.runs ?? []
   const active = runs.find(run => ['queued', 'running', 'waiting_user'].includes(run.status)), latest = active ?? runs.find(run => run.id === story?.conversationRunId)
+  const liveActivity = useLiveRunActivity(active, query.connection, view === 'conversation')
   const { scroll, follow, atBottom, jump, onScroll } = useReaderScroll(storyId, !!story && !!preferences, story?.revision)
   const openTrace = (runId?: string) => panelGuard.context.requestClose(() => {
     if (view === 'conversation') readingCheckpoint.current = { top: scroll.current?.scrollTop ?? 0, follow: follow.current }
@@ -76,8 +77,8 @@ function StoryReader({ storyId }: { storyId: string }) {
   const traceEntries = roundTraceEntries(messages, latest)
   const committed = !!latest && story.messages.some(message => message.runId === latest.id && (message.kind === 'narrative' || message.kind === 'message') && message.role === 'assistant')
   const activityAnchor = active && messages.findLast(message => message.runId === active.id && message.role === 'user')?.id
-  const progress = active && <RunProgress key={active.id} run={active} connection={query.connection} visible={view === 'conversation'} />
-  const activity = <RunActivity story={story} run={active ?? latest} activeTools={data.activeTools} connection={query.connection} />
+  const progress = active && <RunProgressView key={active.id} run={active} connection={query.connection} snapshot={liveActivity.data} unavailable={!!liveActivity.error} />
+  const activity = <RunActivity story={story} run={active ?? latest} activeTools={data.activeTools} connection={query.connection} requestsQueued={!liveActivity.error && modelRequestsQueued(active, liveActivity.data)} />
   return <div className="story-page"><div className="story-workspace"><div className="conversation-main">
     <PageHeader title={story.title} detail={story.archived ? uiT("已归档") : undefined} actions={<>
       <StorySubagentModels story={story} disabled={busy || editingId !== null} />

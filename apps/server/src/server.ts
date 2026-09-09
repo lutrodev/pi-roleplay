@@ -32,6 +32,9 @@ import { SystemTools } from './runtime/system-tools.ts'
 import { RunExecutor } from './runtime/executor.ts'
 import { ResourceFactory } from './runtime/resources.ts'
 import { RunQueue } from './runtime/queue.ts'
+import { ModelRequestQueue } from './runtime/model-request-queue.ts'
+import { ConcurrencyService } from './services/concurrency-service.ts'
+import { registerConcurrency } from './http/concurrency.ts'
 import { registerAuthentication } from './http/auth.ts'
 import { registerErrors } from './http/errors.ts'
 import { Operations } from './services/operations.ts'
@@ -63,6 +66,7 @@ export async function createServer(config: ServerConfig, dependencies: { logger?
   registerErrors(app)
   let queue: RunQueue | undefined
   let summaries: SummaryService | undefined
+  let modelRequests: ModelRequestQueue | undefined
   const operations = new Operations(config.dataDirectory, () => ({
     runs: (database.sqlite.prepare("SELECT count(*) AS count FROM runs WHERE status IN ('queued','running','waiting_user')").get() as { count: number }).count,
     background: summaries?.activeCount ?? 0,
@@ -70,7 +74,9 @@ export async function createServer(config: ServerConfig, dependencies: { logger?
   operations.register(app)
   try {
     const assets = new AssetRepository(database), stories = new StoryRepository(database), files = new FileRepository(database, join(config.dataDirectory, 'inputs'))
-    const modelCatalog = new ModelCatalogService(assets, config.models, config.sessionKey, dependencies.modelOptions, () =>
+    const concurrency = new ConcurrencyService(assets, () => modelRequests?.wake())
+    modelRequests = new ModelRequestQueue(() => concurrency.snapshot().settings)
+    const modelCatalog = new ModelCatalogService(assets, config.models, config.sessionKey, { ...dependencies.modelOptions, requests: modelRequests }, () =>
       Boolean((database.sqlite.prepare("SELECT count(*) AS count FROM runs WHERE status IN ('running','waiting_user')").get() as { count: number }).count || summaries?.activeCount))
     const models = modelCatalog.models
     const auth = new AuthService(assets), settings = new SettingsService(assets, models), subagents = new SubagentService(assets, models), skills = new SkillService(config.skillRoots)
@@ -126,6 +132,7 @@ export async function createServer(config: ServerConfig, dependencies: { logger?
     registerWriterHistory(app, writerHistory)
     registerSidebar(app, sidebar)
     registerModelCatalog(app, modelCatalog)
+    registerConcurrency(app, concurrency)
     registerContextPreview(app, contexts, settings, config.defaultMain)
     registerSummaryRoutes(app, summaryService, storyId => {
       const runtime = stories.snapshot(storyId).profile.runtime, selected = settings.snapshot().preferences.mainModel ?? config.defaultMain
@@ -138,6 +145,7 @@ export async function createServer(config: ServerConfig, dependencies: { logger?
       const tools = await client.health().then(value => ({ available: true, ...value }), () => ({ available: false }))
       const configuredTools = toolSettings.snapshot()
       return { version: '0.1.0', operations: operations.status(), tools, models: models.list(), searchConfigured: Boolean(configuredTools.settings.search.baseUrl && configuredTools.searchKey.configured),
+        concurrency: { ...concurrency.snapshot().settings, ...modelRequests!.status() },
         runs: database.sqlite.prepare("SELECT status, count(*) AS count FROM runs WHERE status IN ('queued','running','waiting_user') GROUP BY status").all() }
     })
     if (config.webDirectory) {
@@ -150,10 +158,10 @@ export async function createServer(config: ServerConfig, dependencies: { logger?
       app.get('/', async (_request, reply) => reply.header('cache-control', 'no-cache').sendFile('index.html'))
     }
     app.addHook('onReady', async () => { summaryService.recover(); if (config.controlSocket) await operations.listen(config.controlSocket); runs.start() })
-    app.addHook('preClose', async () => { modelCatalog.close(); await operations.close(); await runs.close(); await summaryService.close() })
+    app.addHook('preClose', async () => { modelCatalog.close(); await operations.close(); await runs.close(); await summaryService.close(); modelRequests?.close() })
     app.addHook('onClose', async () => { if (database.sqlite.open) database.close() })
-    return { app, database, assets, stories, workspaces, files, fileService, service, auth, settings, toolSettings, writerHistory, subagents, skills, models, modelCatalog, client, queue: runs, summaries: summaryService, operations }
+    return { app, database, assets, stories, workspaces, files, fileService, service, auth, settings, toolSettings, writerHistory, subagents, skills, models, modelCatalog, client, queue: runs, summaries: summaryService, operations, concurrency, modelRequests }
   } catch (error) {
-    await operations.close(); await queue?.close(); await summaries?.close(); await app.close(); if (database.sqlite.open) database.close(); throw error
+    await operations.close(); await queue?.close(); await summaries?.close(); modelRequests?.close(); await app.close(); if (database.sqlite.open) database.close(); throw error
   }
 }

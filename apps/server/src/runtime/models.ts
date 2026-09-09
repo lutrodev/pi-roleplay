@@ -8,6 +8,7 @@ import type { ModelRoute, StoryProfile } from '../../../../packages/rp-core/src/
 import { resolveModelSelection, type ModelSelection } from '../../../../packages/rp-core/src/agents/catalog.ts'
 import { defaultThinkingLevel } from './model-reasoning.ts'
 import { resolveMetadata, type ModelIdentity, type ModelMetadata, type MetadataSources } from './model-metadata.ts'
+import { ModelRequestQueue } from './model-request-queue.ts'
 
 export interface ModelRegistration {
   provider: string
@@ -31,12 +32,15 @@ interface RegisteredModel { registration: ModelRegistration; model: Model<Api>; 
 /** Only explicitly configured routes are available. Secrets are resolved at request time and never returned by list(). */
 export class ModelRegistry {
   private entries = new Map<string, RegisteredModel>()
+  private readonly requests: ModelRequestQueue
   constructor(registrations: ModelRegistration[], readonly options: {
     env?: (key: string) => string | undefined
     fetch?: SimpleStreamOptions['fetch']
     metadata?: (route: ModelIdentity) => ModelMetadata | undefined
     providerLabel?: (provider: string) => string
+    requests?: ModelRequestQueue
   } = {}) {
+    this.requests = options.requests ?? new ModelRequestQueue()
     requireValue(Array.isArray(registrations) && registrations.length <= 64, 'MODEL_CONFIG_INVALID', '最多配置 64 个模型。')
     const builtins = builtinModels()
     const customApis: Record<string, ProviderStreams> = {
@@ -120,19 +124,20 @@ export class ModelRegistry {
     return { main, writer }
   }
 
-  stream(model: Model<Api>, context: Context, options: SimpleStreamOptions = {}) {
+  stream(model: Model<Api>, context: Context, options: SimpleStreamOptions & { onQueued?: (queued: boolean) => void } = {}) {
     const entry = this.entries.get(routeKey({ provider: model.provider, model: model.id }))
     requireValue(entry, 'MODEL_NOT_CONFIGURED', '这个模型未配置。')
     requireValue(context.messages.every(message => !Array.isArray(message.content) || message.content.every(part => part.type !== 'image' || model.input.includes('image'))),
       'MODEL_VISION_REQUIRED', '所选模型不支持当前图片附件。')
     const key = this.key(entry.registration.keyEnv)
     requireValue(key, 'MODEL_KEY_MISSING', '所选模型的 API 密钥尚未配置。')
-    return entry.streams.streamSimple(model, context, {
+    const { onQueued, ...streamOptions } = options
+    return this.requests.stream(model, signal => entry.streams.streamSimple(model, context, {
       timeoutMs: 120_000, maxRetries: 1, maxRetryDelayMs: 10_000,
       maxTokens: entry.registration.outputTokens ?? Math.min(8192, model.maxTokens),
       ...(entry.registration.temperature === undefined ? {} : { temperature: entry.registration.temperature }),
-      ...options, apiKey: key, ...(this.options.fetch ? { fetch: this.options.fetch } : {}),
-    })
+      ...streamOptions, signal, apiKey: key, ...(this.options.fetch ? { fetch: this.options.fetch } : {}),
+    }), options.signal, onQueued)
   }
 
   outputBudget(route: ModelRoute) {

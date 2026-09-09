@@ -72,11 +72,14 @@ export class ToolRunner {
     return job
   }
 
-  cancel(id: string) {
+  async cancel(id: string) {
     const job = this.jobs.get(id)
     requireValue(job, 'TOOL_REQUEST_NOT_FOUND', '工具请求不存在，无法确认执行状态。', 404)
-    if (!job.done) job.controller.abort()
-    return { finished: job.done, cancellationRequested: !job.done }
+    const cancellationRequested = !job.done
+    if (cancellationRequested) job.controller.abort()
+    // Acknowledge only after the command and its workspace lock have settled.
+    await job.completion
+    return { finished: job.done, cancellationRequested }
   }
 
   reset(storyId: string) {

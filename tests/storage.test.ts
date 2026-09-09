@@ -26,11 +26,12 @@ describe('SQLite journal and story projection', () => {
   it('upgrades an existing version-one database in place without rewriting its story', () => {
     const x = setup(), story = x.stories.create('旧版本故事', profile())
     x.database.sqlite.exec('DROP TABLE deleted_stories; DROP TABLE background_images; DROP TABLE workspaces; DROP TABLE pending_inputs; DROP INDEX events_story_type_cursor; DROP INDEX events_story_run_cursor; DROP INDEX events_story_call_cursor; DELETE FROM __rp_migrations WHERE version > 1;')
+    x.database.sqlite.exec("CREATE UNIQUE INDEX runs_one_active_global ON runs((1)) WHERE status IN ('running','waiting_user')")
     x.database.close()
     const reopened = new AppDatabase(x.filename)
     try {
       expect(new StoryRepository(reopened).snapshot(story.id)).toEqual(story)
-      expect(reopened.sqlite.prepare('SELECT version FROM __rp_migrations ORDER BY version').all()).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }, { version: 5 }, { version: 6 }, { version: 7 }, { version: 8 }])
+      expect(reopened.sqlite.prepare('SELECT version FROM __rp_migrations ORDER BY version').all()).toEqual(Array.from({ length: 9 }, (_, index) => ({ version: index + 1 })))
       expect(reopened.sqlite.prepare('SELECT * FROM deleted_stories').all()).toEqual([])
       expect(reopened.sqlite.prepare('SELECT count(*) AS count FROM pending_inputs').get()).toEqual({ count: 0 })
       expect(reopened.sqlite.prepare('SELECT count(*) AS count FROM background_images').get()).toEqual({ count: 0 })
@@ -167,20 +168,40 @@ describe('durable execution queue', () => {
     expect(() => stories.enqueue({ ...input, requestId: 'request-b' }, () => {})).toThrow('等待')
   })
 
-  it('serializes stories globally and rejects illegal status transitions', () => {
+  it('runs independent stories concurrently, serializes each story and rejects illegal transitions', () => {
     const { stories } = setup()
     const first = stories.create('一', profile()), second = stories.create('二', profile())
     const a = stories.enqueue({ storyId: first.id, requestId: 'a', inputHash: 'a', turnId: 'a' }, () => {}).run
     const b = stories.enqueue({ storyId: second.id, requestId: 'b', inputHash: 'b', turnId: 'b' }, () => {}).run
     stories.setRunStatus(a.id, 'running')
-    expect(stories.nextQueued()).toBeUndefined()
-    expect(() => stories.setRunStatus(b.id, 'running')).toThrow()
-    expect(stories.run(b.id).status).toBe('queued')
+    expect(stories.nextQueued()?.id).toBe(b.id)
+    stories.setRunStatus(b.id, 'running')
+    expect(stories.run(b.id).status).toBe('running')
+    expect(() => stories.enqueue({ storyId: first.id, requestId: 'c', inputHash: 'c', turnId: 'c' }, () => {})).toThrow('等待')
     stories.setRunStatus(a.id, 'waiting_user')
     stories.setRunStatus(a.id, 'running')
     stories.setRunStatus(a.id, 'completed')
-    expect(stories.nextQueued()?.id).toBe(b.id)
+    expect(stories.nextQueued()).toBeUndefined()
     expect(() => stories.setRunStatus(a.id, 'running')).toThrow('状态')
+  })
+
+  it('upgrades the global lock in version eight without changing events or the per-story lock', () => {
+    const x = setup(), story = x.stories.create('升级中的会话', profile())
+    const a = x.stories.enqueue({ storyId: story.id, requestId: 'a', inputHash: 'a', turnId: 'a' }, () => {}).run
+    x.stories.setRunStatus(a.id, 'running'); x.stories.saveDraft(a.id, '升级前的草稿')
+    const events = x.stories.eventLog(story.id), run = x.stories.run(a.id)
+    x.database.sqlite.exec("CREATE UNIQUE INDEX runs_one_active_global ON runs((1)) WHERE status IN ('running','waiting_user'); DELETE FROM __rp_migrations WHERE version = 9")
+    x.database.close()
+    const database = new AppDatabase(x.filename), stories = new StoryRepository(database)
+    try {
+      expect(stories.eventLog(story.id)).toEqual(events); expect(stories.run(a.id)).toEqual(run)
+      const other = stories.create('另一个会话', profile())
+      const b = stories.enqueue({ storyId: other.id, requestId: 'b', inputHash: 'b', turnId: 'b' }, () => {}).run
+      stories.setRunStatus(b.id, 'running')
+      expect(() => database.sqlite.prepare("UPDATE runs SET story_id = ? WHERE id = ?").run(story.id, b.id)).toThrow('UNIQUE constraint failed: runs.story_id')
+      expect(stories.recoverInterrupted()).toBe(2)
+      expect(stories.run(a.id)).toMatchObject({ status: 'interrupted', draft: '升级前的草稿' })
+    } finally { database.close() }
   })
 
   it('preserves drafts and cancels pending questions after process interruption', () => {

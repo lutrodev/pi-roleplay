@@ -4,7 +4,7 @@ import type { ToolRecord } from '../../rp-core/src/types.ts'
 /** Transient model progress. Never a message, Writer draft, or trajectory event. */
 export interface ModelActivity {
   requestId: string
-  phase: 'waiting' | 'thinking' | 'responding' | 'tool'
+  phase: 'queued' | 'waiting' | 'thinking' | 'responding' | 'tool'
   text: string
   toolName?: string
 }

@@ -211,8 +211,7 @@ export class StoryRepository {
   }
 
   nextQueued(): RunRecord | undefined {
-    const active = this.database.orm.select({ id: runs.id }).from(runs).where(inArray(runs.status, ['running', 'waiting_user'])).get()
-    if (active) return undefined
+    // The partial unique index keeps each story serial; other stories may run independently.
     return this.database.orm.select().from(runs).where(eq(runs.status, 'queued')).orderBy(asc(runs.createdAt), asc(runs.id)).get()
   }
 

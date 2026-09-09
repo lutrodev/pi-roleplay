@@ -70,5 +70,20 @@
   "识别结果已过期，请重新获取模型信息。": "Detection results have expired. Fetch model information again.",
   "连接已变更，请重新获取模型信息。": "The connection has changed. Fetch model information again.",
   "密钥已变更，请重新获取模型信息。": "The key has changed. Fetch model information again.",
-  "目录之外的模型需要配置 API 类型和地址。": "Models outside the catalog require an API protocol and base URL."
+  "目录之外的模型需要配置 API 类型和地址。": "Models outside the catalog require an API protocol and base URL.",
+  "并发设置": "Concurrency settings",
+  "不同会话可以同时生成，同一会话按顺序处理。等待你的回答时不占用请求名额。": "Conversations can generate together; turns within each conversation stay in order. Waiting for your answer uses no request slot.",
+  "总并发请求": "Total concurrent requests",
+  "所有服务连接合计最多同时请求的数量。": "Maximum simultaneous requests across all connections.",
+  "每个连接的并发请求": "Requests per connection",
+  "每个服务连接各自计算，主模型、Writer、子代理和总结合用。": "Counted separately for each connection and shared by the main model, Writer, subagents, and summaries.",
+  "超出名额的请求自动等待。提高上限会立即放行；降低上限会等待已有请求结束，不中断生成。": "Extra requests wait automatically. Raising a limit starts waiting requests; lowering it lets current requests finish.",
+  "%{name} 已排队，等待请求名额": "%{name} is queued, waiting for a request slot",
+  "模型请求": "Model requests",
+  "%{active} 个进行中 · %{queued} 个排队": "%{active} active · %{queued} queued",
+  "并发请求数必须是 1 到 32 之间的整数。": "Concurrent requests must be an integer from 1 to 32.",
+  "并发设置已经更新，请刷新后再保存。": "Concurrency settings have changed. Refresh before saving.",
+  "保存的并发设置无法读取，请检查数据库或从备份恢复。": "Saved concurrency settings could not be read. Check the database or restore a backup.",
+  "请提交完整的并发设置。": "Submit the complete concurrency settings.",
+  "并发设置版本不正确。": "Invalid concurrency settings version."
 }
