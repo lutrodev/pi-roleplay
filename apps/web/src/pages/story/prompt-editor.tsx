@@ -84,7 +84,7 @@ function PromptCanvas({ storyId, profile, dirty, build, inspection, onChange, sa
     {mobile ? <TabGroup className="prompt-mobile-tabs" value={view} onChange={setView} label={uiT('写作 Prompt 视图')}
       items={[{ value: 'arrange', label: uiT('编排'), icon: <ListOrdered size={16} /> }, { value: 'preview', label: uiT('预览'), icon: <Eye size={16} /> }]}>
       <div className="prompt-mobile-scroll" data-prompt-scroll ref={mobileScroll}>{view === 'preview' ? preview : editor || <>{arrangement}{idlePanel}</>}</div>
-    </TabGroup> : <div className="prompt-grid">{idlePanel}{arrangement}{editor || preview}</div>}
+    </TabGroup> : <div className={`prompt-grid${idle.length ? '' : ' prompt-grid-empty-idle'}`}>{idlePanel}{arrangement}{editor || preview}</div>}
     <ErrorNotice error={saveError} />
     <footer className="prompt-footer">
       <div aria-live="polite">{uiT("回复资料 ")}{formatPromptCount(document.characters)} {uiT(" 字")}<span>{disabled ? uiT(" · 回复生成中") : saving ? uiT(" · 保存中…") : refreshing ? uiT(" · 正在刷新资料…") : invalidName ? uiT(" · 请填写分组名称") : dirty ? uiT(" · 修改尚未保存") : uiT(" · 已保存")}</span></div>

@@ -1,5 +1,4 @@
-.model-settings-layout > .tab-content { padding: 24px 32px 0; }
-.model-settings-layout > .tab-content > * { max-width: none; }
+.model-settings-layout .settings-content > * { max-width: none; }
 .model-settings-layout .settings-panel-heading { margin-bottom: 20px; }
 .model-settings-layout .settings-panel-heading h2 { font-size: 20px; }
 .model-settings-layout .settings-panel-heading p { margin-top: 5px; font-size: 12px; }
@@ -189,7 +188,7 @@
 }
 @media (max-width: 540px) {
   .task-agent-basics, .task-agent-tools { grid-template-columns: minmax(0, 1fr); gap: 8px; }
-  .model-settings-layout > .tab-content { padding: 20px 16px 0; }
+  .model-settings-layout .settings-content { padding: 20px 16px 0; }
   .model-dialog.modal-editor .modal-body { display: flex; flex-direction: column; flex: 1; }
   .model-dialog .model-editor, .model-dialog .connection-complete { flex: 1 0 auto; }
   .model-dialog .model-editor .sticky-actions, .model-dialog .connection-complete > .form-actions { margin-top: auto; }

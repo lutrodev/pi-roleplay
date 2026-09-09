@@ -1,5 +1,5 @@
 import { uiT, useUiLanguage } from '../lib/i18n.ts'
-import { useId, useState, type ReactNode } from 'react'
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Search, X, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, Eye } from 'lucide-react'
 import type { AssetKind } from '../../../../packages/rp-core/src/types.ts'
 import { useAsset, useAssetCatalog } from '../lib/api.ts'
@@ -31,19 +31,30 @@ export function AssetPicker(props: SelectionProps) {
 export function AssetSelection({ kind, ids, onChange, multiple = false, disabled = false, onSelect, autoFocus = true }: SelectionProps & { onSelect?: () => void; autoFocus?: boolean }) {
   useUiLanguage()
   const group = useId(), [search, setSearch] = useState(''), [offset, setOffset] = useState(0), [preview, setPreview] = useState<string | null>(null)
+  const root = useRef<HTMLDivElement>(null), origin = useRef<HTMLElement | null>(null), scroll = useRef(0), previous = useRef(preview)
+  useLayoutEffect(() => {
+    if (previous.current === preview) return
+    const scroller = root.current?.closest('.modal-body')
+    if (scroller) scroller.scrollTop = preview ? 0 : scroll.current
+    if (preview) root.current?.querySelector<HTMLElement>('[data-picker-back]')?.focus({ preventScroll: true })
+    else origin.current?.focus({ preventScroll: true })
+    previous.current = preview
+  }, [preview])
   const query = useAssetCatalog(kind, search, offset)
-  return <div className="asset-selection stack">
+  return <div className="asset-selection stack" ref={root}>
+    {preview && <div className="asset-selection-preview stack"><div className="section-heading"><Button tone="quiet" data-picker-back onClick={() => setPreview(null)}><ChevronLeft size={16} />{uiT('返回选择')}</Button><Button disabled={disabled || ids.includes(preview) || kind === 'writingStyle' && ids.length >= 16} onClick={() => { onChange(multiple ? [...ids, preview] : [preview]); onSelect?.() }}>{ids.includes(preview) ? uiT('已选择') : uiT('选择这份资料')}</Button></div><AssetDetailsById id={preview} /></div>}
+    <div className="asset-selection-catalog" hidden={preview !== null}>
     <div className="search-field"><Search size={17} /><Input autoFocus={autoFocus} aria-label={uiT('搜索资料')} placeholder={uiT('按名称搜索')} value={search} onChange={event => { setSearch(event.target.value); setOffset(0) }} /></div>
     {multiple && ids.length > 0 && <SelectedAssets ids={ids} multiple disabled={disabled} onChange={onChange} />}
     <ErrorNotice source="read" error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />{query.isPending && <Loading />}
     <div className="pick-list">{!multiple && <div className="asset-pick-row"><Check type="radio" name={group} label={uiT('不使用%{kind}', { kind: uiT(assetLabels[kind]) })} checked={!ids.length} disabled={disabled} onChange={() => { onChange([]); onSelect?.() }} /></div>}
       {query.data?.assets.map(asset => <div className="asset-pick-row" key={asset.id}><Check type={multiple ? 'checkbox' : 'radio'} name={multiple ? undefined : group} label={asset.name} help={asset.description} checked={ids.includes(asset.id)} disabled={disabled || kind === 'writingStyle' && ids.length >= 16 && !ids.includes(asset.id)} onChange={event => {
         onChange(multiple ? event.target.checked ? [...ids, asset.id] : ids.filter(id => id !== asset.id) : [asset.id]); onSelect?.()
-      }} /><IconButton label={uiT('查看%{v0}详情', { v0: asset.name })} onClick={() => setPreview(asset.id)}><Eye size={16} /></IconButton></div>)}
+      }} /><IconButton label={uiT('查看%{v0}详情', { v0: asset.name })} onClick={event => { origin.current = event.currentTarget; scroll.current = root.current?.closest('.modal-body')?.scrollTop ?? 0; setPreview(asset.id) }}><Eye size={16} /></IconButton></div>)}
     </div>
     {!query.error && query.data?.total === 0 && <Empty title={search ? uiT('没有找到资料') : uiT('还没有可选资料')} action={search ? <Button onClick={() => setSearch('')}>{uiT('清空搜索')}</Button> : undefined}>{uiT('可以在资料库中创建或导入。')}</Empty>}
     {query.data && query.data.total > 50 && <div className="pagination"><Button disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))}><ChevronLeft size={16} />{uiT('上一页')}</Button><span>{query.data.total} {uiT('份资料')}</span><Button disabled={query.data.nextOffset == null} onClick={() => setOffset(query.data!.nextOffset!)}>{uiT('下一页')}<ChevronRight size={16} /></Button></div>}
-    <Modal open={preview !== null} onOpenChange={open => { if (!open) setPreview(null) }} title={uiT('%{v0}详情', { v0: uiT(assetLabels[kind]) })} size="editor">{preview && <AssetDetailsById id={preview} />}</Modal>
+    </div>
   </div>
 }
 export { ModelPicker } from './model-picker.tsx'

@@ -1,3 +1,4 @@
+import { EditorFooter } from '../../components/editor-footer.tsx'
 import { SettingRow, SettingsGroup } from '../../components/settings-layout.tsx'
 import { CancelButton, EditorForm } from '../../components/form-guard.tsx'
 import { uiT, useUiLanguage } from "../../lib/i18n.ts"
@@ -6,7 +7,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import type { AssetKind, StoryProfile, StorySnapshot } from '../../../../../packages/rp-core/src/types.ts'
 import { api, refreshStory, useAction, useAsset } from '../../lib/api.ts'
 import { AssetPicker, assetLabels } from '../../components/selectors.tsx'
-import { Button, ErrorNotice, Field, IconButton, Input, Select, TabGroup, Textarea } from '../../components/ui.tsx'
+import { Button, Field, IconButton, Input, Select, TabGroup, Textarea } from '../../components/ui.tsx'
 
 import { RuntimeProfile } from './runtime-profile.tsx'
 export function ProfileEditor({ story, done, initialTab = 'basics', disabled = false }: { story: StorySnapshot; done: () => void; initialTab?: 'basics' | 'models'; disabled?: boolean }) {
@@ -40,6 +41,6 @@ export function ProfileEditor({ story, done, initialTab = 'basics', disabled = f
     </>}
     {tab === 'models' && <RuntimeProfile value={value.runtime} onChange={runtime => patch({ runtime })} />}
     </div></TabGroup>
-    <ErrorNotice error={action.error} /><div className="form-actions sticky-actions"><CancelButton onCancel={done} /><Button tone="primary" type="submit" disabled={disabled || action.busy}>{uiT("保存会话设置")}</Button></div>
+    <EditorFooter error={action.error}><CancelButton onCancel={done} /><Button tone="primary" type="submit" disabled={disabled || action.busy}>{uiT("保存会话设置")}</Button></EditorFooter>
   </EditorForm>
 }

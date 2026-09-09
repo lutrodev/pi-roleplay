@@ -1,3 +1,4 @@
+import { EditorFooter } from '../../components/editor-footer.tsx'
 import { CancelButton, EditorForm } from '../../components/form-guard.tsx'
 import { uiT, useUiLanguage } from "../../lib/i18n.ts"
 import { useState } from 'react'
@@ -13,5 +14,5 @@ export function ReplyOptionSettings({ done }: { done: () => void }) {
 function Form({ initial, done }: { initial: Settings; done: () => void }) {
   useUiLanguage()
   const [value, setValue] = useState(initial.preferences), action = useAction()
-  return <EditorForm className="stack" dirty={JSON.stringify(value) !== JSON.stringify(initial.preferences)} busy={action.busy} onSubmit={event => { event.preventDefault(); void action.run(async () => { await api('/settings', 'PUT', { expectedRevision: initial.revision, preferences: value }); await queryClient.invalidateQueries({ queryKey: ['settings'] }); done() }) }}><ReplyOptionControls value={value} onChange={next => setValue(current => ({ ...current, ...next }))} /><ErrorNotice error={action.error} /><div className="form-actions sticky-actions"><CancelButton onCancel={done} /><Button type="submit" tone="primary" disabled={action.busy}>{uiT("保存回复选项")}</Button></div></EditorForm>
+  return <EditorForm className="stack" dirty={JSON.stringify(value) !== JSON.stringify(initial.preferences)} busy={action.busy} onSubmit={event => { event.preventDefault(); void action.run(async () => { await api('/settings', 'PUT', { expectedRevision: initial.revision, preferences: value }); await queryClient.invalidateQueries({ queryKey: ['settings'] }); done() }) }}><ReplyOptionControls value={value} onChange={next => setValue(current => ({ ...current, ...next }))} /><EditorFooter error={action.error}><CancelButton onCancel={done} /><Button type="submit" tone="primary" disabled={action.busy}>{uiT("保存回复选项")}</Button></EditorFooter></EditorForm>
 }

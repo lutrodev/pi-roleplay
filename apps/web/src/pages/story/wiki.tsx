@@ -47,13 +47,13 @@ export function StoryWiki({ story }: { story: StorySnapshot }) {
     </section>
   })
   return <div className="story-materials" ref={root}>
-    {active ? <MaterialReader key={active.id} asset={active.source.data?.asset} kind={active.kind} pending={active.source.isPending} error={active.source.error} retry={() => void active.source.refetch()} query={query} back={() => setSelected(null)} /> : <>
+    {active ? <MaterialReader key={active.id} storyId={story.id} asset={active.source.data?.asset} kind={active.kind} pending={active.source.isPending} error={active.source.error} retry={() => void active.source.refetch()} query={query} back={() => setSelected(null)} /> : <>
       <header className="inspector-intro"><h3>{uiT('这段故事的设定')}</h3><p>{uiT('人物、世界与写作方式，一览即可了解。')}</p></header>
       <div className="search-field material-search"><Search size={16} /><Input aria-label={uiT('搜索会话资料')} value={query} onChange={event => setQuery(event.target.value)} placeholder={uiT('搜索已引用的资料…')} /></div>
       {query.trim() && <p className="material-search-status" role="status">{uiT('找到 %{count} 份资料', { count: filtered.filter(item => item.source.data).length })}</p>}
       {query.trim() ? <div className="material-results">{groups}</div> : <TabGroup className="material-categories" label={uiT('资料类型')} value={category} onChange={setCategory} items={materialGroups.map(group => { const Icon = groupIcons[group.id]; return { value: group.id, icon: <Icon size={16} />, label: `${uiT(group.label)} · ${items.filter(item => (group.kinds as readonly string[]).includes(item.kind)).length}` } })}>{groups}</TabGroup>}
       {query.trim() && !filtered.length && <Empty title={uiT('没有找到相关资料')}>{uiT('试试角色名、条目关键词或正文中的文字。')}</Empty>}
-      <footer className="material-footnote"><p>{uiT('这里展示当前引用，内容随资料库同步。')}</p><p>{uiT('如需修改，请前往「角色与资料」，或让 Agent 调整。')}</p></footer>
+      <footer className="material-footnote"><p>{uiT('这里展示当前引用，内容随资料库同步。')}</p><p>{uiT('打开资料后，可直接前往资料库编辑。')}</p></footer>
     </>}
   </div>
 }

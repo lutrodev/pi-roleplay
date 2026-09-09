@@ -1,3 +1,4 @@
+import { EditorFooter } from './editor-footer.tsx'
 import { CancelButton, EditorForm } from './form-guard.tsx'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
@@ -40,8 +41,7 @@ function WorkspaceEditor({ current, done }: { current?: WorkspaceRecord; done: (
     <SettingsGroup>
       <Field layout="row" label={uiT('工作区名称')} help={uiT(current ? '重命名只改变显示名称，已有文件路径保持不变。' : '文件夹统一保存在工作区目录中，由系统自动创建。')}><Input autoFocus required maxLength={120} value={name} onChange={event => setName(event.target.value)} /></Field>
       <AccessSelect value={access} onChange={setAccess} />
-    </SettingsGroup><ErrorNotice error={action.error} />
-    <div className="form-actions sticky-actions"><CancelButton onCancel={done} /><Button type="submit" tone="primary" disabled={action.busy || !name.trim()}>{uiT(current ? '保存工作区' : '创建工作区')}</Button></div>
+    </SettingsGroup><EditorFooter error={action.error}><CancelButton onCancel={done} /><Button type="submit" tone="primary" disabled={action.busy || !name.trim()}>{uiT(current ? '保存工作区' : '创建工作区')}</Button></EditorFooter>
   </EditorForm>
 }
 export function StoryWorkspaceDialog({ storyId, open, onOpenChange }: { storyId: string; open: boolean; onOpenChange: (open: boolean) => void }) {
@@ -62,6 +62,6 @@ function StoryWorkspaceEditor({ storyId, initial, workspaces, done }: { storyId:
     await refreshWorkspaces(storyId); done()
   }) }}><SettingsGroup><Field layout="row" label={uiT('关联工作区')} help={<>{uiT('当前目录')}<br /><code>{chosen?.directory ?? initial.binding.directory}</code></>}><Select value={workspaceId} onChange={event => { setWorkspaceId(event.target.value); setAccess(initial.binding.access) }}><option value="">{uiT('不分组，保留当前目录')}</option>{workspaces.map(item => <option value={item.id} key={item.id}>{item.name} · {accessLabel(item.access)}</option>)}</Select></Field>
     <AccessSelect value={chosen?.access ?? access} onChange={setAccess} disabled={sharedAccess} /></SettingsGroup>
-    {sharedAccess && <p className="muted">{uiT('共享工作区的权限在工作区管理中修改。')}</p>}<ErrorNotice error={action.error} /><div className="form-actions sticky-actions"><CancelButton onCancel={done} /><Button tone="primary" type="submit" disabled={action.busy}>{uiT('保存关联')}</Button></div>
+    {sharedAccess && <p className="muted">{uiT('共享工作区的权限在工作区管理中修改。')}</p>}<EditorFooter error={action.error}><CancelButton onCancel={done} /><Button tone="primary" type="submit" disabled={action.busy}>{uiT('保存关联')}</Button></EditorFooter>
   </EditorForm>
 }

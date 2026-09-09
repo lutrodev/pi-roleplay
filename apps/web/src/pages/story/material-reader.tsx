@@ -1,6 +1,7 @@
 import { ContentImage } from '../../components/content-image.tsx'
 import { useState, type ReactNode } from 'react'
-import { ArrowLeft, Search } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import { ArrowLeft, Pencil, Search } from 'lucide-react'
 import type { AssetKind, AssetRecord, JsonObject } from '../../../../../packages/rp-core/src/types.ts'
 import { uiT, useUiLanguage } from '../../lib/i18n.ts'
 import { assetLabels } from '../../components/selectors.tsx'
@@ -13,8 +14,8 @@ function ReadingFold({ title, text, children, expanded = false, search = '', bad
   const [open, setOpen] = useState(expanded)
   return <details className="material-fold" open={open} onToggle={event => setOpen(event.currentTarget.open)}><summary><span className="material-fold-label"><strong>{title}</strong>{badge && <small>{badge}</small>}</span>{!open && <span className="material-excerpt">{text.slice(0, 160)}</span>}</summary>{open && <div className="material-fold-body"><Markdown text={text} search={search} />{children}</div>}</details>
 }
-export function MaterialReader({ asset, kind, pending, error, retry, query, back }: {
-  asset?: AssetRecord; kind: AssetKind; pending: boolean; error: Error | null; retry: () => void; query: string; back: () => void
+export function MaterialReader({ asset, kind, pending, error, retry, query, back, storyId }: {
+  asset?: AssetRecord; kind: AssetKind; pending: boolean; error: Error | null; retry: () => void; query: string; back: () => void; storyId: string
 }) {
   useUiLanguage()
   const [search, setSearch] = useState(query), needle = search.trim().toLocaleLowerCase()
@@ -24,7 +25,7 @@ export function MaterialReader({ asset, kind, pending, error, retry, query, back
   const entries = asset ? materialEntries(asset).filter(entry => matches(entrySearchText(entry))) : []
   const groups = kind === 'lorebook' ? levels.map(level => ({ ...level, entries: entries.filter(entry => entry.level === level.id) })) : [{ id: 'preset', label: '创作指引', entries }]
   return <article className="material-reader">
-    <div className="material-reader-bar"><Button tone="quiet" className="material-back" onClick={back}><ArrowLeft size={16} />{uiT('资料总览')}</Button></div>
+    <div className="material-reader-bar"><Button tone="quiet" className="material-back" onClick={back}><ArrowLeft size={16} />{uiT('资料总览')}</Button>{asset && <Link className="button button-quiet" to="/library" search={{ kind, edit: asset.id, from: storyId }}><Pencil size={15} />{uiT('在资料库编辑')}</Link>}</div>
     <header className="material-reader-heading">{asset?.avatarFileId && <ContentImage src={`/api/files/${asset.avatarFileId}/content`} alt="" />}<div><span className="material-kind">{uiT(assetLabels[kind])}</span><h3 tabIndex={-1} data-reader-heading>{asset?.name ?? uiT('资料详情')}</h3></div></header>
     <ErrorNotice source="read" error={error} retry={retry} />{pending && <Loading />}
     {asset && <>
@@ -36,7 +37,7 @@ export function MaterialReader({ asset, kind, pending, error, retry, query, back
         : <section key={section.id} className="material-text"><h4>{uiT(section.label)}</h4><Markdown text={section.text} search={search} /></section>)}
       {groups.filter(group => group.entries.length).map(group => <section className="material-entry-group" key={group.id}><h4>{uiT(group.label)}<small>{group.entries.length}</small></h4>{group.entries.map((entry, index) => <ReadingFold key={`${String(entry.id ?? index)}-${needle}`} title={String(entry.name || uiT('未命名条目'))} text={String(entry.content ?? '')} search={search} expanded={!!needle && !nameMatches} badge={entry.enabled === false ? uiT('已停用') : kind === 'lorebook' ? entry.constant ? uiT('常驻') : uiT('按条件匹配') : undefined}><EntryNotes entry={entry} kind={kind} /></ReadingFold>)}</section>)}
       {!sections.length && !entries.length && <Empty title={uiT(needle ? '没有找到相关内容' : '这份资料还没有正文')} />}
-      <footer className="material-footnote">{uiT('资料修改、导入原文和高级设置，请在资料库中查看。')}</footer>
+      <footer className="material-footnote">{uiT('共享资料的修改会同步到引用它的会话。')}</footer>
     </>}
   </article>
 }

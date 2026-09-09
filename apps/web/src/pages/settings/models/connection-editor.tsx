@@ -1,7 +1,8 @@
+import { EditorFooter } from '../../../components/editor-footer.tsx'
 import { useState } from 'react'
 import { CancelButton, EditorForm } from '../../../components/form-guard.tsx'
 import { SettingToggle } from '../../../components/settings-controls.tsx'
-import { Button, ErrorNotice, Field, Input } from '../../../components/ui.tsx'
+import { Button, Field, Input } from '../../../components/ui.tsx'
 import { api, useAction } from '../../../lib/api.ts'
 import { uiT } from '../../../lib/i18n.ts'
 import { fields, refreshModels, type Provider } from './catalog.ts'
@@ -30,6 +31,6 @@ export function ConnectionEditor({ provider, revision, done }: { provider: Provi
     <ConnectionFields connection={connection} onChange={setConnection} apiKey={apiKey} setKey={setKey} stored={provider.credentialConfigured} disabled={clearKey} />
     <p className="muted">{uiT('%{count} 个模型使用此连接；模型中的独立覆盖会保留。', { count: inherited })}</p>
     <details className="provider-advanced"><summary>{uiT('密钥与连接标识')}</summary><div className="stack"><Field label={uiT('连接标识')}><Input readOnly value={provider.id} /></Field><SettingToggle label={uiT('移除当前密钥')} help={uiT('此连接的模型将无法生成回复，重新填写密钥后即可恢复。')} checked={clearKey} onChange={event => { setClearKey(event.target.checked); if (event.target.checked) setKey('') }} /></div></details>
-    <ErrorNotice error={action.error} /><div className="form-actions sticky-actions"><CancelButton onCancel={done} /><Button type="submit" tone="primary" disabled={!dirty || action.busy}>{action.busy ? uiT('正在保存…') : uiT('保存连接')}</Button></div>
+    <EditorFooter error={action.error}><CancelButton onCancel={done} /><Button type="submit" tone="primary" disabled={!dirty || action.busy}>{action.busy ? uiT('正在保存…') : uiT('保存连接')}</Button></EditorFooter>
   </EditorForm>
 }

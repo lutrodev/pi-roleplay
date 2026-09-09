@@ -1,9 +1,10 @@
+import { EditorFooter } from '../../../components/editor-footer.tsx'
 import { StatusNotice } from '../../../components/status-notice.tsx'
 import { useEffect, useRef, useState } from 'react'
 import { CancelButton, EditorForm, useDialogFormState } from '../../../components/form-guard.tsx'
 import { SettingToggle } from '../../../components/settings-controls.tsx'
 import { ConnectionLogo } from './service-logo.tsx'
-import { Button, ErrorNotice, Field, Input, Select, Textarea } from '../../../components/ui.tsx'
+import { Button, Field, Input, Select, Textarea } from '../../../components/ui.tsx'
 import { api, useAction } from '../../../lib/api.ts'
 import { uiT } from '../../../lib/i18n.ts'
 import { fields, freshModel, saveModels, type Discovery, type ModelFields, type Provider } from './catalog.ts'
@@ -33,7 +34,7 @@ export function ModelEditor({ provider, modelId, revision, done }: { provider: P
       onRefresh={provider.credentialConfigured ? () => void refreshMetadata() : undefined} error={discovery.error ?? metadata.error} retry={() => { if (discovery.error) void refreshMetadata(); else void metadata.refetch() }} />
     <details className="provider-advanced"><summary>{uiT('连接覆盖')}<small>{override ? uiT('这个模型使用独立的协议或地址') : uiT('使用服务连接的协议、地址和密钥')}</small></summary><div className="stack"><SettingToggle label={uiT('为这个模型单独设置协议和地址')} checked={override} onChange={event => { setOverride(event.target.checked); if (!event.target.checked) { patch(provider.connection); setDiscoveryId(undefined) } }} />{override && <><Field label={uiT('API 协议')}><ProtocolSelect value={model.api} onChange={api => { patch({ api }); setDiscoveryId(undefined) }} /></Field><Field label={uiT('API 基础地址')}><Input type="url" required={!!model.api} value={model.baseUrl ?? ''} onChange={event => { patch({ baseUrl: event.target.value || undefined }); setDiscoveryId(undefined) }} /></Field></>}</div></details>
     <ModelParameters model={model} onChange={setModel} />
-    <ErrorNotice error={action.error} /><div className="form-actions sticky-actions"><CancelButton onCancel={done} /><Button tone="primary" type="submit" disabled={action.busy || discovery.busy || !!original && !dirty}>{action.busy ? uiT('正在保存…') : uiT('保存模型')}</Button></div>
+    <EditorFooter error={action.error}><CancelButton onCancel={done} /><Button tone="primary" type="submit" disabled={action.busy || discovery.busy || !!original && !dirty}>{action.busy ? uiT('正在保存…') : uiT('保存模型')}</Button></EditorFooter>
   </EditorForm>
 }
 function ModelParameters({ model, onChange }: { model: ModelFields; onChange: (model: ModelFields) => void }) {

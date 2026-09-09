@@ -2,15 +2,20 @@
 .settings-page { display: flex; flex-direction: column; overflow: clip; padding: 0; }
 .settings-page > .page-inner { display: flex; flex-direction: column; flex: 1; min-height: 0; max-width: none; }
 /* Only the active panel scrolls; categories stay available. */
-.settings-layout { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-.settings-layout > .tabs { flex-shrink: 0; }
-.settings-layout[data-orientation="vertical"] { display: grid; grid-template-columns: 172px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 0; }
-.settings-layout[data-orientation="vertical"] > .tabs { display: flex; flex-direction: column; align-items: stretch; align-self: stretch; padding: 22px 12px; border: 0; border-right: 1px solid var(--border); border-radius: 0; gap: 3px; margin-bottom: 0; max-height: 100%; overflow: auto; overscroll-behavior-y: contain; }
-.settings-layout[data-orientation="vertical"] > .tabs .tab-trigger { justify-content: flex-start; gap: 9px; min-height: 34px; padding: 6px 10px; border: 0; border-radius: var(--radius); white-space: normal; text-align: left; overflow-wrap: anywhere; font-size: 13px; font-weight: 400; }
-.settings-layout[data-orientation="vertical"] > .tabs .tab-trigger[data-state="active"] { background: var(--soft); font-weight: 500; }
-.settings-layout > .tab-content { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: thin; padding: 24px 32px 0; margin: 0; scroll-padding-block: 24px 88px; }
-.settings-layout > .tab-content:focus-visible { outline-offset: -2px; }
-.settings-layout > .tab-content > * { width: 100%; max-width: 1040px; margin-inline: auto; }
+.settings-layout { display: grid; grid-template-columns: 172px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); flex: 1; min-height: 0; }
+.settings-navigation { display: flex; flex-direction: column; align-items: stretch; padding: 22px 12px; border-right: 1px solid var(--border); gap: 3px; overflow: auto; overscroll-behavior-y: contain; }
+.settings-navigation > a { display: flex; align-items: center; gap: 9px; min-height: 34px; padding: 6px 10px; border-radius: var(--radius); color: var(--text); text-decoration: none; overflow-wrap: anywhere; font-size: 13px; }
+.settings-navigation > a > svg { flex-shrink: 0; color: var(--muted); }
+.settings-navigation > a > span:first-of-type { flex: 1; min-width: 0; }
+.settings-navigation > a:hover { background: var(--hover); }
+.settings-navigation > a[aria-current="page"] { background: var(--soft); font-weight: 500; }
+.settings-navigation > a[aria-disabled="true"] { opacity: .5; cursor: default; }
+.settings-draft-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text); flex: 0 0 5px; }
+.settings-panel { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.settings-content { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: thin; padding: 24px 32px 0; scroll-padding-block: 24px 88px; }
+.settings-panel-heading h2:focus { outline: none; }
+.settings-content > * { width: 100%; max-width: 1040px; margin-inline: auto; }
+.settings-navigation[hidden], .settings-panel[hidden] { display: none; }
 .settings-panel-heading { margin-bottom: 20px; }
 .settings-panel-heading h2 { font-size: var(--ui-page-size); font-weight: 550; line-height: 1.3; letter-spacing: -.025em; }
 .settings-panel-heading p { color: var(--muted); font-size: 13px; line-height: 1.65; margin-top: 7px; }
@@ -41,15 +46,20 @@
 .settings-modal details:not(.status-notice-details) > summary small { display: block; margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
 .settings-modal .provider-advanced[open] > .stack, .settings-modal .provider-advanced[open] > .field { margin-top: 10px; }
 @media (max-width: 800px) {
-  .settings-layout > .tabs { padding: 8px 20px 0; margin-bottom: 0; gap: 20px; scrollbar-width: none; }
-  .settings-layout > .tabs::-webkit-scrollbar { display: none; }
-  .settings-layout > .tabs .tab-trigger { gap: 7px; font-size: 13px; }
-  .settings-layout > .tab-content { padding: 24px 20px 0; }
+  .settings-layout { display: flex; flex-direction: column; }
+  .settings-navigation { padding: 12px 20px; gap: 0; border: 0; }
+  .settings-navigation > a { min-height: 64px; padding: 14px 0; gap: 14px; border-radius: 0; font-size: 15px; }
+  .settings-navigation > a + a { border-top: 1px solid var(--border); }
+  .settings-navigation small { display: block; margin-top: 4px; font-size: 12px; font-weight: 400; line-height: 1.6; color: var(--muted); }
+  .settings-panel { flex: 1; }
+  .settings-back { padding: 6px 12px; border-bottom: 1px solid var(--border); }
+  .settings-back .button { gap: 8px; }
+  .settings-content { padding: 20px 20px 0; }
   .settings-panel-heading { margin-bottom: 22px; }
   .settings-panel-heading h2 { font-size: var(--ui-page-size); }
 }
 @media (max-width: 800px), (pointer: coarse) {
-  .settings-layout[data-orientation="vertical"] > .tabs .tab-trigger { min-height: 44px; }
+  .settings-navigation > a { min-height: 44px; }
   :is(.settings-page, .settings-modal) details:not(.status-notice-details) > summary { min-height: 44px; }
 }
 @media (max-width: 540px) {

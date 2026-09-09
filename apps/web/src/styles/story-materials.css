@@ -28,7 +28,7 @@
 .material-group-items:empty { display: none; }
 .story-materials > .material-footnote { padding-top: 2px; }
 .inspector-body .material-back { align-self: flex-start; padding: 3px 0; min-height: 32px; color: var(--muted); font-weight: 400; gap: 7px; }
-.material-reader-bar { position: sticky; top: -18px; z-index: 1; margin-block: -6px -8px; padding-block: 6px; background: var(--surface); }
+.material-reader-bar { position: sticky; top: -18px; z-index: 1; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px; margin-block: -6px -8px; padding-block: 6px; background: var(--surface); }
 .material-reader-heading { display: flex; align-items: center; gap: 13px; min-width: 0; }
 .material-reader-heading > div { min-width: 0; }
 .material-reader-heading > .content-image { width: 52px; height: 64px; border-radius: 8px; object-fit: cover; }

@@ -6,4 +6,12 @@
 .writer-history-json, .writer-history-preview { font-family: var(--font-mono, monospace); font-size: .85rem; }
 .writer-history-preview { max-height: 28rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 1rem; background: var(--soft); border-radius: 8px; }
 .writer-history-validation ul { padding-inline-start: 1.3rem; }
+.writer-history-round { border-block-start: 1px solid var(--border); }
+.writer-history-round > summary { display: flex; align-items: baseline; gap: 16px; }
+.writer-history-round > summary strong { flex-shrink: 0; font-weight: 550; }
+.writer-history-round > summary span { color: var(--muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 400; }
+.writer-history-round .settings-group-body { padding: 10px 0 16px; border: 0; background: transparent; }
+.writer-history-tools { padding-block: 0; border-block: 1px solid var(--border); }
+.writer-history-tools > .writer-history-steps { padding-bottom: 14px; }
+.writer-history-help > p { font-size: var(--ui-caption-size); line-height: 1.7; margin-top: 8px; }
 @media (max-width: 600px) { .writer-history-step { padding: .75rem; } .writer-history .form-grid { grid-template-columns: minmax(0, 1fr); } }

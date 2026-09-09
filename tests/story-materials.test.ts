@@ -1,6 +1,7 @@
 import { createElement, type ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createMemoryHistory, createRootRoute, createRouter, RouterContextProvider } from '@tanstack/react-router'
 import { describe, expect, it } from 'vitest'
 import { StoryWiki } from '../apps/web/src/pages/story/wiki.tsx'
 import { MaterialReader } from '../apps/web/src/pages/story/material-reader.tsx'
@@ -18,11 +19,12 @@ function render(element: ReactElement, assets: AssetRecord[] = [], recap?: Recap
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } })
   for (const item of assets) client.setQueryData(['asset', item.id], { asset: item, associatedLorebooks: [asset('未绑定的关联世界书', 'lorebook')] })
   if (recap) client.setQueryData(['story-recap', 'story'], { pages: [recap], pageParams: [null] })
-  const html = renderToStaticMarkup(createElement(QueryClientProvider, { client }, element))
+  const router = createRouter({ routeTree: createRootRoute(), history: createMemoryHistory() })
+  const html = renderToStaticMarkup(createElement(RouterContextProvider<typeof router>, { router, children: createElement(QueryClientProvider, { client }, element) }))
   client.clear()
   return html
 }
-const read = (item: AssetRecord, query = '') => renderToStaticMarkup(createElement(MaterialReader, { asset: item, kind: item.kind, pending: false, error: null, retry() {}, query, back() {} }))
+const read = (item: AssetRecord, query = '') => render(createElement(MaterialReader, { asset: item, kind: item.kind, pending: false, error: null, retry() {}, query, back() {}, storyId: 'story' }))
 
 describe('conversation material reader', () => {
   it('groups only explicitly bound resources, preserving multi-book order and deduplicating references', () => {
@@ -74,7 +76,7 @@ describe('conversation material reader', () => {
   })
 
   it('keeps retry and back available when a bound asset was removed', () => {
-    const html = renderToStaticMarkup(createElement(MaterialReader, { kind: 'character', pending: false, error: new ApiError('这份资料已不存在。', 'NOT_FOUND', 404), retry() {}, query: '', back() {} }))
+    const html = render(createElement(MaterialReader, { kind: 'character', pending: false, error: new ApiError('这份资料已不存在。', 'NOT_FOUND', 404), retry() {}, query: '', back() {}, storyId: 'story' }))
     expect(html).toContain('role="alert"')
     expect(html).toContain('这份资料已不存在。')
     expect(html).toContain('资料总览')

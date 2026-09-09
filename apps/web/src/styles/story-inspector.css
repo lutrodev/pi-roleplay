@@ -1,6 +1,7 @@
 .story-inspector { min-width: 0; min-height: 0; --stack-gap: 16px; --field-gap: 6px; }
 .inspector-heading { align-items: center; }
-.inspector-body { flex: 1; min-height: 0; padding: 18px 20px 24px; overflow-y: auto; overflow-x: clip; overscroll-behavior: contain; scrollbar-width: thin; font-size: 13px; }
+.inspector-body { --inspector-bottom: 24px; flex: 1; min-height: 0; padding: 18px 20px var(--inspector-bottom); overflow-y: auto; overflow-x: clip; overscroll-behavior: contain; scrollbar-width: thin; font-size: 13px; }
+.story-inspector .inspector-body .sticky-actions { bottom: calc(-1 * var(--inspector-bottom)); padding-bottom: max(12px, env(safe-area-inset-bottom)); }
 .inspector-navigation { display: flex; flex-shrink: 0; align-items: center; gap: 2px; padding: 8px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
 .inspector-navigation > .button { padding: 5px 10px; min-height: 34px; font-size: 13px; font-weight: 400; color: var(--muted); }
 .inspector-navigation > .button[aria-pressed=true] { background: var(--soft); color: var(--text); }
@@ -43,7 +44,7 @@
   .inspector-navigation > .button, .inspector-body .button { min-height: 44px; }
 }
 @media (max-width: 540px) {
-  .inspector-body { padding: 16px 18px max(20px, env(safe-area-inset-bottom)); }
+  .inspector-body { --inspector-bottom: max(20px, env(safe-area-inset-bottom)); padding: 16px 18px var(--inspector-bottom); }
   .inspector-navigation { padding-inline: 12px; gap: 0; }
   .inspector-navigation > .button { padding-inline: 9px; }
   :root[lang=en] .inspector-navigation > .button { padding-inline: 7px; min-width: 44px; font-size: 12px; }

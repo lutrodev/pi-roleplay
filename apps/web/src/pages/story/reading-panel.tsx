@@ -1,3 +1,4 @@
+import { EditorFooter } from '../../components/editor-footer.tsx'
 import { useState } from 'react'
 import { api, queryClient, useAction, useSettings } from '../../lib/api.ts'
 import { EditorForm } from '../../components/form-guard.tsx'
@@ -20,6 +21,6 @@ function ReadingForm({ initial }: { initial: NonNullable<ReturnType<typeof useSe
     setSaved(next); setValue(next.preferences); queryClient.setQueryData(['settings'], next)
   })}>
     <ReadingControls value={value.reading} onChange={next => setValue(current => ({ ...current, reading: { ...current.reading, ...next } }))} />
-    <ErrorNotice error={action.error} /><div className="form-actions"><Button disabled={action.busy || !dirty} onClick={() => setValue(saved.preferences)}>{uiT('还原修改')}</Button><Button type="submit" tone="primary" disabled={action.busy || !dirty}>{action.busy ? uiT('正在保存…') : uiT('保存')}</Button></div>
+    <EditorFooter error={action.error}><Button disabled={action.busy || !dirty} onClick={() => setValue(saved.preferences)}>{uiT('还原修改')}</Button><Button type="submit" tone="primary" disabled={action.busy || !dirty}>{action.busy ? uiT('正在保存…') : uiT('保存')}</Button></EditorFooter>
   </EditorForm>
 }
