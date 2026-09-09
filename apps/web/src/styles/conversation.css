@@ -36,6 +36,8 @@
 .prose .content-image { max-width: 100%; height: auto; border-radius: var(--radius); }
 .prose hr { border: 0; border-top: 1px solid var(--border); margin: 1.5em 0; }
 .dialogue { color: var(--dialogue); }
+.prose em { font-style: italic; font-synthesis: style; color: var(--italic-ink, inherit); }
+.prose em .dialogue { color: var(--italic-ink, var(--dialogue)); }
 .user-message { position: relative; width: fit-content; max-width: 83%; margin-left: auto; }
 .user-message:not(.message-editing) > .message-body { background: var(--soft); border-radius: 18px 18px 5px 18px; padding: 11px 16px; }
 .user-avatar { position: absolute; right: -34px; top: 10px; }

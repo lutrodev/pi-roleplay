@@ -1,6 +1,6 @@
 import { objectInput } from '../../../../packages/rp-core/src/input.ts'
 import { requireValue } from '../../../../packages/rp-core/src/errors.ts'
-import { normalizePreferences } from '../../../../packages/rp-core/src/settings/preferences.ts'
+import { DEFAULT_PREFERENCES, normalizePreferences } from '../../../../packages/rp-core/src/settings/preferences.ts'
 import type { StoryProfile } from '../../../../packages/rp-core/src/types.ts'
 import { StoryRepository } from '../storage/story-repository.ts'
 import type { AppDatabase } from '../storage/database.ts'
@@ -11,10 +11,15 @@ const dependencies: Record<string, string[]> = { 'compat-mvu': ['character-card'
 
 export function upgradePreferences(input: unknown, version: number) {
   objectInput(input)
+  objectInput(input.reading)
+  const { italicColor, italicHighlight } = DEFAULT_PREFERENCES.reading
+  if (version === 8) {
+    requireValue(Object.keys(input.reading).sort().join(',') === 'dialogueColor,dialogueHighlight,fontFamily,fontSize,lineHeight,maxWidth,showAvatars,showStateCard,theme', 'INVALID_SETTINGS', '旧阅读设置格式不正确。')
+    return { preferences: normalizePreferences({ ...input, reading: { ...input.reading, italicColor, italicHighlight } }), features: null }
+  }
   const keys = ['mainModel', 'enabledFeatures', 'skills', 'disabledSkills', 'identity', 'quickReplies', 'replyOptions', 'reading',
     ...(version >= 2 ? ['transcriptView'] : []), ...(version >= 3 ? ['busyEnter'] : []), ...(version >= 4 ? ['language'] : [])]
   requireValue(Object.keys(input).sort().join(',') === keys.sort().join(','), 'INVALID_SETTINGS', '旧设置格式不正确。')
-  objectInput(input.reading)
   requireValue(Object.keys(input.reading).every(key => ['theme', 'fontFamily', 'fontSize', 'lineHeight', 'maxWidth', ...(version >= 6 ? ['dialogueColor'] : [])].includes(key)), 'INVALID_SETTINGS', '旧阅读设置包含未知字段。')
   const oldFeatures = input.enabledFeatures
   requireValue(Array.isArray(oldFeatures) && new Set(oldFeatures).size === oldFeatures.length && oldFeatures.every(id => typeof id === 'string' && (legacyFeatures.includes(id) || version < 7 && id === 'compact-access-mode')), 'INVALID_SETTINGS', '旧功能设置包含未知项或重复项。')
@@ -26,7 +31,7 @@ export function upgradePreferences(input: unknown, version: number) {
     ...(version === 1 ? { transcriptView: 'compact' } : {}), ...(version < 3 ? { busyEnter: 'queue' } : {}), ...(version < 4 ? { language: 'zh' } : {}),
     quickRepliesEnabled: features.includes('quick-replies'), replyOptionsEnabled: features.includes('reply-options'), subagentsEnabled: features.includes('subagent-manager'),
     reading: { ...(version < 5 ? { fontFamily: 'sans' } : {}), ...input.reading, ...(version < 6 ? { dialogueColor: 'green' } : {}),
-      dialogueHighlight: features.includes('dialogue-highlight'), showAvatars: features.includes('message-avatar'), showStateCard: features.includes('state-display') },
+      dialogueHighlight: features.includes('dialogue-highlight'), showAvatars: features.includes('message-avatar'), showStateCard: features.includes('state-display'), italicColor, italicHighlight },
   })
   return { preferences, features }
 }

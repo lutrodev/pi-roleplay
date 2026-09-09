@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { DEFAULT_PREFERENCES, DIALOGUE_COLORS } from '../packages/rp-core/src/settings/preferences.ts'
 import { SettingsService } from '../apps/server/src/services/settings-service.ts'
 import { ModelRegistry } from '../apps/server/src/runtime/models.ts'
-import { DIALOGUE_PALETTE } from '../apps/web/src/lib/dialogue-colors.ts'
+import { DIALOGUE_PALETTE, ITALIC_PALETTE } from '../apps/web/src/lib/reading-colors.ts'
 import { ReadingControls } from '../apps/web/src/components/reading-controls.tsx'
 import { Markdown } from '../apps/web/src/components/markdown.tsx'
 import { fixture } from './helpers.ts'
@@ -25,7 +25,7 @@ describe('dialogue preferences', () => {
     const { dialogueColor: _color, ...reading } = preferences.reading
     x.assets.setSetting('app.preferences', JSON.parse(JSON.stringify({ version: 5, revision: 40, preferences: legacyPreferences(preferences, 5) })))
     const upgraded = x.settings.snapshot()
-    expect(upgraded).toEqual({ version: 8, revision: 41, preferences: { ...preferences, reading: { ...preferences.reading, dialogueColor: 'green' } } })
+    expect(upgraded).toEqual({ version: 9, revision: 41, preferences: { ...preferences, reading: { ...preferences.reading, dialogueColor: 'green' } } })
     expect(new SettingsService(x.assets, x.models).snapshot()).toEqual(upgraded)
     expect(x.assets.getSetting('app.preferences')).toEqual(upgraded)
     expect(() => x.settings.update(40, upgraded.preferences)).toThrow('已经更新')
@@ -71,7 +71,7 @@ describe('quoted conversation text', () => {
     expect(enabled).toMatch(/<input\b(?=[^>]*value="orange")(?=[^>]*checked="")[^>]*>/)
     const disabled = render(false)
     expect(disabled).not.toContain('class="dialogue"')
-    expect(disabled).toContain('class="dialogue-color-options" disabled=""')
+    expect(disabled).toContain('class="highlight-color-options" disabled=""')
   })
 })
 
@@ -84,7 +84,7 @@ const luminance = (hex: string) => {
 }
 it('keeps every preset legible on light and dark conversation and preview surfaces', () => {
   const backgrounds = { light: ['#ffffff', '#fcfcfc', '#f6f6f7', '#f0f0f2'], dark: ['#19191b', '#232326', '#2d2d32'] }
-  for (const [color, palette] of Object.entries(DIALOGUE_PALETTE)) for (const theme of ['light', 'dark'] as const) {
+  for (const [color, palette] of Object.entries({ ...DIALOGUE_PALETTE, ...ITALIC_PALETTE })) for (const theme of ['light', 'dark'] as const) {
     for (const surface of backgrounds[theme]) {
       const foreground = luminance(palette[theme]), background = luminance(surface)
       const ratio = (Math.max(foreground, background) + .05) / (Math.min(foreground, background) + .05)

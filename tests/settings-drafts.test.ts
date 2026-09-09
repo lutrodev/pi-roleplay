@@ -47,7 +47,7 @@ it('keeps the latest default model when saving or discarding another category', 
 
 it('saves display preferences together without consuming optional-behavior drafts', () => {
   const stored = structuredClone(DEFAULT_PREFERENCES), draft = structuredClone(stored)
-  draft.reading = { ...draft.reading, dialogueHighlight: false, dialogueColor: 'blue', showAvatars: false, showStateCard: false }
+  draft.reading = { ...draft.reading, dialogueHighlight: false, dialogueColor: 'blue', italicHighlight: false, italicColor: 'indigo', showAvatars: false, showStateCard: false }
   draft.subagentsEnabled = false
   const saved = normalizePreferences(mergeSection(stored, draft, 'reading'))
   expect(saved.reading).toEqual(draft.reading)

@@ -5,7 +5,7 @@ export const LEGACY_FEATURE_IDS = ['character-card', 'lore-book', 'persona', 'pr
 /** Persisted pre-v8 document shape, kept as input fixtures for upgrade/recovery tests only. */
 export function legacyPreferences(preferences: Preferences = structuredClone(DEFAULT_PREFERENCES), version = 7) {
   const { quickRepliesEnabled, replyOptionsEnabled, subagentsEnabled, reading: currentReading, ...fields } = preferences
-  const { dialogueHighlight, showAvatars, showStateCard, ...reading } = currentReading
+  const { dialogueHighlight, showAvatars, showStateCard, italicHighlight: _italicHighlight, italicColor: _italicColor, ...reading } = currentReading
   const switches: Record<string, boolean> = { 'quick-replies': quickRepliesEnabled, 'reply-options': replyOptionsEnabled, 'subagent-manager': subagentsEnabled, 'dialogue-highlight': dialogueHighlight, 'message-avatar': showAvatars, 'state-display': showStateCard }
   const value = { ...fields, enabledFeatures: LEGACY_FEATURE_IDS.filter(id => switches[id] !== false), reading }
   if (version < 6) delete (value.reading as Partial<typeof reading>).dialogueColor

@@ -9,7 +9,7 @@ import { Button, Empty, ErrorNotice, IconButton, Input, Loading, Modal } from '.
 import { WorkspaceManager } from './workspaces.tsx'
 import { ShellContext } from './shell-context.tsx'
 import { SidebarStories } from './sidebar-stories.tsx'
-import { DIALOGUE_PALETTE } from '../lib/dialogue-colors.ts'
+import { dialogueColorStyle, italicColorStyle } from '../lib/reading-colors.ts'
 import { AppBackground } from './app-background.tsx'
 import { useStoryDeletionHandler } from './story-deletion-handler.tsx'
 
@@ -48,8 +48,7 @@ export function Shell({ notice }: { notice?: ReactNode }) {
     document.documentElement.style.setProperty('--reading-size', `${reading.fontSize}px`)
     document.documentElement.style.setProperty('--reading-leading', String(reading.lineHeight))
     document.documentElement.style.setProperty('--reading-width', `${reading.maxWidth}px`)
-    document.documentElement.style.setProperty('--dialogue-light', DIALOGUE_PALETTE[reading.dialogueColor].light)
-    document.documentElement.style.setProperty('--dialogue-dark', DIALOGUE_PALETTE[reading.dialogueColor].dark)
+    for (const [property, value] of Object.entries({ ...dialogueColorStyle(reading.dialogueColor), ...italicColorStyle(reading.italicColor, reading.italicHighlight) })) document.documentElement.style.setProperty(property, String(value))
     return () => media.removeEventListener('change', apply)
   }, [reading])
   useEffect(() => {

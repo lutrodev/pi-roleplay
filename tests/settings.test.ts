@@ -31,7 +31,7 @@ describe('single-user settings and effective feature policy', () => {
       reading: { ...preferences.reading, ...(version < 5 ? { fontFamily: 'sans' } : {}), ...(version < 6 ? { dialogueColor: 'green' } : {}) } }
     x.assets.setSetting('app.preferences', JSON.parse(JSON.stringify({ version, revision: 17, preferences: old })))
     const upgraded = x.settings.snapshot()
-    expect(upgraded).toEqual({ version: 8, revision: 18, preferences: expected })
+    expect(upgraded).toEqual({ version: 9, revision: 18, preferences: expected })
     expect(x.assets.getSetting('app.preferences')).toEqual(upgraded)
     expect(new SettingsService(x.assets, x.models).snapshot()).toEqual(upgraded)
     expect(() => x.settings.update(17, upgraded.preferences)).toThrow('已经更新')
@@ -46,7 +46,7 @@ describe('single-user settings and effective feature policy', () => {
     const x = setup(), old = legacyPreferences(undefined, 6)
     if (enabled) old.enabledFeatures.push('compact-access-mode')
     x.assets.setSetting('app.preferences', JSON.parse(JSON.stringify({ version: 6, revision: 5, preferences: old })))
-    expect(x.settings.snapshot()).toEqual({ version: 8, revision: 6, preferences: DEFAULT_PREFERENCES })
+    expect(x.settings.snapshot()).toEqual({ version: 9, revision: 6, preferences: DEFAULT_PREFERENCES })
   })
 
   it('rejects invalid legacy settings without losing their original data', () => {

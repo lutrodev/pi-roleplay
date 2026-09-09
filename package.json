@@ -73,6 +73,7 @@
     "@vitejs/plugin-react": "6.1.1",
     "drizzle-kit": "0.31.10",
     "esbuild": "0.28.2",
+    "micromark-util-types": "2.0.2",
     "tailwindcss": "4.3.3",
     "tsx": "4.23.13",
     "typescript": "6.0.3",

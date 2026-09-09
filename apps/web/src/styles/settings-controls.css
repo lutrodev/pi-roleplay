@@ -64,22 +64,22 @@
 .reading-preview > header { display: flex; justify-content: space-between; gap: 12px; padding: 10px 18px; font-size: 12px; border-bottom: 1px solid var(--border); }
 .reading-preview > header strong { font-weight: 500; }
 .reading-preview > header small { color: var(--muted); }
-.reading-preview[data-preview-theme="dark"] { --sidebar: #19191b; --text: #eeedf0; --muted: #a2a2ac; --border: #37373d; --dialogue: var(--dialogue-dark); color: var(--text); background: var(--sidebar); }
-.reading-preview[data-preview-theme="light"] { --sidebar: #f6f6f7; --text: #242427; --muted: #6c6c73; --border: #e8e8eb; --dialogue: var(--dialogue-light); color: var(--text); background: var(--sidebar); }
+.reading-preview[data-preview-theme="dark"] { --sidebar: #19191b; --text: #eeedf0; --muted: #a2a2ac; --border: #37373d; --dialogue: var(--dialogue-dark); --italic: var(--italic-dark); color: var(--text); background: var(--sidebar); }
+.reading-preview[data-preview-theme="light"] { --sidebar: #f6f6f7; --text: #242427; --muted: #6c6c73; --border: #e8e8eb; --dialogue: var(--dialogue-light); --italic: var(--italic-light); color: var(--text); background: var(--sidebar); }
 .reading-preview .reading-sample { padding: 22px; margin-top: 0; border: 0; background: var(--sidebar); }
-.settings-group .dialogue-color-options { padding-block: 14px; margin: 0; }
-.dialogue-color-options legend { float: left; width: 100%; font-weight: 500; }
-.dialogue-color-palette { clear: both; display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 8px; }
-.dialogue-color-palette label { position: relative; cursor: pointer; }
-.dialogue-color-palette input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
-.dialogue-color-option { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; min-height: 66px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); font-size: 12px; pointer-events: none; }
-.dialogue-color-option i { width: 20px; height: 20px; border-radius: 50%; background: var(--swatch-color); box-shadow: inset 0 0 0 1px #00000012; }
-.dialogue-color-check { position: absolute; right: 5px; top: 5px; visibility: hidden; }
-.dialogue-color-palette input:checked + .dialogue-color-option { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.dialogue-color-palette input:checked + .dialogue-color-option .dialogue-color-check { visibility: visible; }
-.dialogue-color-palette input:focus-visible + .dialogue-color-option { outline: 2px solid var(--accent); outline-offset: 3px; }
-.dialogue-color-options:disabled { opacity: .5; }
-.dialogue-color-options:disabled :is(label, input) { cursor: not-allowed; }
+.settings-group .highlight-color-options { padding-block: 14px; margin: 0; }
+.highlight-color-options legend { float: left; width: 100%; font-weight: 500; }
+.highlight-color-palette { clear: both; display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 8px; }
+.highlight-color-palette label { position: relative; cursor: pointer; }
+.highlight-color-palette input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.highlight-color-option { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; min-height: 66px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); font-size: 12px; pointer-events: none; }
+.highlight-color-option i { width: 20px; height: 20px; border-radius: 50%; background: var(--swatch-color); box-shadow: inset 0 0 0 1px #00000012; }
+.highlight-color-check { position: absolute; right: 5px; top: 5px; visibility: hidden; }
+.highlight-color-palette input:checked + .highlight-color-option { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.highlight-color-palette input:checked + .highlight-color-option .highlight-color-check { visibility: visible; }
+.highlight-color-palette input:focus-visible + .highlight-color-option { outline: 2px solid var(--accent); outline-offset: 3px; }
+.highlight-color-options:disabled { opacity: .5; }
+.highlight-color-options:disabled :is(label, input) { cursor: not-allowed; }
 
 /* Reflow from the actual group width, including desktop drawers and nested dialogs. */
 @container (max-width: 440px) {

@@ -73,7 +73,7 @@ describe('settings ownership and persisted upgrades', () => {
     expect(x.assets.getSetting('app.preferences')).toMatchObject({ version: 7, revision: 4 })
     expect([first, second].map(story => x.stories.eventLog(story.id))).toEqual(before)
     x.database.sqlite.exec('DROP TRIGGER migration_failure')
-    expect(x.settings.snapshot().version).toBe(8); x.settings.snapshot()
+    expect(x.settings.snapshot().version).toBe(9); x.settings.snapshot()
     for (const [index, story] of [first, second].entries()) expect(x.stories.eventLog(story.id)).toHaveLength(before[index]!.length + 1)
   })
 })
