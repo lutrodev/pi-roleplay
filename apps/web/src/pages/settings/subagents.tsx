@@ -18,7 +18,7 @@ export function Subagents() {
   const [search, setSearch] = useState(''), models = useModels(), preferences = useSettings()
   const refresh = () => Promise.all(['subagents', 'prompt-projection'].map(key => queryClient.invalidateQueries({ queryKey: [key] })))
   if (query.isPending) return <Loading />
-  if (!query.data) return <ErrorNotice error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />
+  if (!query.data) return <ErrorNotice source="read" error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />
   const writerRoute = query.data.writer.route.kind === 'fixed' ? query.data.writer.route : null
   const writerModel = models.data?.models.find(model => model.provider === writerRoute?.provider && model.model === writerRoute.model)
   const matches = query.data.subagents.filter(agent => (agent.name + agent.description).toLowerCase().includes(search.toLowerCase()))
@@ -31,7 +31,7 @@ export function Subagents() {
       {matches.map(agent => <SettingToggle key={agent.id} label={agent.name} help={agent.description} checked={agent.enabled} disabled={action.busy} onChange={event => void action.run(async () => { await api(`/settings/subagents/${agent.id}`, 'PATCH', { expectedRevision: agent.revision, enabled: event.target.checked }); await refresh() })} actions={<><Button onClick={() => setEditing(agent)}><Pencil size={15} />{uiT('编辑')}</Button><Menu label={uiT('%{name} 的子代理操作', { name: agent.name })}><MenuItem danger onSelect={() => setRemove(agent)}>{uiT('删除')}</MenuItem></Menu></>} />)}
       {!matches.length && <Empty title={search ? uiT('没有找到子代理') : uiT('按需添加协作角色')} action={search ? <Button onClick={() => setSearch('')}>{uiT('清空搜索')}</Button> : undefined}>{uiT('例如检查剧情连续性、核对设定或润色对话。')}</Empty>}
     </SettingsGroup>
-    <ErrorNotice error={action.error ?? query.error} />
+    <ErrorNotice source={!remove && action.error ? 'action' : 'read'} error={(remove ? null : action.error) ?? query.error} />
     <Modal open={editing !== null} onOpenChange={open => { if (!open) setEditing(null) }} title={editing === 'new' ? uiT("创建任务子代理") : uiT("编辑任务子代理")} size="editor" className="settings-modal">{editing && <TaskEditor agent={editing === 'new' ? undefined : editing} done={() => { setEditing(null); void refresh() }} />}</Modal>
     <Modal size="form" open={writer} onOpenChange={setWriter} title={uiT("Writer 模型")} className="settings-modal">{writer && <WriterEditor writer={query.data.writer} done={() => { setWriter(false); void refresh() }} />}</Modal>
     <Modal size="compact" open={remove !== null} onOpenChange={open => { if (!open) setRemove(null) }} title={uiT("删除任务子代理？")}><p>{uiT("删除“")}{remove?.name}{uiT("”后，后续生成将不再使用它。")}</p><ErrorNotice error={action.error} /><div className="form-actions"><Button onClick={() => setRemove(null)}>{uiT("保留")}</Button><Button tone="danger" disabled={action.busy} onClick={() => void action.run(async () => { await api(`/settings/subagents/${remove!.id}`, 'DELETE', { expectedRevision: remove!.revision }); setRemove(null); await refresh() })}>{uiT("删除")}</Button></div></Modal>

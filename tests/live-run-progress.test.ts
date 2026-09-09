@@ -105,7 +105,7 @@ describe('two distinct progress surfaces', () => {
   it('stops on terminal runs, ignores another run, and marks disconnected or waiting states honestly', () => {
     for (const status of ['completed', 'cancelled', 'failed', 'interrupted'] as const) expect(render({ ...run, status })).toBe('')
     expect(progressPresentation(run, { ...snapshot(), runId: 'previous' }).text).toBeUndefined()
-    expect(render(run, snapshot(), 'reconnecting')).toContain('连接恢复后继续更新实时进展')
+    expect(render(run, snapshot(), 'reconnecting')).toBe('')
     expect(render({ ...run, status: 'waiting_user' })).toContain('需要你确认信息后继续')
     expect(render({ ...run, status: 'queued' })).toContain('请求已排队')
   })

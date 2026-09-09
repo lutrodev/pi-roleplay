@@ -13,7 +13,7 @@ import { Button, ErrorNotice, Field, Input, Loading, Modal } from '../../compone
 export function ToolSettingsPanel({ onDirtyChange }: { onDirtyChange?: (dirty: boolean) => void } = {}) {
   useUiLanguage()
   const query = useQuery({ queryKey: ['tool-settings'], queryFn: () => api<ToolSettingsSnapshot>('/settings/tools') })
-  return <section className="settings-form tool-settings stack"><ErrorNotice error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />{query.isPending ? <Loading /> : query.data && <ToolSettingsEditor initial={query.data} onDirtyChange={onDirtyChange} />}</section>
+  return <section className="settings-form tool-settings stack"><ErrorNotice source="read" error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />{query.isPending ? <Loading /> : query.data && <ToolSettingsEditor initial={query.data} onDirtyChange={onDirtyChange} />}</section>
 }
 
 function ToolSettingsEditor({ initial, onDirtyChange }: { initial: ToolSettingsSnapshot; onDirtyChange?: (dirty: boolean) => void }) {

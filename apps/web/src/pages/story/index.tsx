@@ -27,6 +27,7 @@ import { initialPanel, preferredPanel, rememberPanel } from './panel-preferences
 import { StorySubagentModels } from './subagent-models.tsx'
 
 import { SummaryFeedback } from './maintenance-feedback.tsx'
+import { useSharedConnectionError } from '../../lib/connection-feedback.tsx'
 
 export function StoryPage() {
   useUiLanguage()
@@ -35,6 +36,7 @@ export function StoryPage() {
 }
 function StoryReader({ storyId }: { storyId: string }) {
   useUiLanguage()
+  const sharedConnectionError = useSharedConnectionError()
   const [deleting, setDeleting] = useState(false)
   const query = useStory(storyId), settings = useSettings(), action = useAction(), history = useReadingHistory(storyId, query.data), draft = useStoryDraft(storyId)
   const [inspector, setInspector] = useState<StoryPanelTarget | null>(initialPanel), [profile, setProfile] = useState<'basics' | 'models' | null>(null), [writingPrompt, setWritingPrompt] = useState(false), [rename, setRename] = useState(false), [title, setTitle] = useState(''), [editingId, setEditingId] = useState<string | null>(null)
@@ -68,7 +70,7 @@ function StoryReader({ storyId }: { storyId: string }) {
     if (message) { follow.current = false; message.scrollIntoView({ block: 'start', behavior: 'instant' }); message.focus({ preventScroll: true }); setTarget(null) }
   }, [target, history.messages, follow])
   if (query.isPending || settings.isPending) return <div className="story-page"><PageHeader title={uiT("会话")} /><Loading /></div>
-  if (!story || !preferences) return <div className="story-page"><PageHeader title={uiT("会话")} /><div className="page-content conversation-error-page"><ErrorNotice title={uiT('会话暂时无法打开')} error={query.error ?? settings.error} retry={() => { void query.refetch(); void settings.refetch() }} /></div></div>
+  if (!story || !preferences) return <div className="story-page"><PageHeader title={uiT("会话")} /><div className="page-content conversation-error-page"><ErrorNotice source="read" title={uiT('会话暂时无法打开')} error={query.error ?? settings.error} retry={() => { void query.refetch(); void settings.refetch() }} /></div></div>
   const messages = history.messages, summary = story.maintenance.summary
   const busy = !!active || summary?.status === 'running' && summary.trigger === 'manual'
   const traceEntries = roundTraceEntries(messages, latest)
@@ -100,9 +102,9 @@ function StoryReader({ storyId }: { storyId: string }) {
       if (next === 'conversation') showConversation(); else if (view !== 'trace') openTrace(traceRun ?? undefined)
       event.currentTarget.querySelector<HTMLButtonElement>(next === 'trace' ? '#trace-tab' : '#conversation-tab')?.focus()
     }}><button type="button" role="tab" id="conversation-tab" tabIndex={view === 'conversation' ? 0 : -1} aria-selected={view === 'conversation'} aria-controls="conversation-view" onClick={showConversation}><MessageSquare size={15} />{uiT('对话')}</button><button type="button" role="tab" id="trace-tab" tabIndex={view === 'trace' ? 0 : -1} aria-selected={view === 'trace'} aria-controls="trajectory-view" onClick={() => view !== 'trace' && openTrace(traceRun ?? undefined)}><Activity size={15} />{uiT('轨迹')}</button></div>
-    <div className="connection-status" role="status">{query.connection !== 'live' && <span className="connection-status-inner">{query.connection === 'reconnecting' ? <WifiOff size={13} aria-hidden="true" /> : <LoaderCircle size={13} className="spinner" aria-hidden="true" />}<span>{query.connection === 'reconnecting' ? uiT("连接中断，正在重新连接；服务端生成仍会继续。") : uiT("正在连接会话…")}</span></span>}</div>
+    <div className="connection-status" role="status">{!sharedConnectionError && query.connection !== 'live' && <span className="connection-status-inner">{query.connection === 'reconnecting' ? <WifiOff size={13} aria-hidden="true" /> : <LoaderCircle size={13} className="spinner" aria-hidden="true" />}<span>{query.connection === 'reconnecting' ? uiT('暂时无法同步会话，正在重新连接…') : uiT("正在连接会话…")}</span></span>}</div>
       <div className="conversation-surface" id="conversation-view" role="tabpanel" aria-labelledby="conversation-tab" hidden={view !== 'conversation'}><div className="reader-frame"><div className="reader-scroll" ref={scroll} onScroll={onScroll} role="region" aria-label={uiT("会话内容")} tabIndex={0}>
-        <div className="reading-column"><ErrorNotice error={query.error ?? action.error} />
+        <div className="reading-column"><ErrorNotice error={rename ? null : action.error} /><ErrorNotice source="read" error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />
           {story.forkedFrom && <p className="fork-note">{data.forkSourceAvailable === false ? uiT('原会话已删除，此分支的内容和工作区仍保留。') : <><Link to="/stories/$storyId" params={{ storyId: story.forkedFrom.storyId }}>{uiT("从另一个会话展开")}</Link> {uiT(" · 工作文件与原会话共享，修改会同时可见。")}</>}</p>}
           {history.before && <Button className="load-history" disabled={history.busy} onClick={() => { const element = scroll.current, height = element?.scrollHeight ?? 0, top = element?.scrollTop ?? 0; follow.current = false; void history.load().then(() => requestAnimationFrame(() => { if (element) element.scrollTop = top + element.scrollHeight - height })) }}>{history.busy ? uiT("正在读取…") : uiT("阅读更早的消息")}</Button>}<ErrorNotice error={history.error} title={uiT('历史消息暂时无法读取')} />
           {messages.length === 0 && <Empty icon={<BookOpen size={32} strokeWidth={1.3} />} title={uiT("从这里开始")} action={<Button onClick={() => setProfile('basics')}>{uiT("选择角色与资料")}</Button>}>{uiT("输入想法、提出问题，或粘贴一段需要修改的内容。")}</Empty>}

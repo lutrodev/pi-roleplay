@@ -8,7 +8,7 @@ import { ReplyOptionControls } from '../../components/reply-option-controls.tsx'
 export function ReplyOptionSettings({ done }: { done: () => void }) {
   useUiLanguage()
   const query = useSettings()
-  return query.data ? <Form initial={query.data} done={done} /> : query.error ? <ErrorNotice error={query.error} /> : <Loading />
+  return query.data ? <Form initial={query.data} done={done} /> : query.error ? <ErrorNotice source="read" error={query.error} /> : <Loading />
 }
 function Form({ initial, done }: { initial: Settings; done: () => void }) {
   useUiLanguage()

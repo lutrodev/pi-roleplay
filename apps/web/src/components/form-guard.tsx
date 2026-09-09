@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useId, useLayoutEffect, useMemo
 import { AlertDialog } from 'radix-ui'
 import { useBlocker } from '@tanstack/react-router'
 import { uiT, useUiLanguage } from '../lib/i18n.ts'
+import { useConnectionFeedback } from '../lib/connection-feedback.tsx'
 
 interface FormState { dirty: boolean; busy: boolean }
 interface DialogGuard {
@@ -32,10 +33,12 @@ export function useDialogGuard() {
 
 function DiscardChanges({ open, cancel, discard }: { open: boolean; cancel: () => void; discard: () => void }) {
   useUiLanguage()
+  const connection = useConnectionFeedback()
   return <AlertDialog.Root open={open} onOpenChange={next => { if (!next) cancel() }}><AlertDialog.Portal>
     <AlertDialog.Overlay className="overlay discard-overlay" />
     <AlertDialog.Content className="modal discard-dialog">
       <div className="modal-heading"><AlertDialog.Title>{uiT('修改还未保存')}</AlertDialog.Title></div>
+      {connection.notice && <div className="modal-connection-feedback">{connection.notice}</div>}
       <div className="modal-body stack"><AlertDialog.Description>{uiT('关闭会丢失刚才的修改。你可以继续编辑，或放弃这些修改。')}</AlertDialog.Description>
         <div className="form-actions"><AlertDialog.Action asChild><button type="button" className="button button-danger" onClick={discard}>{uiT('放弃修改')}</button></AlertDialog.Action><AlertDialog.Cancel asChild><button type="button" className="button button-primary">{uiT('继续编辑')}</button></AlertDialog.Cancel></div>
       </div>

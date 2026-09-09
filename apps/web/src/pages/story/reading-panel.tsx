@@ -8,7 +8,7 @@ import { mergeSection, sectionChanged } from '../settings/preference-drafts.ts'
 
 export function ReadingPanel() {
   const settings = useSettings()
-  if (!settings.data) return settings.error ? <ErrorNotice error={settings.error} /> : <Loading />
+  if (!settings.data) return settings.error ? <ErrorNotice source="read" error={settings.error} /> : <Loading />
   return <ReadingForm initial={settings.data} />
 }
 function ReadingForm({ initial }: { initial: NonNullable<ReturnType<typeof useSettings>['data']> }) {

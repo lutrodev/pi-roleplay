@@ -28,7 +28,7 @@ export function VariablesCard({ storyId, replyId, state, expanded, bodyId, onInt
   return <AnimatePresence initial={false}>{expanded && <motion.section key="values" id={bodyId} className="variable-card-motion" aria-label={uiT('当前会话变量')} onClickCapture={onInteract} initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={transition}>
     <div className="variable-card">
       <header className="variable-card-heading"><span className="variable-card-title"><strong>{uiT('会话变量')}</strong><small>{uiT('%{groups} 组 · %{count} 项', { groups, count })}</small></span>{changes > 0 && <span className="variable-card-changes">{uiT('本轮更新 %{count}', { count: changes })}</span>}</header>
-      <div className="variable-card-body"><ErrorNotice error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} /><VariableValues state={state} boundary={query.data} compact /></div>
+      <div className="variable-card-body"><ErrorNotice source="read" error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} /><VariableValues state={state} boundary={query.data} compact /></div>
     </div>
   </motion.section>}</AnimatePresence>
 }

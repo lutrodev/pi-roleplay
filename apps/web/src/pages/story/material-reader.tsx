@@ -26,7 +26,7 @@ export function MaterialReader({ asset, kind, pending, error, retry, query, back
   return <article className="material-reader">
     <div className="material-reader-bar"><Button tone="quiet" className="material-back" onClick={back}><ArrowLeft size={16} />{uiT('资料总览')}</Button></div>
     <header className="material-reader-heading">{asset?.avatarFileId && <ContentImage src={`/api/files/${asset.avatarFileId}/content`} alt="" />}<div><span className="material-kind">{uiT(assetLabels[kind])}</span><h3 tabIndex={-1} data-reader-heading>{asset?.name ?? uiT('资料详情')}</h3></div></header>
-    <ErrorNotice error={error} retry={retry} />{pending && <Loading />}
+    <ErrorNotice source="read" error={error} retry={retry} />{pending && <Loading />}
     {asset && <>
       {!!(asset.data.tags as string[] | undefined)?.length && <div className="asset-tags">{(asset.data.tags as string[]).map(tag => <span key={tag}>{tag}</span>)}</div>}
       <div className="search-field material-search"><Search size={16} /><Input aria-label={uiT('搜索这份资料')} value={search} onChange={event => setSearch(event.target.value)} placeholder={uiT('搜索这份资料…')} /></div>

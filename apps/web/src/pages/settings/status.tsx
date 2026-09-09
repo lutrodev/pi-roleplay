@@ -9,7 +9,7 @@ export function SystemStatus({ onNavigate }: { onNavigate: (tab: 'models' | 'too
   const query = useQuery({ queryKey: ['system-status'], queryFn: () => api<{ version: string; operations: { quiesced: boolean; backup: { status: string; completedAt?: string; file?: string } | null }; tools: { available: boolean; active?: number }; models: { label: string; configured: boolean }[]; searchConfigured: boolean; runs: { status: string; count: number }[] }>('/system/status'), refetchInterval: 15000 })
   return <section className="settings-form stack">
     <div className="section-heading status-refresh"><span className="muted">{query.dataUpdatedAt ? uiT('上次更新：%{time}', { time: new Date(query.dataUpdatedAt).toLocaleTimeString(uiLocale()) }) : uiT(query.error ? '状态暂不可用' : '正在读取状态')}</span><Button disabled={query.isFetching} onClick={() => void query.refetch()}><RefreshCw size={15} className={query.isFetching ? 'spinner' : undefined} />{uiT('刷新')}</Button></div>
-    <ErrorNotice error={query.error} />{query.isPending && <Loading />}
+    <ErrorNotice source="read" error={query.error} />{query.isPending && <Loading />}
     {query.data && <SettingsGroup>
       <SettingRow label={uiT('应用版本')}><span className="setting-status">{query.data.version}</span></SettingRow>
       <SettingRow label={uiT('工具服务')}><span className="setting-status">{query.data.tools.available ? uiT('可以连接') : uiT('暂时不可用')}</span></SettingRow>

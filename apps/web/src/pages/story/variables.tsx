@@ -50,7 +50,7 @@ export function VariablesPanel({ story, latestReplyId, busy = false }: { story: 
     <div className="variables-toolbar">
       <Check checked={markChanges} label={uiT('标记最近一轮变化')} onChange={event => setMarkChanges(event.target.checked)} />
     </div>
-    {latestReplyId && markChanges && <ErrorNotice error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />}
+    {latestReplyId && markChanges && <ErrorNotice source="read" error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />}
     <VariableValues state={story.state} boundary={markChanges ? query.data : undefined} />
   </div>
 }

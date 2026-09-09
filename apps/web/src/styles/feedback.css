@@ -30,11 +30,19 @@
 .page-feedback > .status-notice-details { margin: 12px 0 0; }
 .page-feedback-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
 .page-feedback-actions .button { min-height: 36px; padding-inline: 14px; }
-.workspace-connection-notice { flex-shrink: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 18px; margin: 12px 16px 0; }
+.workspace-feedback { flex-shrink: 0; }
+.workspace-connection-notice { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; margin: 8px 16px 0; }
 .workspace-connection-notice > .status-notice-copy { grid-area: 1 / 1; }
 .workspace-connection-notice > .status-notice-actions { grid-area: 1 / 2 / span 2; align-self: start; margin: 0; }
 .workspace-connection-notice > .status-notice-details { grid-area: 2 / 1; }
 .workspace-connection-notice .status-notice-details p { max-height: min(120px, 16dvh); }
+.workspace-connection-notice .status-notice-text { display: flex; align-items: baseline; flex-wrap: wrap; column-gap: 12px; }
+.workspace-connection-notice .status-notice-text p { margin-top: 0; }
+.modal-connection-feedback { flex-shrink: 0; margin: 12px var(--modal-padding, 20px) 0; }
+.modal-connection-feedback .workspace-connection-notice { margin: 0; }
+/* The active interaction surface owns connection feedback, including nested dialogs. */
+body:has([role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]) .workspace-feedback,
+[aria-hidden="true"] .modal-connection-feedback, .modal-connection-feedback[aria-hidden="true"] { display: none; }
 
 @media (max-width: 800px), (pointer: coarse) {
   .status-notice-actions .button, .status-notice-details summary, .page-feedback-actions .button { min-height: 44px; }
@@ -43,9 +51,9 @@
   .status-notice { padding: 12px; }
   .status-notice-actions, .status-notice-details { margin-left: 0; }
   .workspace-connection-notice { margin: 8px 8px 0; column-gap: 8px; }
-  .workspace-connection-notice > .status-notice-copy { grid-area: 1 / 1 / auto / span 2; }
+  .workspace-connection-notice > .status-notice-copy { grid-area: 1 / 1; }
   .workspace-connection-notice > .status-notice-details { grid-area: 2 / 1; }
-  .workspace-connection-notice > .status-notice-actions { grid-area: 2 / 2; align-self: start; margin-top: 6px; }
+  .workspace-connection-notice > .status-notice-actions { grid-area: 1 / 2 / span 2; align-self: center; margin: 0; }
   .entry-page, .page-recovery { padding-inline: 24px; }
   .entry-brand { left: 24px; }
 }

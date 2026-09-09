@@ -49,7 +49,7 @@ export function ComposerControls({ story, disabled, openSettings, openContext, m
         const { provider: _provider, model: _model, reasoningEffort: _effort, ...rest } = runtime
         save({ ...story.profile, runtime: { ...rest, ...(selected ? { provider: selected.provider, model: selected.model } : {}) } })
       }}><MenuRadioItem value="">{uiT("跟随默认模型")}</MenuRadioItem>{models.data?.models.map(item => <MenuRadioItem key={key(item.provider, item.model)} value={key(item.provider, item.model)} disabled={!item.configured}><span>{item.label}<small className="menu-description">{item.provider}{item.configured ? '' : uiT(" · 尚未配置")}</small></span></MenuRadioItem>)}</MenuRadioGroup>
-      {openContext && <><MenuSeparator /><MenuItem onSelect={openContext}>{uiT("查看上下文占用")}</MenuItem></>}<ErrorNotice error={models.error} retry={() => void models.refetch()} retrying={models.isFetching} /><MenuSeparator /><MenuItem onSelect={openSettings}>{uiT('Writer 与高级设置')}</MenuItem>
+      {openContext && <><MenuSeparator /><MenuItem onSelect={openContext}>{uiT("查看上下文占用")}</MenuItem></>}<ErrorNotice source="read" error={models.error} retry={() => void models.refetch()} retrying={models.isFetching} /><MenuSeparator /><MenuItem onSelect={openSettings}>{uiT('Writer 与高级设置')}</MenuItem>
     </Menu>{model?.thinkingLevels.some(level => level !== 'off') && <ReasoningControl levels={model.thinkingLevels} value={runtime.reasoningEffort}
       defaultLevel={(!runtime.model ? effective?.reasoningEffort : undefined) ?? model.defaultThinkingLevel}
       defaultLabel={runtime.model ? uiT('模型默认') : uiT('跟随默认设置')} disabled={disabled}

@@ -8,6 +8,8 @@ import { errorFeedback } from '../lib/error-feedback.ts'
 import { DialogGuardContext, useDialogGuard } from './form-guard.tsx'
 import { SettingRow } from './settings-layout.tsx'
 import { StatusNotice } from './status-notice.tsx'
+import { sameConnectionFailure } from '../lib/api-error.ts'
+import { useConnectionFeedback, useSharedConnectionError } from '../lib/connection-feedback.tsx'
 
 export function Button({ children, tone = 'default', className, ...props }: ComponentProps<'button'> & { tone?: 'default' | 'primary' | 'quiet' | 'danger' }) {
   useUiLanguage()
@@ -50,8 +52,11 @@ export function Check({ label, help, indeterminate = false, ...props }: InputHTM
   useUiLanguage()
   return <label className="check"><input type="checkbox" {...props} ref={input => { if (input) input.indeterminate = indeterminate }} /><span>{label}{help && <small>{help}</small>}</span></label>
 }
-export function ErrorNotice({ error, retry, retrying = false, title }: { error: Error | null | undefined; retry?: () => void; retrying?: boolean; title?: string }) {
+export function ErrorNotice({ error, retry, retrying = false, title, source = 'action' }: { error: Error | null | undefined; retry?: () => void; retrying?: boolean; title?: string; source?: 'read' | 'action' }) {
   useUiLanguage()
+  const shared = useSharedConnectionError()
+  // A shared outage owns background-read feedback; an explicit operation failure stays at its action.
+  if (source === 'read' && sameConnectionFailure(error, shared)) return null
   if (!error) return null
   const feedback = errorFeedback(error)
   return <StatusNotice title={title ?? uiT(feedback.title)} tone="error" compact className="error-notice" details={feedback.details && uiT(feedback.details)} collapseDetails={!!feedback.message} actions={retry && <Button onClick={retry} disabled={retrying}>{retrying ? <LoaderCircle size={14} className="spinner" /> : <RefreshCw size={14} />}{uiT(retrying ? '正在重试…' : '重试')}</Button>}>
@@ -76,6 +81,7 @@ export function Modal({ open, onOpenChange, title, description, children, size =
   open: boolean; onOpenChange: (value: boolean) => void; title: string; description?: string; children: ReactNode; size?: 'compact' | 'form' | 'editor' | 'workspace'; drawer?: boolean | 'left' | 'right'; className?: string; returnFocus?: RefObject<HTMLElement | null>; onCloseAutoFocus?: (event: Event) => void
 }) {
   useUiLanguage()
+  const connection = useConnectionFeedback()
   const id = useId(), priorFocus = useRef<HTMLElement | null>(null), wasOpen = useRef(false), surface = useRef<HTMLElement>(null)
   const guard = useDialogGuard()
   // Freeze the origin before the portal mounts children with React autoFocus.
@@ -98,6 +104,7 @@ export function Modal({ open, onOpenChange, title, description, children, size =
     }}>
       <section ref={surface} className={clsx('modal', `modal-${content.size}`, content.drawer && 'drawer', content.drawer === 'left' && 'drawer-left', content.className)}>
         <div className="modal-heading"><div><Dialog.Title>{content.title}</Dialog.Title>{content.description && <Dialog.Description id={id}>{content.description}</Dialog.Description>}</div><Dialog.Close asChild><IconButton label={uiT("关闭")} disabled={guard.context.busy}><X size={20} /></IconButton></Dialog.Close></div>
+        {connection.notice && <div className="modal-connection-feedback">{connection.notice}</div>}
         <div className="modal-body">{content.children}</div>
       </section>
     </Dialog.Content>

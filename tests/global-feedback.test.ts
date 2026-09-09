@@ -6,6 +6,7 @@ import { ErrorNotice } from '../apps/web/src/components/ui.tsx'
 import { ApiError } from '../apps/web/src/lib/api.ts'
 import { errorFeedback, isSessionExpired, stalePageModule } from '../apps/web/src/lib/error-feedback.ts'
 import { setUiLanguage } from '../apps/web/src/lib/i18n.ts'
+import { ConnectionFeedbackContext } from '../apps/web/src/lib/connection-feedback.tsx'
 
 afterEach(() => setUiLanguage('zh'))
 
@@ -82,6 +83,28 @@ describe('global error recovery', () => {
     expect(html).toContain('unsaved edits are still here')
     expect(html).toContain('Retry connection')
     expect(html).not.toContain('<main')
+  })
+
+  it.each([0, 503, 429, 200])('consolidates matching background failures (%i) but keeps failed actions and unrelated errors', status => {
+    const error = new ApiError('shared failure', status === 200 ? 'INVALID_RESPONSE' : 'HTTP_ERROR', status)
+    const html = renderToStaticMarkup(createElement(ConnectionFeedbackContext.Provider, { value: { error } },
+      createElement(ErrorNotice, { source: 'read', error, title: 'duplicate read' }),
+      createElement(ErrorNotice, { error, title: 'failed save' }),
+      createElement(ErrorNotice, { source: 'read', error: new ApiError('permission', 'DENIED', 403), title: 'local permission' }),
+      createElement(ErrorNotice, { source: 'read', error: new ApiError('missing', 'NOT_FOUND', 404), title: 'missing resource' }),
+      createElement(ErrorNotice, { source: 'read', error: new Error('validation'), title: 'validation error' }),
+    ))
+    expect(html).not.toContain('duplicate read')
+    for (const title of ['failed save', 'local permission', 'missing resource', 'validation error']) expect(html).toContain(title)
+  })
+
+  it('keeps an isolated read failure visible and disables offline recovery without a false spinner', () => {
+    const error = new ApiError('offline', 'NETWORK_ERROR', 0)
+    expect(renderToStaticMarkup(createElement(ErrorNotice, { source: 'read', error }))).toContain('连接暂时中断')
+    const html = renderToStaticMarkup(createElement(WorkspaceConnectionNotice, { error, busy: false, offline: true, retry: () => {} }))
+    expect(html).toContain('等待网络恢复')
+    expect(html).toMatch(/<button[^>]*disabled=""/)
+    expect(html).not.toContain('spinner')
   })
 
   it('requires document recovery for failed lazy modules but not ordinary render errors', () => {

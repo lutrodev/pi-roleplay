@@ -1,5 +1,6 @@
 import { uiT, useUiLanguage } from "../../lib/i18n.ts"
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { createPortal } from 'react-dom'
 import { Eye, ListOrdered, Plus, RotateCcw } from 'lucide-react'
 import type { StoryProfile } from '../../../../../packages/rp-core/src/types.ts'
@@ -20,30 +21,26 @@ interface Props {
 export function PromptEditor(props: Props) {
   const language = useUiLanguage()
   const { storyId, profile, onChange } = props
-  const [inspection, setInspection] = useState<PromptInspection | null>(null), [error, setError] = useState<Error | null>(null), [loading, setLoading] = useState(true), [refresh, setRefresh] = useState(0)
   const materialProfile = JSON.stringify({ ...profile, contextBuild: undefined })
-  useEffect(() => {
-    if (props.disabled) { setLoading(false); return }
-    const controller = new AbortController()
-    setLoading(true); setError(null)
-    void api<PromptInspection>(`/stories/${storyId}/context-preview`, 'POST', { profile: JSON.parse(materialProfile) }, controller.signal)
-      .then(result => { if (!controller.signal.aborted) setInspection(result) })
-      .catch(error => { if (!controller.signal.aborted) setError(error) })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false) })
-    return () => controller.abort()
-  }, [storyId, materialProfile, props.storyRevision, props.disabled, refresh])
+  // This POST only computes a preview. It belongs to read recovery, never to save retries.
+  const query = useQuery({ queryKey: ['prompt-inspection', storyId, props.storyRevision, materialProfile], enabled: !props.disabled,
+    queryFn: ({ signal }) => api<PromptInspection>(`/stories/${storyId}/context-preview`, 'POST', { profile: JSON.parse(materialProfile) }, signal),
+    placeholderData: keepPreviousData, gcTime: 0, staleTime: Infinity, refetchOnWindowFocus: false,
+  })
+  const { data: inspection, error, isFetching: loading } = query
+  const notice = <ErrorNotice source="read" error={error} retry={() => void query.refetch()} retrying={loading} />
   const prepared = useMemo(() => {
     if (!inspection) return null
     try { return { build: normalizePromptBuild(profile.contextBuild, inspection.catalog), error: null } }
     catch (reason) { return { build: null, error: reason instanceof Error ? reason : new Error(uiT("资料顺序无效。")) } }
   }, [inspection, profile.contextBuild, language])
-  if (error) return <ErrorNotice error={error} retry={() => setRefresh(value => value + 1)} />
+  if (error && !inspection) return notice
   if (!inspection || !prepared) return props.disabled ? <Empty title={uiT("回复生成中")}>{uiT("回复完成后可查看和调整下次回复的资料。")}</Empty> : <Loading label={uiT("正在整理下次回复的资料…")} />
   if (!prepared.build) return <div className="stack"><ErrorNotice error={prepared.error} /><p>{uiT("当前布局包含无效设置。恢复必需资料只会将始终使用的分组重新启用，其他顺序与内容保留。")}</p><div className="form-actions">
     <Button onClick={() => onChange({ ...profile.contextBuild!, slots: profile.contextBuild!.slots.map(slot => canIdlePromptSlot(slot, inspection.catalog) ? slot : { ...slot, idle: false }) })}>{uiT("恢复必需资料")}</Button>
     <Button onClick={() => onChange(undefined)}>{uiT("恢复默认顺序")}</Button>
   </div></div>
-  return <PromptCanvas {...props} inspection={inspection} build={prepared.build} refreshing={loading} refresh={() => setRefresh(value => value + 1)} />
+  return <>{notice}<PromptCanvas {...props} inspection={inspection} build={prepared.build} refreshing={loading} refresh={() => void query.refetch()} /></>
 }
 
 function PromptCanvas({ storyId, profile, dirty, build, inspection, onChange, saving, disabled, saveError, refresh, refreshing }: Props & { build: PromptBuild; inspection: PromptInspection; refresh: () => void; refreshing: boolean }) {

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 import type { StoryProfile } from '../../../../../../packages/rp-core/src/types.ts'
 import { promptDocument, type PromptBuild, type PromptInspection } from '../../../../../../packages/rp-core/src/context/preview.ts'
@@ -14,17 +15,17 @@ export function PromptPreviewPane({ storyId, profile, build, document, blocked, 
   onChange: (build: PromptBuild) => void
 }) {
   useUiLanguage()
-  const [advanced, setAdvanced] = useState(false), [serverPreview, setServerPreview] = useState<PromptInspection | null>(null), [serverError, setServerError] = useState<Error | null>(null)
+  const [advanced, setAdvanced] = useState(false)
   const invalidName = build.slots.some(slot => slot.id.startsWith('custom-') && !slot.label.trim())
   const serverProfile = JSON.stringify({ ...profile, contextBuild: build })
-  useEffect(() => {
-    if (!advanced || invalidName || blocked) return
-    const controller = new AbortController()
-    setServerPreview(null); setServerError(null)
-    const timer = setTimeout(() => { void api<PromptInspection>(`/stories/${storyId}/context-preview`, 'POST', { profile: JSON.parse(serverProfile) }, controller.signal)
-      .then(value => { if (!controller.signal.aborted) setServerPreview(value) }).catch(error => { if (!controller.signal.aborted) setServerError(error) }) }, 180)
-    return () => { clearTimeout(timer); controller.abort() }
-  }, [advanced, invalidName, serverProfile, storyId, blocked])
+  const query = useQuery({ queryKey: ['prompt-diagnostic', storyId, serverProfile], enabled: advanced && !invalidName && !blocked,
+    queryFn: async ({ signal }) => {
+      await new Promise(resolve => setTimeout(resolve, 180))
+      signal.throwIfAborted()
+      return api<PromptInspection>(`/stories/${storyId}/context-preview`, 'POST', { profile: JSON.parse(serverProfile) }, signal)
+    }, gcTime: 0, refetchOnWindowFocus: false,
+  })
+  const serverPreview = query.data
   return <aside className="prompt-preview-pane">
     <header><div><small>{uiT('回复预览')}</small><h3>{uiT('写作子代理预览')}</h3></div><div className="prompt-mode" role="group" aria-label={uiT('预览方式')}>
       {(['cards', 'plain'] as const).map(value => <Button key={value} aria-pressed={mode === value} onClick={() => onModeChange(value)}>{value === 'cards' ? uiT('资料卡片') : uiT('纯文本')}</Button>)}
@@ -39,7 +40,7 @@ export function PromptPreviewPane({ storyId, profile, build, document, blocked, 
       {!document.groups.length && <Empty title={uiT('还没有可预览的资料')}>{uiT('选择角色卡或添加自定义资料后，会在这里显示。')}</Empty>}
       <details className="prompt-advanced" onToggle={event => setAdvanced(event.currentTarget.open)}><summary>{uiT('父模型资料与激活诊断')}</summary>
         <p className="prompt-help">{uiT('实际模型请求还包含运行时规则；历史执行中的完整请求可在运行记录查看。')}</p>
-        {advanced && <>{serverError ? <ErrorNotice error={serverError} /> : !serverPreview ? <Loading label={uiT('正在校验当前资料…')} /> : <><pre className="prompt-plain" aria-label={uiT('父模型 RP 资料')}>{serverPreview.parentPrompt}</pre><details><summary>{uiT('资料缺失与世界书激活详情')}</summary><JsonView value={serverPreview.diagnostics} /></details></>}</>}
+        {advanced && <><ErrorNotice source="read" error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />{!serverPreview ? !query.error && <Loading label={uiT('正在校验当前资料…')} /> : <><pre className="prompt-plain" aria-label={uiT('父模型 RP 资料')}>{serverPreview.parentPrompt}</pre><details><summary>{uiT('资料缺失与世界书激活详情')}</summary><JsonView value={serverPreview.diagnostics} /></details></>}</>}
       </details>
     </div>
   </aside>

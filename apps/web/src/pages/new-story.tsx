@@ -95,7 +95,7 @@ function Setup({ value, onChange, onStart, busy, error, initialStep = 'assets', 
         </aside>
       </div> : <NewStoryOpening scene={scene} card={card.data?.asset} userName={persona.data?.asset.name ?? uiT('我')} compatMvu={(profile.variables?.enabled ?? true) && (profile.variables?.mvu ?? true)} onChange={scene => patch({ scene })} />}
       {pendingCard && card.isPending && <Loading label={uiT('正在读取角色与关联资料…')} />}
-      <ErrorNotice error={error ?? resourceError} retry={!error && resourceError ? () => { if (card.error) void card.refetch(); if (persona.error) void persona.refetch(); if (defaults.error) void defaults.refetch() } : undefined} retrying={card.isFetching || persona.isFetching || defaults.isFetching} />
+      <ErrorNotice source={error ? 'action' : 'read'} error={error ?? resourceError} retry={!error && resourceError ? () => { if (card.error) void card.refetch(); if (persona.error) void persona.refetch(); if (defaults.error) void defaults.refetch() } : undefined} retrying={card.isFetching || persona.isFetching || defaults.isFetching} />
     </div>
     <footer className="new-story-footer"><div className="new-story-footer-context"><strong>{cardName}</strong><span>{step === 'assets' ? uiT('下一步预览开场') : uiT('创建后即可接着对话')}</span></div><div className="new-story-footer-actions">
       {step === 'opening' && <Button tone="quiet" onClick={() => setStep('assets')}><ArrowLeft size={15} />{uiT('上一步')}</Button>}

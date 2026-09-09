@@ -25,6 +25,6 @@ export function ConditionEditor({ value, onChange }: { value: string; onChange: 
       } catch { setError(new Error(uiT("比较值格式不正确，请填写与变量相同类型的值。"))) }
     }}>{uiT("应用这个条件")}</Button>{state && !Object.keys(state.namespaces).length && <p className="muted">{uiT("当前会话还没有变量。")}</p>}</>}
     <Field label={uiT("当前条件")}><Input readOnly value={value} placeholder={uiT("没有条件，按关键词和常驻设置激活")} /></Field>
-    <details><summary>{uiT("高级条件表达式")}</summary><Field label={uiT("条件表达式")}><Textarea rows={3} value={value} onChange={event => onChange(event.target.value)} /></Field><p className="muted">{uiT("支持 state、exists、比较、逻辑运算；缺失变量不会激活条目。")}</p></details>{value && <Button onClick={() => onChange('')}>{uiT("清除条件")}</Button>}<ErrorNotice error={error ?? source.error ?? catalog.error} />
+    <details><summary>{uiT("高级条件表达式")}</summary><Field label={uiT("条件表达式")}><Textarea rows={3} value={value} onChange={event => onChange(event.target.value)} /></Field><p className="muted">{uiT("支持 state、exists、比较、逻辑运算；缺失变量不会激活条目。")}</p></details>{value && <Button onClick={() => onChange('')}>{uiT("清除条件")}</Button>}<ErrorNotice source={error ? 'action' : 'read'} error={error ?? source.error ?? catalog.error} />
   </section>
 }

@@ -31,7 +31,7 @@ function AssetEditorSurface({ id, kind, done }: { id: string; kind: AssetKind; d
   useUiLanguage()
   const query = useAsset(id === 'new' ? undefined : id)
   if (id !== 'new' && query.isPending) return <Loading />
-  return <><ErrorNotice error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />{(id === 'new' || query.data) && <AssetEditor asset={query.data?.asset} kind={kind} done={done} />}</>
+  return <><ErrorNotice source="read" error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />{(id === 'new' || query.data) && <AssetEditor asset={query.data?.asset} kind={kind} done={done} />}</>
 }
 function AssetEditor({ asset, kind, done }: { asset?: AssetRecord; kind: AssetKind; done: () => void }) {
   useUiLanguage()

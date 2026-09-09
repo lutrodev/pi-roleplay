@@ -18,7 +18,7 @@ function WorkspaceCatalog({ createStory }: { createStory: (workspaceId: string) 
   const catalog = useWorkspaces(), action = useAction()
   const [edit, setEdit] = useState<WorkspaceRecord | 'new' | null>(null), [remove, setRemove] = useState<WorkspaceRecord | null>(null)
   return <div className="stack"><div className="form-actions"><Button disabled={!catalog.data} onClick={() => setEdit('new')}><FolderPlus size={16} />{uiT('添加工作区')}</Button></div>
-    <ErrorNotice error={action.error ?? catalog.error} retry={!action.error && catalog.error ? () => void catalog.refetch() : undefined} retrying={catalog.isFetching} />{catalog.isPending && <Loading />}
+    <ErrorNotice source={!remove && action.error ? 'action' : 'read'} error={(remove ? null : action.error) ?? catalog.error} retry={(remove || !action.error) && catalog.error ? () => void catalog.refetch() : undefined} retrying={catalog.isFetching} />{catalog.isPending && <Loading />}
     {!catalog.error && catalog.data?.workspaces.length === 0 && <Empty title={uiT('还没有工作区')}>{uiT('为工作区起个名字，系统会自动创建文件夹。')}</Empty>}
     {catalog.data?.workspaces.map(item => <article className="workspace-card" key={item.id}><FolderOpen size={20} /><div><strong>{item.name}</strong><small>{accessLabel(item.access)}</small></div><div className="workspace-card-actions"><Button tone="quiet" aria-label={uiT('在 %{v0} 中新建会话', { v0: item.name })} onClick={() => createStory(item.id)}>{uiT('新会话')}</Button><IconButton label={uiT('编辑工作区 %{v0}', { v0: item.name })} onClick={() => setEdit(item)}><Pencil size={15} /></IconButton><IconButton label={uiT('移除工作区 %{v0}', { v0: item.name })} onClick={() => setRemove(item)}><Trash2 size={15} /></IconButton></div></article>)}
     <Modal size="form" open={!!edit} onOpenChange={open => { if (!open) setEdit(null) }} title={uiT(edit === 'new' ? '添加工作区' : '编辑工作区')}>{edit && <WorkspaceEditor key={edit === 'new' ? 'new' : edit.id} current={edit === 'new' ? undefined : edit} done={() => setEdit(null)} />}</Modal>
@@ -51,7 +51,7 @@ export function StoryWorkspaceDialog({ storyId, open, onOpenChange }: { storyId:
 function StoryWorkspaceContents({ storyId, done }: { storyId: string; done: () => void }) {
   // Fetch the form baseline on each opening; background query refreshes must not discard an edit.
   const current = useQuery({ queryKey: ['workspace-edit', storyId], queryFn: ({ signal }) => api<StoryWorkspace>(`/stories/${storyId}/workspace`, 'GET', undefined, signal), staleTime: 0, gcTime: 0, refetchOnWindowFocus: false, refetchOnReconnect: false }), catalog = useWorkspaces()
-  return <><ErrorNotice error={current.error ?? catalog.error} retry={() => { void current.refetch(); void catalog.refetch() }} />{current.data && catalog.data ? <StoryWorkspaceEditor storyId={storyId} initial={current.data} workspaces={catalog.data.workspaces} done={done} /> : <Loading />}</>
+  return <><ErrorNotice source="read" error={current.error ?? catalog.error} retry={() => { void current.refetch(); void catalog.refetch() }} />{current.data && catalog.data ? <StoryWorkspaceEditor storyId={storyId} initial={current.data} workspaces={catalog.data.workspaces} done={done} /> : <Loading />}</>
 }
 function StoryWorkspaceEditor({ storyId, initial, workspaces, done }: { storyId: string; initial: StoryWorkspace; workspaces: WorkspaceRecord[]; done: () => void }) {
   const [workspaceId, setWorkspaceId] = useState(initial.binding.workspaceId ?? ''), [access, setAccess] = useState(initial.binding.access), action = useAction()

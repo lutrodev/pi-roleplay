@@ -12,6 +12,9 @@ const tool = (name: string, runId = 'current'): ActiveTool => ({ runId, name })
 const phase = (state: ReturnType<typeof story>, current: RunRecord | undefined, tools: ActiveTool[] = [], connection: 'live' | 'reconnecting' = 'live') => runActivityPhase(state, current, tools, connection)
 
 describe('activity at the end of the conversation transcript', () => {
+  it('leaves reconnect feedback to the conversation instead of repeating it at the reply footer', () => {
+    expect(renderToStaticMarkup(createElement(RunActivity, { story: story(), run: run(), activeTools: [], connection: 'reconnecting' }))).toBe('')
+  })
   it('stays present from queueing through streamed prose and post-commit work, until the run completes', () => {
     const state = story(), current = run('queued')
     expect(phase(state, current)).toBe('queued')

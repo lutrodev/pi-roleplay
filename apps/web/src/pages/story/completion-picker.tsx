@@ -56,7 +56,7 @@ export function CompletionPicker({ kind, storyId, agent, query, listId, pick, br
     </div>
     {kind === 'references' && listing.isFetching && <Loading />}
     {!items.length && !(kind === 'references' && (listing.isFetching || current.isFetching || archived.isFetching)) && <p className="muted">{uiT('没有匹配的选项')}</p>}
-    <ErrorNotice error={kind === 'commands' ? skills.error : listing.error ?? current.error ?? archived.error} />
+    <ErrorNotice source="read" error={kind === 'commands' ? skills.error : listing.error ?? current.error ?? archived.error} />
     {kind === 'references' && listing.data?.truncated && <p className="muted">{uiT('目录条目较多，请输入子目录继续查找。')}</p>}
     <div className="sr-only" id={`${listId}-hint`}>{selected?.directory ? uiT('↑ ↓ 选择 · → 打开目录 · Enter 引用') : uiT('↑ ↓ 选择 · Enter 插入 · Esc 关闭')}</div>
   </div>

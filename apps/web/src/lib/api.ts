@@ -1,15 +1,15 @@
 import { uiT } from "./i18n.ts"
-import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Preferences } from '../../../../packages/rp-core/src/settings/preferences.ts'
 import type { AssetKind, AssetRecord, ModelRoute, RunRecord, StorySnapshot } from '../../../../packages/rp-core/src/types.ts'
 import type { ActiveTool, StoryNotice } from '../../../../packages/protocol/src/reading.ts'
 import { StoryFeed } from './story-feed.ts'
+import { ApiError } from './api-error.ts'
+import { createQueryClient, recoverFailedReads } from './query-client.ts'
 
-export class ApiError extends Error {
-  constructor(message: string, readonly code: string, readonly status: number, readonly details?: unknown) { super(message) }
-}
-export const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 15000, retry: false, refetchOnWindowFocus: true }, mutations: { retry: false } } })
+export { ApiError } from './api-error.ts'
+export const queryClient = createQueryClient()
 export async function api<T>(path: string, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<T> {
   let response: Response
   try {
@@ -24,7 +24,7 @@ export async function api<T>(path: string, method = 'GET', body?: unknown, signa
   if (response.status === 204) return undefined as T
   const value = await response.json().catch(() => null)
   if (!response.ok) {
-    if (response.status === 401 && path !== '/auth/login') void queryClient.invalidateQueries({ queryKey: ['auth'] })
+    if (response.status === 401 && path !== '/auth/login' && path !== '/auth/session') void queryClient.invalidateQueries({ queryKey: ['auth'] })
     throw new ApiError(value?.error?.message ?? uiT("请求失败（%{v0}），请稍后重试。", { v0: response.status }), value?.error?.code ?? 'HTTP_ERROR', response.status, value?.error?.details)
   }
   if (value === null) throw new ApiError(uiT('服务器返回了无法读取的内容，请重试。'), 'INVALID_RESPONSE', response.status)
@@ -76,7 +76,7 @@ export function useStory(storyId: string) {
     const open = () => {
       if (closed) return
       stream = new EventSource(`/api/stories/${storyId}/events?after=${cursor}`)
-      stream.onopen = () => setConnection('live')
+      stream.onopen = () => { setConnection('live'); void recoverFailedReads(client) }
       stream.addEventListener('story-deleted', () => { if (!closed) { stop(); notifyStoryDeleted(storyId) } })
       stream.addEventListener('story', event => {
         if (closed) return

@@ -17,7 +17,7 @@ export function BackgroundSettings() {
   const current = findBackground(query.data, query.data?.selectedId)
   return <>
     <SettingsGroup title={uiT('背景图片')}>
-      {query.isPending ? <Loading /> : query.error ? <ErrorNotice error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} /> : <SettingRow
+      {query.isPending ? <Loading /> : query.error ? <ErrorNotice source="read" error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} /> : <SettingRow
         label={<span className="background-current">{current ? <ContentImage src={backgroundUrl(current.id, true)} alt="" /> : <span className="background-current-empty"><ImageOff size={20} /></span>}<span>{backgroundName(current)}</span></span>}
         help={uiT('在界面最底层显示，所有页面共用。')}>
         <Button onClick={() => setOpen(true)}><Images size={16} />{uiT('管理背景')}</Button>

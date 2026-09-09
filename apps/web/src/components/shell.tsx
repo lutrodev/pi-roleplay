@@ -106,7 +106,7 @@ function StorySearch({ done, create }: { done: (target?: { storyId: string; mess
     items[next]?.focus()
   }
   return <div className="command-search" onKeyDown={move}><div className="search-field"><Search size={18} /><Input autoFocus aria-label={uiT("查找会话")} placeholder={uiT("搜索会话名称或历史内容…")} maxLength={300} value={query} onChange={event => setQuery(event.target.value)} /></div>
-    <ErrorNotice error={current.error ?? archived.error} retry={() => { void current.refetch(); void archived.refetch() }} retrying={current.isFetching || archived.isFetching} />
+    <ErrorNotice source="read" error={current.error ?? archived.error} retry={() => { void current.refetch(); void archived.refetch() }} retrying={current.isFetching || archived.isFetching} />
     <div className="command-results">{!query.trim() && <button data-command className="command-result" onClick={create}><Plus size={18} /><span>{uiT("开始新会话")}</span><kbd>⇧ ⌘ O</kbd></button>}
       {current.isPending && <Loading />}{stories.map(story => <Link data-command key={story.id} className="command-result" to="/stories/$storyId" params={{ storyId: story.id }} hash={story.match ? `message-${story.match.messageId}` : undefined} onClick={() => done(story.match ? { storyId: story.id, messageId: story.match.messageId } : undefined)}><BookOpen size={17} /><span><strong>{story.title}</strong>{story.match && <small className="search-excerpt">{story.match.snippet}</small>}</span><small>{story.archived ? uiT("已归档") : storyDate(story.updatedAt)}</small></Link>)}
       {!current.error && !archived.error && !current.isPending && !archived.isPending && !stories.length && <Empty title={uiT("没有找到会话")} action={<Button data-command onClick={create}>{uiT("新会话")}</Button>}>{uiT("试试其他关键词，或从一个新会话开始。")}</Empty>}

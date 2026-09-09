@@ -22,7 +22,7 @@ function issueText(issue: string) {
 export function WriterHistoryPanel({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
   useUiLanguage()
   const query = useQuery({ queryKey: ['writer-history'], queryFn: () => api<WriterHistorySettings>('/settings/writer-history') })
-  return <section className="settings-form writer-history stack"><ErrorNotice error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />
+  return <section className="settings-form writer-history stack"><ErrorNotice source="read" error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />
     {query.isPending ? <Loading /> : query.data && <HistoryEditor initial={query.data} onDirtyChange={onDirtyChange} />}</section>
 }
 

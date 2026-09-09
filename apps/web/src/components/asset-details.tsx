@@ -17,7 +17,7 @@ export function AssetDetailsById({ id, query = '', unavailable }: { id: string; 
   useUiLanguage()
   const source = useAsset(id)
   if (source.isPending) return <Loading />
-  if (!source.data) return <div className="stack"><ErrorNotice error={source.error} retry={() => void source.refetch()} retrying={source.isFetching} />{unavailable}</div>
+  if (!source.data) return <div className="stack"><ErrorNotice source="read" error={source.error} retry={() => void source.refetch()} retrying={source.isFetching} />{unavailable}</div>
   return <><AssetDetails asset={source.data.asset} query={query} />{!!source.data.associatedLorebooks.length && <Fold label={uiT("关联世界书 · %{v0} 本", { v0: source.data.associatedLorebooks.length })}>
     {source.data.associatedLorebooks.map(book => <Fold key={book.id} label={book.name}><AssetDetailsById id={book.id} query={query} /></Fold>)}
   </Fold>}</>

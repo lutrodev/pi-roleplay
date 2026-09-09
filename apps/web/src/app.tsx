@@ -1,5 +1,5 @@
 import { uiT, useUiLanguage } from "./lib/i18n.ts"
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowUpRight } from 'lucide-react'
 import { api, queryClient, useAction } from './lib/api.ts'
@@ -7,21 +7,23 @@ import { Button, ErrorNotice, Field, Input } from './components/ui.tsx'
 import { Shell } from './components/shell.tsx'
 import { EntryState, WorkspaceConnectionNotice } from './components/app-states.tsx'
 import { isSessionExpired } from './lib/error-feedback.ts'
+import { connectionFailure } from './lib/api-error.ts'
+import { ConnectionFeedbackContext, useWorkspaceConnection } from './lib/connection-feedback.tsx'
 export { HomePage } from './pages/home.tsx'
 
 export function App() {
   useUiLanguage()
-  const auth = useQuery({ queryKey: ['auth'], queryFn: ({ signal }) => api<{ authenticated: boolean; configured: boolean }>('/auth/session', 'GET', undefined, signal) })
-  const previousError = useRef<Error | null>(null)
-  useEffect(() => { if (auth.error) previousError.current = auth.error; else if (!auth.isFetching) previousError.current = null }, [auth.error, auth.isFetching])
-  // Query retries clear an initial error before they resolve. Keep recovery stable meanwhile.
-  const error = auth.error ?? (auth.isFetching ? previousError.current : null)
-  const retry = () => { void auth.refetch() }
-  if (!auth.data) return <EntryState error={error} busy={auth.isFetching} retry={retry} />
-  if (!auth.data.configured) return <EntryState configured={false} error={error} busy={auth.isFetching} retry={retry} />
-  if (!auth.data.authenticated || isSessionExpired(error)) return <Login connectionError={error} retry={retry} retrying={auth.isFetching} />
+  const auth = useQuery({ queryKey: ['auth'], queryFn: ({ signal }) => api<{ authenticated: boolean; configured: boolean }>('/auth/session', 'GET', undefined, signal),
+    refetchInterval: query => connectionFailure(query.state.error) ? 5000 : false,
+  })
+  const connection = useWorkspaceConnection(auth), { error } = connection
+  const retry = () => { void auth.refetch({ cancelRefetch: false }) }
+  if (!auth.data) return <EntryState {...connection} retry={retry} />
+  if (!auth.data.configured) return <EntryState configured={false} {...connection} retry={retry} />
+  if (!auth.data.authenticated || isSessionExpired(error)) return <Login connectionError={error} retry={retry} retrying={connection.busy} />
   // A background connection failure must not unmount the workspace and its drafts.
-  return <Shell notice={error && <WorkspaceConnectionNotice error={error} busy={auth.isFetching} retry={retry} />} />
+  const notice = error && <WorkspaceConnectionNotice error={error} busy={connection.busy} offline={connection.offline} retry={retry} />
+  return <ConnectionFeedbackContext.Provider value={{ error, notice }}><Shell notice={notice && <div className="workspace-feedback">{notice}</div>} /></ConnectionFeedbackContext.Provider>
 }
 function Login({ connectionError, retry, retrying }: { connectionError: Error | null; retry: () => void; retrying: boolean }) {
   useUiLanguage()

@@ -1,4 +1,4 @@
-import { ApiError } from './api.ts'
+import { ApiError } from './api-error.ts'
 
 export interface ErrorFeedback { title: string; message?: string; help?: string; details?: string; icon: 'connection' | 'error' | 'locked' | 'clock' | 'missing' }
 

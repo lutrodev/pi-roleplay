@@ -22,21 +22,21 @@ export function PageFeedback({ title, description, icon: Icon, details, actions,
   </section>
 }
 
-export function EntryState({ error, configured, busy, retry }: { error?: Error | null; configured?: boolean; busy: boolean; retry: () => void }) {
+export function EntryState({ error, configured, busy, retry, offline = false }: { error?: Error | null; configured?: boolean; busy: boolean; retry: () => void; offline?: boolean }) {
   useUiLanguage()
   const feedback = error ? errorFeedback(error) : undefined
   return <main className="entry-page"><p className="entry-brand">pi-roleplay</p>
-    {feedback ? <PageFeedback title={uiT(feedback.title)} description={uiT(feedback.message ?? '暂时无法打开创作空间，请重试连接。')} icon={errorIcons[feedback.icon]} details={feedback.details && uiT(feedback.details)} actions={<Button tone="primary" onClick={retry} disabled={busy}>{busy ? <LoaderCircle size={15} className="spinner" /> : <RefreshCw size={15} />}{uiT(busy ? '正在重试…' : '重试连接')}</Button>} />
+    {feedback ? <PageFeedback title={uiT(feedback.title)} description={uiT(feedback.message ?? '暂时无法打开创作空间，请重试连接。')} icon={errorIcons[feedback.icon]} details={feedback.details && uiT(feedback.details)} actions={<Button tone="primary" onClick={retry} disabled={busy || offline}>{busy && !offline ? <LoaderCircle size={15} className="spinner" /> : <RefreshCw size={15} />}{uiT(offline ? '等待网络恢复' : busy ? '正在重试…' : '重试连接')}</Button>} />
       : configured === false ? <PageFeedback title={uiT('完成首次设置')} description={uiT('管理员密码尚未设置。请在服务器上完成初始化，然后重新检查。')} icon={Settings2} actions={<Button tone="primary" onClick={retry} disabled={busy}>{busy && <LoaderCircle size={15} className="spinner" />}{uiT(busy ? '正在检查…' : '重新检查')}</Button>} />
       : <PageFeedback title={uiT('正在连接创作空间')} description={uiT('正在检查服务和登录状态…')} icon={LoaderCircle} busy />}
   </main>
 }
 
-export function WorkspaceConnectionNotice({ error, busy, retry }: { error: Error; busy: boolean; retry: () => void }) {
+export function WorkspaceConnectionNotice({ error, busy, retry, offline = false }: { error: Error; busy: boolean; retry: () => void; offline?: boolean }) {
   useUiLanguage()
   const feedback = errorFeedback(error)
-  return <StatusNotice title={uiT(feedback.title)} tone="error" icon={errorIcons[feedback.icon]} compact className="workspace-connection-notice" details={feedback.details && uiT(feedback.details)} collapseDetails actions={<Button onClick={retry} disabled={busy}>{busy ? <LoaderCircle size={14} className="spinner" /> : <RefreshCw size={14} />}{uiT(busy ? '正在重试…' : '重试连接')}</Button>}>
-    <p>{uiT('当前页面和未保存的编辑仍保留，连接恢复后即可继续。')}</p>
+  return <StatusNotice title={uiT(feedback.title)} tone="warning" icon={errorIcons[feedback.icon]} compact className="workspace-connection-notice" details={feedback.details && uiT(feedback.details)} collapseDetails actions={<Button onClick={retry} disabled={busy || offline}>{busy && !offline ? <LoaderCircle size={14} className="spinner" /> : <RefreshCw size={14} />}{uiT(offline ? '等待网络恢复' : busy ? '正在重试…' : '重试连接')}</Button>}>
+    <p>{uiT('内容与未保存的编辑仍保留，恢复后自动同步。')}</p>
   </StatusNotice>
 }
 

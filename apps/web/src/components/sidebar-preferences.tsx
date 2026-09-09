@@ -31,7 +31,7 @@ export function SidebarPreferences({ settings, manageWorkspaces }: { settings: S
 
 function SortContents({ settings, done }: { settings: SidebarSettings; done: () => void }) {
   const current = useStories(), archived = useStories(true), workspaces = useWorkspaces()
-  return <><ErrorNotice error={current.error ?? archived.error ?? workspaces.error} retry={() => { void current.refetch(); void archived.refetch(); void workspaces.refetch() }} />
+  return <><ErrorNotice source="read" error={current.error ?? archived.error ?? workspaces.error} retry={() => { void current.refetch(); void archived.refetch(); void workspaces.refetch() }} />
     {current.data && archived.data && workspaces.data ? <SortEditor settings={settings} stories={[...current.data.stories, ...archived.data.stories].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))} workspaces={workspaces.data.workspaces} done={done} /> : <Loading />}
   </>
 }

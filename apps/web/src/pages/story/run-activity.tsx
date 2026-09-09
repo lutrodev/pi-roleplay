@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import type { RunRecord, StorySnapshot } from '../../../../../packages/rp-core/src/types.ts'
 import type { ActiveTool } from '../../../../../packages/protocol/src/reading.ts'
 import { uiT, useUiLanguage } from '../../lib/i18n.ts'
+import { useSharedConnectionError } from '../../lib/connection-feedback.tsx'
 
 type ActivityStory = Pick<StorySnapshot, 'archived' | 'messages' | 'maintenance'>
 type Connection = 'connecting' | 'live' | 'reconnecting'
@@ -31,11 +32,12 @@ export function runActivityPhase(story: ActivityStory, run: RunRecord | undefine
 
 export function RunActivity({ story, run, activeTools, connection = 'live' }: { story: ActivityStory; run?: RunRecord; activeTools: readonly ActiveTool[]; connection?: Connection }) {
   useUiLanguage()
+  const sharedConnectionError = useSharedConnectionError()
   const phase = runActivityPhase(story, run, activeTools, connection)
   // Manual summaries already expose their progress and stop action in SummaryFeedback.
   const manualSummary = story.maintenance.summary?.status === 'running' && story.maintenance.summary.trigger === 'manual'
-  if (!phase || manualSummary && !['queued', 'waiting_user'].includes(run?.status ?? '')) return null
-  const copy: Record<Phase, string> = {
+  if (sharedConnectionError || !phase || phase === 'reconnecting' || manualSummary && !['queued', 'waiting_user'].includes(run?.status ?? '')) return null
+  const copy: Record<Exclude<Phase, 'reconnecting'>, string> = {
     queued: uiT('等待开始…'),
     preparing: uiT('正在构思…'),
     writing: uiT('正在写作…'),
@@ -44,7 +46,6 @@ export function RunActivity({ story, run, activeTools, connection = 'live' }: { 
     finishing: uiT('正在完成后续处理…'),
     summary: uiT('正在整理上下文…'),
     waiting: uiT('等待你的回答'),
-    reconnecting: uiT('正在重新连接…'),
   }
   return <div className="run-activity" data-phase={phase} role="status" aria-live="polite" aria-atomic="true">
     {phase === 'waiting' ? <MessageCircle className="run-activity-icon" size={14} aria-hidden="true" /> : <LoaderCircle className="run-activity-icon spinner" size={14} aria-hidden="true" />}

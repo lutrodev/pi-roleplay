@@ -53,7 +53,7 @@ function StorySubagentForm({ story, disabled, done }: { story: StorySnapshot; di
     else setRoutes(current => { const next = { ...current }; if (route) next[id] = route; else delete next[id]; return next })
   }
   if (catalog.isPending) return <Loading />
-  if (!catalog.data) return <ErrorNotice error={catalog.error} retry={() => void catalog.refetch()} retrying={catalog.isFetching} />
+  if (!catalog.data) return <ErrorNotice source="read" error={catalog.error} retry={() => void catalog.refetch()} retrying={catalog.isFetching} />
   const picker = (id: string, name: string, globalRoute: ModelSelection, layout: 'row' | 'compact') => {
     const route = id === 'writer' ? writerRoute : routes[id]
     const globalModel = globalRoute.kind === 'fixed' ? globalRoute : main ? resolveModelSelection(globalRoute, main) : undefined

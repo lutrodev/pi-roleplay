@@ -24,7 +24,7 @@ export function NewConversationPage() {
 function NewConversation({ workspaceId }: { workspaceId: string }) {
   useUiLanguage()
   const settings = useSettings(), defaults = useQuery({ queryKey: ['defaults'], queryFn: () => api<{ defaults: { persona: string; preset: string; writingStyle: string } }>('/assets/defaults') })
-  if (!settings.data || !defaults.data) return <div className="page-screen"><PageHeader title={uiT('新会话')} /><div className="page-content"><ErrorNotice error={settings.error ?? defaults.error} retry={() => { void settings.refetch(); void defaults.refetch() }} retrying={settings.isFetching || defaults.isFetching} />{!settings.error && !defaults.error && <Loading />}</div></div>
+  if (!settings.data || !defaults.data) return <div className="page-screen"><PageHeader title={uiT('新会话')} /><div className="page-content"><ErrorNotice source="read" error={settings.error ?? defaults.error} retry={() => { void settings.refetch(); void defaults.refetch() }} retrying={settings.isFetching || defaults.isFetching} />{!settings.error && !defaults.error && <Loading />}</div></div>
   const shared = defaults.data.defaults
   const profile: StoryProfile = { revision: 0, playerCharacterId: 'player', cast: [{ characterId: 'player', name: uiT('我'), controller: 'user' }], scene: { openingSource: 'skip' }, runtime: { executionMode: 'chat' }, resources: {
     persona: { id: shared.persona }, preset: { id: shared.preset }, lorebooks: [], writingStyles: [{ id: shared.writingStyle }],
@@ -119,7 +119,7 @@ function DraftConversation({ initial, preferences }: { initial: NewConversationO
           </Button>
         </div>
       </section>
-      <ErrorNotice error={restored.error ?? card.error ?? workspaces.error ?? models.error} />
+      <ErrorNotice source="read" error={restored.error ?? card.error ?? workspaces.error ?? models.error} />
     </div>
     <NewStory open={setup !== null} initialStep={setup ?? 'assets'} value={options} onChange={change} onOpenChange={open => { if (!open) closeSetup() }} onStart={() => void create.run(() => start())} busy={busy} error={create.error} />
     <Modal size="form" open={advanced} onOpenChange={setAdvanced} title={uiT('会话设置')} description={uiT('本次会话使用的名称、工作区与模型。')}><div className="stack"><SettingsGroup><Field layout="row" label={uiT('名称（可选）')}><Input maxLength={120} value={options.title} placeholder={uiT('根据第一条消息命名')} onChange={event => change({ ...options, title: event.target.value })} /></Field>

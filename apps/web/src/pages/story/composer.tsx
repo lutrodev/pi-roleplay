@@ -141,7 +141,8 @@ export function Composer({ story, active, preferences, state, openSettings, onSe
   }
   const status = editing ? uiT("正在编辑消息 · 输入草稿会保留") : active ? active.status === 'queued' ? uiT("正在排队 · 可先写下一条") : active.status === 'waiting_user' ? uiT("请在上方回答问题") : uiT("正在生成 · 可先写下一条") : upload.busy ? uiT("正在上传附件…") : summaryBusy ? uiT("正在整理会话总结 · 可先写下一条") : ''
   return <Popover.Root open={!!completion} onOpenChange={open => { if (!open) dismissCompletion() }}><div className="composer-wrap">
-    <ErrorNotice error={submission.error ?? upload.error ?? stop.error ?? queued.error} />
+    <ErrorNotice error={submission.error ?? upload.error ?? stop.error} title={uiT('消息操作未完成')} />
+    <ErrorNotice source="read" error={queued.error} title={uiT('待发消息暂时无法读取')} retry={() => void queued.refetch()} retrying={queued.isFetching} />
     {commandNotice && <p className="composer-command-notice" role="status">{commandNotice}</p>}
     <InputQueue storyId={story.id} items={queued.items} active={active} disabled={story.archived || editing || submission.busy} refresh={queued.refresh} />
     <div className="composer-surface">{suggestions}

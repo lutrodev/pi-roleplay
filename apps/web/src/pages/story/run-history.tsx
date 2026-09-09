@@ -17,5 +17,5 @@ export function useRunHistory(storyId: string, recent: RunRecord[]) {
 }
 export function RunSelector({ history, selected, onChange }: { history: ReturnType<typeof useRunHistory>; selected: string; onChange: (id: string) => void }) {
   useUiLanguage()
-  return <><Field label={uiT("执行记录")}><Select value={selected} onChange={event => onChange(event.target.value)}>{history.runs.map(run => <option key={run.id} value={run.id}>{new Date(run.createdAt).toLocaleString(uiLocale())} · {uiT(runStatus[run.status])}</option>)}</Select></Field>{history.canLoad && <Button disabled={history.busy} onClick={() => void history.load()}>{uiT("加载更早的执行记录")}</Button>}<ErrorNotice error={history.error} /></>
+  return <><Field label={uiT("执行记录")}><Select value={selected} onChange={event => onChange(event.target.value)}>{history.runs.map(run => <option key={run.id} value={run.id}>{new Date(run.createdAt).toLocaleString(uiLocale())} · {uiT(runStatus[run.status])}</option>)}</Select></Field>{history.canLoad && <Button disabled={history.busy} onClick={() => void history.load()}>{uiT("加载更早的执行记录")}</Button>}<ErrorNotice source="read" error={history.error} /></>
 }

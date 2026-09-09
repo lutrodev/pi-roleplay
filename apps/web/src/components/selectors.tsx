@@ -35,7 +35,7 @@ export function AssetSelection({ kind, ids, onChange, multiple = false, disabled
   return <div className="asset-selection stack">
     <div className="search-field"><Search size={17} /><Input autoFocus={autoFocus} aria-label={uiT('搜索资料')} placeholder={uiT('按名称搜索')} value={search} onChange={event => { setSearch(event.target.value); setOffset(0) }} /></div>
     {multiple && ids.length > 0 && <SelectedAssets ids={ids} multiple disabled={disabled} onChange={onChange} />}
-    <ErrorNotice error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />{query.isPending && <Loading />}
+    <ErrorNotice source="read" error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />{query.isPending && <Loading />}
     <div className="pick-list">{!multiple && <div className="asset-pick-row"><Check type="radio" name={group} label={uiT('不使用%{kind}', { kind: uiT(assetLabels[kind]) })} checked={!ids.length} disabled={disabled} onChange={() => { onChange([]); onSelect?.() }} /></div>}
       {query.data?.assets.map(asset => <div className="asset-pick-row" key={asset.id}><Check type={multiple ? 'checkbox' : 'radio'} name={multiple ? undefined : group} label={asset.name} help={asset.description} checked={ids.includes(asset.id)} disabled={disabled || kind === 'writingStyle' && ids.length >= 16 && !ids.includes(asset.id)} onChange={event => {
         onChange(multiple ? event.target.checked ? [...ids, asset.id] : ids.filter(id => id !== asset.id) : [asset.id]); onSelect?.()

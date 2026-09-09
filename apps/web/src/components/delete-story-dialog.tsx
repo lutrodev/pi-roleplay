@@ -23,7 +23,7 @@ export function DeleteStoryDialog({ storyId, title, onClose }: { storyId: string
       <p className="muted">{uiT('共享资料、工作区文件和其他会话分支会保留。')}</p>
       {current.isFetching && <Loading />}
       {busy && <p role="status">{uiT('会话仍有任务进行中，请等待完成或先停止生成。')}</p>}
-      {changed ? <StatusNotice compact tone="error" title={uiT('会话已更新')} details={uiT('会话已更新，请重新确认最新内容后再删除。')} /> : <ErrorNotice error={action.error ?? current.error} />}
+      {changed ? <StatusNotice compact tone="error" title={uiT('会话已更新')} details={uiT('会话已更新，请重新确认最新内容后再删除。')} /> : <ErrorNotice source={action.error ? 'action' : 'read'} error={action.error ?? current.error} />}
       <div className="form-actions"><Button data-autofocus disabled={action.busy} onClick={onClose}>{uiT('取消')}</Button>
         {(needsReview || busy || current.error) && <Button disabled={action.busy || current.isFetching} onClick={() => { action.clear(); void current.refetch() }}>{uiT('重新确认')}</Button>}
         <Button type="submit" tone="danger" disabled={action.busy || current.isFetching || !current.data || !!current.error || !!busy || needsReview}>{action.busy ? uiT('正在删除…') : uiT('删除会话')}</Button>

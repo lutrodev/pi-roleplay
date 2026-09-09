@@ -3,6 +3,7 @@ import type { RunRecord } from '../../../../../packages/rp-core/src/types.ts'
 import type { RunActivitySnapshot } from '../../../../../packages/protocol/src/activity.ts'
 import { api } from '../../lib/api.ts'
 import { uiT, useUiLanguage } from '../../lib/i18n.ts'
+import { useSharedConnectionError } from '../../lib/connection-feedback.tsx'
 
 export function activityToolName(name: string): string {
   return ({ rp_write_turn: uiT('Writer 写作'), rp_commit_turn: uiT('保存正文与剧情状态'), rp_reply: uiT('整理回复'),
@@ -40,14 +41,15 @@ export function RunProgressView({ run, snapshot, connection, unavailable }: {
   run: RunRecord; snapshot?: RunActivitySnapshot; connection: 'connecting' | 'live' | 'reconnecting'; unavailable?: boolean
 }) {
   useUiLanguage()
-  if (!['queued', 'running', 'waiting_user'].includes(run.status)) return null
-  const progress = progressPresentation(run, snapshot), disconnected = connection !== 'live'
-  const label = disconnected ? uiT('连接恢复后继续更新实时进展') : unavailable ? uiT('实时进展暂时无法读取，可查看本轮轨迹') : progress.label
+  const sharedConnectionError = useSharedConnectionError()
+  if (sharedConnectionError || connection !== 'live' || !['queued', 'running', 'waiting_user'].includes(run.status)) return null
+  const progress = progressPresentation(run, snapshot)
+  const label = unavailable ? uiT('实时进展暂时无法读取，可查看本轮轨迹') : progress.label
   // Show the newest sentence while streaming; inspection stays in the reply footer.
   const currentLine = label.split(/(?<=[。！？\n])/u).map(line => line.trim()).filter(Boolean).at(-1) ?? label
   return <section className="run-progress" aria-label={uiT('实时运行进展')}>
     <div className="run-progress-line" title={label}>
-      <span className="run-progress-text" data-animated={!disconnected && !unavailable && run.status === 'running'}>{currentLine}</span>
+      <span className="run-progress-text" data-animated={!unavailable && run.status === 'running'}>{currentLine}</span>
     </div>
   </section>
 }

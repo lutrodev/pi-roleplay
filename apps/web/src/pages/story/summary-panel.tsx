@@ -25,10 +25,10 @@ export function SummaryPanel({ story }: { story: StorySnapshot }) {
       {story.checkpoint && <small>{uiT('涵盖 %{count} 条消息', { count: story.checkpoint.sourceMessageIds.length })}</small>}
     </header>
     {story.checkpoint && <section className="summary-checkpoint" aria-label={uiT('会话总结')}><Markdown text={story.checkpoint.text} /><p className="material-footnote">{uiT('原文仍保留在会话中。')}</p></section>}
-    <ErrorNotice error={recaps.error} retry={() => void recaps.refetch()} retrying={recaps.isFetching} />{recaps.isPending && <Loading />}
+    <ErrorNotice source="read" error={recaps.error} retry={() => void recaps.refetch()} retrying={recaps.isFetching} />{recaps.isPending && <Loading />}
     {recent.length > 0 && <section className="summary-recent"><header><h4>{uiT('近期剧情')}</h4><span>{uiT('从新到旧')}</span></header><ol>{recent.map((summary, index) => <li key={summary.messageId}><span className="summary-step">{index === 0 ? uiT('最近') : uiT('更早')}</span><Markdown text={summary.text} /></li>)}</ol>{recaps.hasNextPage && <Button tone="quiet" disabled={recaps.isFetchingNextPage} onClick={() => void recaps.fetchNextPage()}>{uiT(recaps.isFetchingNextPage ? '正在读取…' : '继续阅读更早的剧情')}</Button>}<p className="material-footnote">{uiT('这些回顾记录于回复生成时。')}</p></section>}
     {!story.checkpoint && recaps.isSuccess && !recent.length && <Empty icon={<BookOpen size={24} />} title={uiT('故事回顾会出现在这里')}>{uiT('有剧情回复或会话总结后，就可以在这里阅读。')}</Empty>}
     <SummaryFeedback summary={story.maintenance.summary} showReady />
-    {id && <details className="context-section summary-records" open={recordsOpen} onToggle={event => setRecordsOpen(event.currentTarget.open)}><summary>{uiT('最近一次总结记录')}</summary>{recordsOpen && <><ErrorNotice error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />{query.isPending && <Loading />}{query.data && <JsonView value={query.data.records} />}</>}</details>}
+    {id && <details className="context-section summary-records" open={recordsOpen} onToggle={event => setRecordsOpen(event.currentTarget.open)}><summary>{uiT('最近一次总结记录')}</summary>{recordsOpen && <><ErrorNotice source="read" error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />{query.isPending && <Loading />}{query.data && <JsonView value={query.data.records} />}</>}</details>}
   </div>
 }

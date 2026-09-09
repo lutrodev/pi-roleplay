@@ -26,7 +26,7 @@ export function RoundLedger({ round, now, children, viewingAttempt, chooseAttemp
         </Menu>}
       </header>
       {historical && <div className="trajectory-history-notice"><History size={13} /><span>{uiT('正在查看第 %{attempt} 次尝试 · %{state}', { attempt, state: uiT(selected?.disposition === 'deleted' ? '已删除' : selected?.disposition === 'superseded' ? '已被替换' : '当前尝试') })}</span>{viewingAttempt && round.state !== 'deleted' && <Button tone="quiet" onClick={() => chooseAttempt?.(null)}>{uiT('返回当前轨迹')}</Button>}</div>}
-      {loading ? <Loading /> : error ? <ErrorNotice error={error} retry={retry} /> : <>{!inputOnly && run.error && <p className="trajectory-run-error" data-status={run.status}>{run.error.message}</p>}{children}</>}
+      {loading ? <Loading /> : error ? <ErrorNotice source="read" error={error} retry={retry} /> : <>{!inputOnly && run.error && <p className="trajectory-run-error" data-status={run.status}>{run.error.message}</p>}{children}</>}
     </div>
   </section>
 }

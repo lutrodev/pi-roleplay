@@ -27,7 +27,7 @@ export function SidebarStories({ done, create, manageWorkspaces }: { done: () =>
   const archived = !selectedListed && current.data?.story.archived ? current.data.story : null
   return <>
     <nav className="story-list" aria-label={uiT('会话导航')}>
-      <ErrorNotice error={catalog.error ?? settings.error} retry={() => { void catalog.refetch(); void settings.refetch() }} retrying={catalog.isFetching || settings.isFetching} />
+      <ErrorNotice source="read" error={catalog.error ?? settings.error} retry={() => { void catalog.refetch(); void settings.refetch() }} retrying={catalog.isFetching || settings.isFetching} />
       {(catalog.isPending || settings.isPending) && <Loading label={uiT('读取会话…')} />}
       {sections && settings.data && <>
         {archived && <section className="sidebar-section" aria-label={uiT('当前归档会话')}><div className="sidebar-section-heading">{uiT('当前归档会话')}</div><SidebarStory story={archived} settings={settings.data} done={done} /></section>}
@@ -52,7 +52,7 @@ function WorkspaceStories({ stories, settings, selectedId, done, create }: RowsP
   useEffect(() => { if (containsSelected) setCollapsed(ids => ids.filter(id => id !== activeGroup)) }, [selectedId, activeGroup, containsSelected])
   useEffect(() => { try { localStorage.setItem('rp-collapsed-workspaces', JSON.stringify(collapsed)) } catch { /* The in-memory choice remains usable without local storage. */ } }, [collapsed])
   const groups = catalog.data ? workspaceGroups(stories, catalog.data.workspaces, settings) : []
-  return <><ErrorNotice error={catalog.error} retry={() => void catalog.refetch()} retrying={catalog.isFetching} />{catalog.isPending && <Loading />}
+  return <><ErrorNotice source="read" error={catalog.error} retry={() => void catalog.refetch()} retrying={catalog.isFetching} />{catalog.isPending && <Loading />}
     {groups.map(group => {
       const open = !collapsed.includes(group.id), label = group.id ? group.name || uiT('工作区信息待刷新') : uiT('独立会话')
       return <section className="sidebar-workspace" key={group.id}>

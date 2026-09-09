@@ -18,5 +18,5 @@ export function ModelReasoning({ provider, model, onChange }: { provider: string
   return <><Field label={uiT('思考能力')} help={help}><Select aria-label={uiT('思考能力')} value={model.reasoning === undefined ? 'auto' : String(model.reasoning)}
     onChange={event => onChange(event.target.value === 'auto' ? undefined : event.target.value === 'true')}>
     <option value="auto">{uiT('自动识别（默认）')}</option><option value="true">{uiT('手动开启')}</option><option value="false">{uiT('不支持思考')}</option>
-  </Select></Field><ErrorNotice error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} /></>
+  </Select></Field><ErrorNotice source="read" error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} /></>
 }
