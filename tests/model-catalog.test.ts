@@ -18,15 +18,25 @@ function setup() {
 }
 it('previews reasoning without network or credential access and preserves automatic mode through edits and reopen', () => {
   const x = setup(), connection = { api: 'openai-completions', baseUrl: model.baseUrl }
-  expect(x.service.previewMetadata({ provider: 'provider-synthetic', model: 'gpt-6-astra', connection })).toMatchObject({ reasoningSource: 'catalog', defaultThinkingLevel: 'medium' })
+  expect(x.service.previewMetadata({ provider: 'provider-synthetic', model: 'gpt-6-astra', connection })).toMatchObject({ reasoningSource: 'catalog', defaultThinkingLevel: 'provider-default' })
   expect(x.requests).toEqual([])
   const updated = x.service.update(1, { id: 'provider-synthetic', label: '自动思考', apiKey: 'synthetic-key', models: [{ ...model, model: 'gpt-6-astra' }] }, true)
   const entry = updated.providers[0]!.models[0]!, { configured: _configured, check: _check, effective: _effective, ...fields } = entry
   expect(fields.reasoning).toBeUndefined()
   x.service.update(2, { id: 'provider-synthetic', label: '改名', models: [fields] })
   const restored = new ModelCatalogService(x.assets, [], x.key, x.options)
-  expect(restored.models.list()[0]).toMatchObject({ reasoningSource: 'catalog', defaultThinkingLevel: 'medium' })
+  expect(restored.models.list()[0]).toMatchObject({ reasoningSource: 'catalog', defaultThinkingLevel: 'provider-default' })
   expect(restored.models.registrations()[0]?.reasoning).toBeUndefined()
+})
+it('persists explicit channel controls and model defaults without mixing them with credentials or capability discovery', () => {
+  const x = setup(), reasoningControl = { mode: 'effort', format: 'openai', levels: { low: 'low', high: 'high' }, off: 'none' }
+  x.service.update(1, { id: 'custom', label: '渠道', apiKey: 'synthetic-key', models: [{ ...model, reasoningControl, defaultReasoningEffort: 'high' }] }, true)
+  const restored = new ModelCatalogService(x.assets, [], x.key, x.options)
+  expect(restored.models.registrations()[0]).toMatchObject({ reasoningControl, defaultReasoningEffort: 'high' })
+  expect(restored.models.resolve({ provider: 'custom', model: model.model }).reasoning).toMatchObject({ effective: 'high', source: 'model-default', controlSource: 'manual' })
+  const before = x.assets.getSetting('models.catalog')
+  expect(() => restored.update(2, { id: 'custom', label: '渠道', models: [{ ...model, reasoningControl, defaultReasoningEffort: 'max' }] })).toThrow('默认思考')
+  expect(x.assets.getSetting('models.catalog')).toEqual(before)
 })
 it('persists encrypted Web credentials, uses them through the real Pi adapter, and restores with the same deployment secret', async () => {
   const x = setup()

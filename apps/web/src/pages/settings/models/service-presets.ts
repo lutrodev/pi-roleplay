@@ -30,7 +30,7 @@ export const servicePresets: ServicePreset[] = [
   { id: 'deepseek', label: 'DeepSeek', description: 'DeepSeek 官方服务', aliases: ['深度求索'], common: true,
     connection: { api: 'openai-completions', baseUrl: 'https://api.deepseek.com' }, docsUrl: 'https://api-docs.deepseek.com/' },
   { id: 'bailian', label: '阿里云百炼', description: 'Qwen 通义千问等模型', aliases: ['Alibaba', 'Aliyun', 'DashScope', 'Qwen', '通义千问'],
-    connection: { api: 'openai-completions', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1' }, docsUrl: 'https://www.alibabacloud.com/help/zh/model-studio/get-api-key', note: '默认使用北京地域的按量 API；其他地域或套餐请按接入文档修改地址。', compat: { ...compatible, thinkingFormat: 'qwen', supportsReasoningEffort: false } },
+    connection: { api: 'openai-completions', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1' }, docsUrl: 'https://www.alibabacloud.com/help/zh/model-studio/get-api-key', note: '默认使用北京地域的按量 API；其他地域或套餐请按接入文档修改地址。', compat: { ...compatible, thinkingFormat: 'qwen' } },
   { id: 'zhipu', label: '智谱 BigModel', description: 'GLM 系列模型', aliases: ['Zhipu', 'GLM', '智谱清言'],
     connection: { api: 'openai-completions', baseUrl: 'https://open.bigmodel.cn/api/paas/v4' }, docsUrl: 'https://docs.bigmodel.cn/cn/guide/develop/openai/introduction', note: '默认使用国内站的按量 API；Coding Plan 请按接入文档修改地址。' },
   { id: 'minimax', label: 'MiniMax', description: 'MiniMax 系列模型 · 国内站', aliases: ['海螺', '稀宇'],

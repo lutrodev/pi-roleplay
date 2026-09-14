@@ -133,11 +133,11 @@ export class SummaryService {
     job.done = Promise.resolve().then(async () => {
       try {
         signal.throwIfAborted()
-        const { model, thinkingLevel } = this.models.resolve(route), maxTokens = Math.min(SUMMARY_MAX_TOKENS, model.maxTokens)
+        const { model } = this.models.resolve(route), maxTokens = this.models.outputBudget(route, SUMMARY_MAX_TOKENS)
         requireValue(estimateTextTokens(SUMMARY_INSTRUCTION + plan.prompt) + maxTokens < model.contextWindow, 'SUMMARY_INPUT_TOO_LARGE', '总结来源超过所选模型的上下文窗口，请改用更大上下文的模型。')
         this.stories.append(storyId, { type: 'maintenance.model', data: { id: metadata.id, role: 'request', message: { route: { ...route }, systemPrompt: SUMMARY_INSTRUCTION, prompt: plan.prompt, maxTokens } } })
         const result = await this.models.stream(model, { systemPrompt: SUMMARY_INSTRUCTION, messages: [{ role: 'user', content: plan.prompt, timestamp: Date.now() }] }, {
-          signal, timeoutMs: 60000, maxRetries: 0, maxTokens, toolChoice: 'none', ...(thinkingLevel === 'off' ? {} : { reasoning: thinkingLevel }),
+          signal, timeoutMs: 60000, maxRetries: 0, maxTokens, toolChoice: 'none', reasoningSelection: route.reasoningEffort ?? 'model-default',
         }).result()
         signal.throwIfAborted()
         this.stories.append(storyId, { type: 'maintenance.model', data: { id: metadata.id, role: 'response', message: JSON.parse(JSON.stringify(result)) as JsonObject } })

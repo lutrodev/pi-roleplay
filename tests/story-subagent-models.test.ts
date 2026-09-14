@@ -16,7 +16,7 @@ afterEach(() => cleanup.splice(0).forEach(close => close()))
 const fixed = (model: string) => ({ kind: 'fixed' as const, provider: 'test', model, reasoningEffort: 'low' })
 function setup() {
   const x = fixture(); cleanup.push(x.close)
-  const models = new ModelRegistry(['global', 'local', 'updated'].map(model => ({ provider: 'test', model, reasoning: true,
+  const models = new ModelRegistry(['global', 'local', 'updated'].map(model => ({ provider: 'test', model, reasoning: true, reasoningControl: { mode: 'effort' as const, format: 'openai' as const, levels: { low: 'low', medium: 'medium', high: 'high' } },
     keyEnv: 'SYNTHETIC', api: 'openai-completions' as const, baseUrl: 'https://model.test/v1', contextWindow: 32000, maxTokens: 4096 })), { env: () => 'synthetic-key' })
   return { ...x, models, catalog: new SubagentService(x.assets, models), service: new StoryService(x.stories, x.assets, x.files) }
 }

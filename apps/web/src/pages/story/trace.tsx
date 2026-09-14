@@ -2,6 +2,7 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
 import { ArrowDown, ArrowLeft, ChevronDown, ChevronRight, ChevronUp, Clock3, Download, Filter, Search, X, ChevronsUpDown } from 'lucide-react'
 import type { RunRecord, StorySnapshot } from '../../../../../packages/rp-core/src/types.ts'
+import type { RunActivitySnapshot } from '../../../../../packages/protocol/src/activity.ts'
 import type { TrajectoryEntry, TrajectoryRound } from '../../../../../packages/protocol/src/trace.ts'
 import { uiLocale, uiT, useUiLanguage } from '../../lib/i18n.ts'
 import { ErrorNotice, Button, Empty, IconButton, Input, Loading, Menu, MenuItem } from '../../components/ui.tsx'
@@ -14,7 +15,8 @@ import { traceKey, useConversationTrajectory, useHistoricalAttempts } from './tr
 
 interface TraceScope { runId: string; id: string }
 interface TraceLocation { selected: string | null; top: number; search: string; errors: boolean }
-export function TracePanel({ story, runs, runId, onRunChange, visible, returnToConversation }: {
+export function TracePanel({ story, runs, runId, onRunChange, visible, returnToConversation, agentId, activity }: {
+  agentId?: string | null; activity?: RunActivitySnapshot
   story: StorySnapshot; runs: RunRecord[]; runId: string | null; onRunChange: (id: string | null) => void; visible: boolean; returnToConversation: () => void
 }) {
   useUiLanguage()
@@ -54,10 +56,10 @@ export function TracePanel({ story, runs, runId, onRunChange, visible, returnToC
   useEffect(() => {
     if (!visible || !runId) return
     pendingLatest.current = false
-    setScope(null); setSelected(null); setQueryText(''); setSearch(''); setErrors(false); setFollowing(false)
+    setScope(agentId ? { runId, id: agentId } : null); setSelected(null); setQueryText(''); setSearch(''); setErrors(false); setFollowing(false)
     if (!rounds.some(round => round.trajectory.run.id === runId)) setAnchor(runId)
     pendingRound.current = runId; onRunChange(null)
-  }, [visible, runId])
+  }, [visible, runId, agentId])
   const enter = (next: TraceScope | null) => {
     if (next?.runId === scope?.runId && next?.id === scope?.id) return
     pendingLatest.current = false
@@ -147,7 +149,7 @@ export function TracePanel({ story, runs, runId, onRunChange, visible, returnToC
           {!scope && source.hasPreviousPage && <div className="trajectory-page-control"><Button tone="quiet" disabled={source.isFetching} onClick={loadOlder}><ChevronUp size={14} />{uiT(source.isFetchingPreviousPage ? '正在读取…' : '加载更早的轮次')}</Button></div>}
           {groups.map(({ round, rows }) => <RoundLedger key={round.id} round={round} now={now} viewingAttempt={history.states.get(round.id)?.attempt.attempt} loading={history.states.get(round.id)?.isPending} error={history.states.get(round.id)?.error} retry={() => void history.states.get(round.id)?.refetch()} chooseAttempt={id => chooseAttempt(round, id)}>{rows.map(({ entry, depth }, index) => {
             const data = round.trajectory, key = traceKey(data.run.id, entry.id), agent = data.agents.find(agent => agent.entryId === entry.id), agentKey = agent ? traceKey(data.run.id, agent.id) : ''
-            return <Fragment key={key}>{entry.history && !rows.slice(0, index).some(row => row.entry.history && row.entry.agentId === entry.agentId) && <div className="trajectory-preset-heading" style={{ paddingLeft: `${14 + depth * 18}px` }}>{uiT("Writer 预置历史")}<span>{uiT("注入的输入 · 不计为实际调用")}</span></div>}<LedgerEntry rowId={key} entry={entry} agent={agent} depth={depth} selected={selected === key} expanded={!!agent && (search || errors ? !collapsedMatches.has(agentKey) : expanded.has(agentKey))} matched={data.matches.includes(entry.id)} search={search} select={() => select(round, entry)} toggle={() => { if (agent) (search || errors ? setCollapsedMatches : setExpanded)(current => { const next = new Set(current); next.has(agentKey) ? next.delete(agentKey) : next.add(agentKey); return next }) }} enter={() => { if (agent) enter({ runId: data.run.id, id: agent.id }) }} /></Fragment>
+            return <Fragment key={key}>{entry.history && !rows.slice(0, index).some(row => row.entry.history && row.entry.agentId === entry.agentId) && <div className="trajectory-preset-heading" style={{ paddingLeft: `${14 + depth * 18}px` }}>{uiT("Writer 预置历史")}<span>{uiT("注入的输入 · 不计为实际调用")}</span></div>}<LedgerEntry activity={activity?.runId === data.run.id && entry.kind === 'assistant' && entry.detail.type === 'request' ? activity.live.find(item => item.requestId === (entry.detail.type === 'request' ? entry.detail.requestId : '')) : undefined} agentActivity={activity?.runId === data.run.id ? activity.agents.find(item => item.callId === agent?.id) : undefined} now={now} rowId={key} entry={entry} agent={agent} depth={depth} selected={selected === key} expanded={!!agent && (search || errors ? !collapsedMatches.has(agentKey) : expanded.has(agentKey))} matched={data.matches.includes(entry.id)} search={search} select={() => select(round, entry)} toggle={() => { if (agent) (search || errors ? setCollapsedMatches : setExpanded)(current => { const next = new Set(current); next.has(agentKey) ? next.delete(agentKey) : next.add(agentKey); return next }) }} enter={() => { if (agent) enter({ runId: data.run.id, id: agent.id }) }} /></Fragment>
           })}{!rows.length && <p className="trajectory-round-empty">{uiT(search || errors ? '没有匹配的记录' : isActive(round.trajectory.run.status) ? '等待第一条执行记录' : '这轮没有逐次执行记录')}</p>}</RoundLedger>)}
           {!groups.length && !source.searching && !source.isError && <Empty title={uiT('没有匹配的记录')} action={<Button tone="quiet" onClick={clearFilters}>{uiT('清除筛选')}</Button>} />}
           {!scope && source.hasNextPage && <div className="trajectory-page-control"><Button tone="quiet" disabled={source.isFetching} onClick={() => void source.fetchNextPage()}><ChevronDown size={14} />{uiT(source.isFetchingNextPage ? '正在读取…' : '加载后续轮次')}</Button></div>}
@@ -155,7 +157,7 @@ export function TracePanel({ story, runs, runId, onRunChange, visible, returnToC
         </div>
         {(!atEnd || !scope && source.hasNextPage) && <Button tone="quiet" className="trajectory-follow" onClick={jump}><ArrowDown size={13} />{uiT('回到最新')}</Button>}
         {selectedItem && <><div className="trajectory-resize" role="separator" aria-label={uiT('调整详情宽度')} aria-orientation="vertical" aria-valuenow={detailWidth} aria-valuemin={30} aria-valuemax={70} tabIndex={0} onKeyDown={event => { if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); setDetailWidth(value => Math.max(30, Math.min(70, value + (event.key === 'ArrowLeft' ? 3 : -3)))) } }} onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); event.preventDefault() }} onPointerMove={event => { if (event.currentTarget.hasPointerCapture(event.pointerId) && split.current) { const rect = split.current.getBoundingClientRect(); setDetailWidth(Math.max(30, Math.min(70, (rect.right - event.clientX) / rect.width * 100))) } }} onPointerUp={event => event.currentTarget.releasePointerCapture(event.pointerId)} />
-          <TraceDetails key={selectedItem.key} entry={selectedItem.entry} runId={selectedItem.round.trajectory.run.id} storyId={story.id} round={selectedItem.round.round} attempt={history.states.get(selectedItem.round.id)?.attempt.attempt ?? selectedItem.round.attempts.length} request={selectedItem.entry.detail.type === 'request' ? selectedItem.round.trajectory.requests.find(request => request.id === (selectedItem.entry.detail.type === 'request' ? selectedItem.entry.detail.requestId : '')) : undefined} close={closeDetail} search={search} /></>}
+          <TraceDetails live={activity?.runId === selectedItem.round.trajectory.run.id && selectedItem.entry.detail.type === 'request' ? activity.live.find(item => item.requestId === (selectedItem.entry.detail.type === 'request' ? selectedItem.entry.detail.requestId : '')) : undefined} key={selectedItem.key} entry={selectedItem.entry} runId={selectedItem.round.trajectory.run.id} storyId={story.id} round={selectedItem.round.round} attempt={history.states.get(selectedItem.round.id)?.attempt.attempt ?? selectedItem.round.attempts.length} request={selectedItem.entry.detail.type === 'request' ? selectedItem.round.trajectory.requests.find(request => request.id === (selectedItem.entry.detail.type === 'request' ? selectedItem.entry.detail.requestId : '')) : undefined} close={closeDetail} search={search} /></>}
       </div>
     </>}
   </section>

@@ -13,17 +13,19 @@ export function beginModelProgress(stories: StoryRepository, runId: string, requ
   if (!runs) { runs = new Map(); requests.set(stories, runs) }
   let active = runs.get(runId)
   if (!active) { active = new Map(); runs.set(runId, active) }
-  const progress: ModelActivity = { requestId, phase: 'waiting', text: '' }
+  const progress: ModelActivity = { requestId, phase: 'waiting', text: '', updatedAt: new Date().toISOString(), outputCharacters: 0 }
   active.set(requestId, progress)
   let closed = false
   return {
-    queued(value: boolean) { if (!closed) progress.phase = value ? 'queued' : 'waiting' },
+    queued(value: boolean) { if (!closed) { progress.phase = value ? 'queued' : 'waiting'; progress.updatedAt = new Date().toISOString() } },
     update(event: AssistantMessageEvent) {
       if (closed) return
+      if (event.type.endsWith('_delta') || event.type === 'start') progress.updatedAt = new Date().toISOString()
       if (event.type === 'thinking_delta') progress.phase = 'thinking'
       if (event.type === 'text_delta') {
         progress.phase = 'responding'
         progress.text = [...(progress.text + event.delta)].slice(-320).join('')
+        progress.outputCharacters += [...event.delta].length
       }
       if (event.type === 'toolcall_start' || event.type === 'toolcall_delta') {
         progress.phase = 'tool'

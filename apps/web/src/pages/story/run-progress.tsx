@@ -5,12 +5,7 @@ import { api } from '../../lib/api.ts'
 import { uiT, useUiLanguage } from '../../lib/i18n.ts'
 import { useSharedConnectionError } from '../../lib/connection-feedback.tsx'
 
-export function activityToolName(name: string): string {
-  return ({ rp_write_turn: uiT('Writer 写作'), rp_commit_turn: uiT('保存正文与剧情状态'), rp_reply: uiT('整理回复'),
-    rp_run_subagent: uiT('子代理协作'), read: uiT('读取文件'), write: uiT('写入文件'), edit: uiT('编辑文件'),
-    bash: uiT('执行命令'), web_search: uiT('搜索资料'), ask_user_question: uiT('向你确认信息'),
-  } as Record<string, string>)[name] ?? name
-}
+import { activityToolName } from './activity-labels.ts'
 
 /** Keep public model commentary explicitly in the process surface, never in Markdown prose. */
 export function progressPresentation(run: RunRecord, snapshot?: RunActivitySnapshot) {
@@ -44,6 +39,7 @@ export function RunProgressView({ run, snapshot, connection, unavailable }: {
   useUiLanguage()
   const sharedConnectionError = useSharedConnectionError()
   if (sharedConnectionError || connection !== 'live' || !['queued', 'running', 'waiting_user'].includes(run.status)) return null
+  if (!unavailable && snapshot?.runId === run.id && snapshot.agents.some(agent => agent.status === 'running') && !snapshot.requests.some(request => request.scope === 'main' && request.status === 'running')) return null
   const progress = progressPresentation(run, snapshot)
   const label = unavailable ? uiT('实时进展暂时无法读取，可查看本轮轨迹') : progress.label
   // Show the newest sentence while streaming; inspection stays in the reply footer.
@@ -60,8 +56,9 @@ export function modelRequestsQueued(run: RunRecord | undefined, snapshot?: RunAc
 }
 
 export function useLiveRunActivity(run: RunRecord | undefined, connection: 'connecting' | 'live' | 'reconnecting', visible: boolean) {
-  const active = !!run && visible && ['queued', 'running', 'waiting_user'].includes(run.status)
-  return useQuery({ queryKey: ['run-activity', run?.id], queryFn: ({ signal }) => api<RunActivitySnapshot>(`/runs/${run!.id}/activity`, 'GET', undefined, signal),
-    enabled: active && connection === 'live', staleTime: 0, refetchInterval: active && connection === 'live' ? 750 : false,
+  const active = !!run && ['queued', 'running', 'waiting_user'].includes(run.status)
+  return useQuery({ queryKey: ['run-activity', run?.id, run?.status], queryFn: ({ signal }) => api<RunActivitySnapshot>(`/runs/${run!.id}/activity`, 'GET', undefined, signal),
+    placeholderData: previous => previous?.runId === run?.id ? previous : undefined,
+    enabled: !!run && visible && connection === 'live', staleTime: 0, refetchInterval: active && visible && connection === 'live' ? 750 : false,
   })
 }

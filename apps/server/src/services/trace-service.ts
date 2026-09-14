@@ -3,7 +3,8 @@ import { requireValue } from '../../../../packages/rp-core/src/errors.ts'
 import { projectConversationRounds, type ConversationRound } from '../../../../packages/rp-core/src/story/conversation-rounds.ts'
 import { projectRunTools } from '../../../../packages/rp-core/src/story/tool-records.ts'
 import type { StoryEvent } from '../../../../packages/rp-core/src/types.ts'
-import type { LogSummary, ModelRequestSummary, ModelUsage, RunTrace, StoryTrajectory } from '../../../../packages/protocol/src/trace.ts'
+import type { LogSummary, RunTrace, StoryTrajectory } from '../../../../packages/protocol/src/trace.ts'
+import { modelRequestSummaries } from './model-requests.ts'
 import { runActivitySnapshot } from './run-activity.ts'
 import type { StoryRepository } from '../storage/story-repository.ts'
 import { projectTrajectory } from './trajectory-projection.ts'
@@ -57,7 +58,7 @@ export class TraceService {
     trajectory.inputPreview = trajectory.entries.find(entry => entry.agentId === 'main' && entry.kind === 'user')?.preview ?? ''
     return trajectory
   }
-  activity(runId: string) { return runActivitySnapshot(this.stories, this.run(runId)) }
+  activity(runId: string) { return runActivitySnapshot(this.stories, this.stories.run(runId)) }
   trajectory(runId: string, query = '') {
     const trace = this.run(runId), database = this.stories.database.sqlite
     const rows = database.prepare(`SELECT seq, type, story_id AS storyId, created_at AS createdAt, data FROM events
@@ -73,27 +74,7 @@ export class TraceService {
   }
   run(runId: string, query = ''): RunTrace {
     const run = this.stories.run(runId), database = this.stories.database.sqlite
-    const rows = database.prepare(`SELECT seq, created_at AS createdAt, json_extract(data, '$.role') AS kind,
-      json_extract(data, '$.message.requestId') AS id, json_extract(data, '$.message.scope') AS scope,
-      json_extract(data, '$.message.parentCallId') AS parentCallId, json_extract(data, '$.message.provider') AS provider,
-      json_extract(data, '$.message.model') AS model, json_extract(data, '$.message.elapsedMs') AS elapsedMs,
-      json_extract(data, '$.message.firstTokenMs') AS firstTokenMs, json_extract(data, '$.message.response.stopReason') AS stopReason,
-      json_extract(data, '$.message.response.usage') AS usage
-      FROM events WHERE story_id = ? AND type = 'model.message' AND json_extract(data, '$.runId') = ?
-      AND json_extract(data, '$.role') IN ('provider:request', 'provider:response') ORDER BY seq`).all(run.storyId, run.id) as {
-        seq: number; createdAt: string; kind: string; id: string; scope: string; parentCallId: string | null; provider: string | null; model: string | null;
-        elapsedMs: number | null; firstTokenMs: number | null; stopReason: string | null; usage: string | null
-      }[]
-    const requests = new Map<string, ModelRequestSummary>()
-    for (const row of rows) {
-      if (row.kind === 'provider:request') requests.set(row.id, { id: row.id, scope: row.scope, ...(row.parentCallId ? { parentCallId: row.parentCallId } : {}), provider: row.provider!, model: row.model!, startedAt: row.createdAt,
-        status: ['queued', 'running', 'waiting_user'].includes(run.status) ? 'running' : run.status === 'cancelled' ? 'cancelled' : 'interrupted' })
-      else {
-        const request = requests.get(row.id)
-        if (request) Object.assign(request, { status: row.stopReason === 'error' ? 'failed' : row.stopReason === 'aborted' ? 'cancelled' : row.stopReason === 'length' ? 'truncated' : 'completed',
-          ...(row.elapsedMs === null ? {} : { elapsedMs: row.elapsedMs }), ...(row.firstTokenMs === null ? {} : { firstTokenMs: row.firstTokenMs }), ...(row.usage ? { usage: JSON.parse(row.usage) as ModelUsage } : {}) })
-      }
-    }
+    const requests = modelRequestSummaries(this.stories, run)
     const events = this.stories.toolEvents(run.storyId, run.id)
     const times = new Map<string, { startedAt?: string; finishedAt?: string }>()
     for (const event of events) if (event.type === 'tool.started' || event.type === 'tool.finished') times.set(event.data.callId, { ...times.get(event.data.callId), [event.type === 'tool.started' ? 'startedAt' : 'finishedAt']: event.createdAt })
@@ -102,15 +83,15 @@ export class TraceService {
       return { ...tool, ...time, ...(time.startedAt && time.finishedAt ? { elapsedMs: Math.max(0, Date.parse(time.finishedAt) - Date.parse(time.startedAt)) } : {}) }
     })
     const matches = query ? (database.prepare(`SELECT DISTINCT json_extract(data,'$.message.requestId') AS id FROM events
-      WHERE story_id = ? AND type = 'model.message' AND json_extract(data,'$.runId') = ? AND json_extract(data,'$.role') IN ('provider:request','provider:response')
-      AND lower(data) LIKE ? ESCAPE '\\'`).all(run.storyId, run.id, '%' + query.toLocaleLowerCase().replace(/[\\%_]/g, '\\$&') + '%') as { id: string }[]).map(row => row.id) : [...requests.keys()]
-    return { run, requests: [...requests.values()], tools, matches }
+      WHERE story_id = ? AND type = 'model.message' AND json_extract(data,'$.runId') = ? AND json_extract(data,'$.role') IN ('provider:request','provider:parameters','provider:response')
+      AND lower(data) LIKE ? ESCAPE '\\'`).all(run.storyId, run.id, '%' + query.toLocaleLowerCase().replace(/[\\%_]/g, '\\$&') + '%') as { id: string }[]).map(row => row.id) : requests.map(request => request.id)
+    return { run, requests, tools, matches }
   }
   request(runId: string, requestId: string) {
     const run = this.stories.run(runId)
     const records = this.stories.database.sqlite.prepare(`SELECT seq, type, story_id AS storyId, created_at AS createdAt, data FROM events
       WHERE story_id = ? AND type = 'model.message' AND json_extract(data, '$.runId') = ? AND json_extract(data, '$.message.requestId') = ?
-      AND json_extract(data, '$.role') IN ('provider:request','provider:response') ORDER BY seq`).all(run.storyId, run.id, requestId) as { data: string }[]
+      AND json_extract(data, '$.role') IN ('provider:request','provider:parameters','provider:response') ORDER BY seq`).all(run.storyId, run.id, requestId) as { data: string }[]
     requireValue(records.length, 'MODEL_REQUEST_NOT_FOUND', '这条模型请求不存在。', 404)
     return { records: records.map(row => ({ ...row, data: JSON.parse(row.data) })) }
   }

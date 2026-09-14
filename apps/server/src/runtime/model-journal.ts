@@ -12,7 +12,7 @@ export function journalStream(journal: RunJournal, models: ModelRegistry, scope:
     const requestId = randomUUID(), owner = parentCallId ?? journal.callId(requestId), started = performance.now()
     journal.model(owner, 'provider:request', { requestId, scope, parentCallId, provider: model.provider, model: model.id, api: model.api,
       baseUrl: model.baseUrl, contextWindow: model.contextWindow, outputBudget: models.outputBudget({ provider: model.provider, model: model.id }),
-      systemPrompt: context.systemPrompt, messages: context.messages, tools: context.tools ?? [], reasoning: options?.reasoning ?? 'off',
+      systemPrompt: context.systemPrompt, messages: context.messages, tools: context.tools ?? [], reasoning: models.requestReasoning(model, options),
       ...(writerHistory ? { writerHistory, historyMessagesJson: context.messages.slice(0, writerHistory.messageCount).map(message => JSON.stringify(message)) } : {}),
     })
     const output = createAssistantMessageEventStream()
@@ -23,7 +23,9 @@ export function journalStream(journal: RunJournal, models: ModelRegistry, scope:
         requestId, scope, parentCallId, elapsedMs: Math.round(performance.now() - started), firstTokenMs, response,
       })
       try {
-        const source = models.stream(model, context, { ...options, onQueued: value => progress.queued(value) })
+        const source = models.stream(model, context, { ...options, onQueued: value => progress.queued(value),
+          onRequestParameters: parameters => journal.model(owner, 'provider:parameters', { requestId, scope, parentCallId, parameters }),
+        })
         for await (const event of source) {
           progress.update(event)
           if (firstTokenMs === undefined && event.type.endsWith('_delta')) firstTokenMs = Math.round(performance.now() - started)

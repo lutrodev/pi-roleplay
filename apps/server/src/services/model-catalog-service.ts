@@ -48,13 +48,26 @@ export class ModelCatalogService {
     })) }
   }
   /** Local metadata lookup only: no credentials, network calls, or model generation. */
-  previewMetadata(input: { provider: string; model: string; connection: unknown; discoveryId?: string }) {
+  previewMetadata(input: { provider: string; model: string; connection: unknown; discoveryId?: string; reasoningContext?: { reasoning?: boolean; compat?: ModelRegistration['compat'] } }) {
     const connection = validateConnection(input.connection)
     const metadata = input.discoveryId ? this.discoveries.read(input.discoveryId, connection).find(item => item.model === input.model)?.metadata
       : storedMetadata(this.read().metadata, { ...connection, ...input })
-    return new ModelRegistry([{ ...connection, provider: input.provider, model: input.model, keyEnv: 'MODEL_PREVIEW' }], {
+    if (input.reasoningContext !== undefined) {
+      objectInput(input.reasoningContext)
+      requireValue(Object.keys(input.reasoningContext).every(key => ['reasoning', 'compat'].includes(key)) && (input.reasoningContext.reasoning === undefined || typeof input.reasoningContext.reasoning === 'boolean'), 'MODEL_CONFIG_INVALID', '思考预览参数不正确。')
+      if (input.reasoningContext.compat !== undefined) objectInput(input.reasoningContext.compat)
+    }
+    const registration = { ...connection, provider: input.provider, model: input.model, keyEnv: 'MODEL_PREVIEW' }
+    const options = {
       env: () => undefined, metadata: () => metadata,
-    }).list()[0]!
+    }
+    const automatic = new ModelRegistry([registration], options).list()[0]!
+    if (input.reasoningContext) {
+      const preview = new ModelRegistry([{ ...registration, ...input.reasoningContext }], options).list()[0]!
+      automatic.reasoningControl = preview.reasoningControl
+      automatic.thinkingLevels = preview.thinkingLevels
+    }
+    return automatic
   }
   update(expectedRevision: number, input: unknown, create = false) {
     objectInput(input)

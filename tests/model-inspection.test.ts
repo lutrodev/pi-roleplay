@@ -79,7 +79,7 @@ it('uses stored credentials through Pi, bounds test generation, and persists onl
   const result = await x.service.test(2, 'custom', 'custom')
   expect(result.status).toBe('passed')
   expect(requests[0]?.headers.get('authorization')).toBe('Bearer test-secret')
-  expect(requests[0]?.body).toMatchObject({ model: 'custom', max_completion_tokens: 32, messages: [{ role: 'user', content: 'Reply with OK.' }] })
+  expect(requests[0]?.body).toMatchObject({ model: 'custom', max_completion_tokens: 1024, messages: [{ role: 'user', content: 'Reply with OK.' }] })
   expect(requests[0]?.body).not.toHaveProperty('tools')
   const restarted = new ModelCatalogService(x.assets, [], x.key, x.options)
   expect(restarted.snapshot().providers[0]?.models[0]?.check?.status).toBe('passed')
@@ -122,7 +122,7 @@ it('exposes discovery and testing with strict HTTP inputs and revision checks', 
   const app = Fastify({ ajv: { customOptions: { removeAdditional: false } } }); registerModelCatalog(app, x.service)
   try {
     const preview = { connection, provider: 'synthetic', model: 'gpt-6-astra' }
-    expect((await app.inject({ method: 'POST', url: '/api/settings/models/metadata', payload: preview })).json()).toMatchObject({ defaultThinkingLevel: 'medium', thinkingLevels: ['low', 'medium', 'high', 'xhigh', 'max'] })
+    expect((await app.inject({ method: 'POST', url: '/api/settings/models/metadata', payload: preview })).json()).toMatchObject({ defaultThinkingLevel: 'provider-default', thinkingLevels: ['provider-default'] })
     expect((await app.inject({ method: 'POST', url: '/api/settings/models/metadata', payload: { ...preview, apiKey: 'not-accepted' } })).statusCode).toBe(400)
     expect((await app.inject({ method: 'POST', url: '/api/settings/providers/discover', payload: { connection, apiKey: 'secret', arbitrary: true } })).statusCode).toBe(400)
     const list = await app.inject({ method: 'POST', url: '/api/settings/providers/discover', payload: { connection, apiKey: 'secret' } })

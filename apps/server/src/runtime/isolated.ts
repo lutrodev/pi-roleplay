@@ -40,7 +40,7 @@ export async function runIsolated(models: ModelRegistry, request: IsolatedReques
   const prune = contextPruner(value => request.onMessage?.({ role: 'context:pruned', ...value }))
   const agent = new Agent({
     initialState: { model, thinkingLevel, systemPrompt: request.systemPrompt, tools: boundedTools(request.tools, parallel), messages: history },
-    streamFn: request.streamFn ?? models.stream.bind(models), toolExecution: parallel > 1 ? 'parallel' : 'sequential',
+    streamFn: models.bindReasoning(request.route, request.streamFn), toolExecution: parallel > 1 ? 'parallel' : 'sequential',
     transformContext: async messages => [...messages.slice(0, historyCount), ...await prune(messages.slice(historyCount))],
     shouldStopAfterTurn: () => request.signal.aborted || ++steps >= request.maxSteps,
   })

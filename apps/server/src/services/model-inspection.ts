@@ -3,6 +3,7 @@ import { ModelRegistry } from '../runtime/models.ts'
 import { RpError, requireValue } from '../../../../packages/rp-core/src/errors.ts'
 import { discoveryMetadata } from './model-discovery-metadata.ts'
 import type { ModelMetadata } from '../runtime/model-metadata.ts'
+import { modelBaseUrl } from '../runtime/model-endpoint.ts'
 
 export interface ModelConnection { api?: ModelRegistration['api']; baseUrl: string }
 export interface DiscoveredModel { model: string; label: string; metadata?: ModelMetadata }
@@ -51,7 +52,7 @@ async function responseJson(response: Response) {
 export async function discoverModels(connection: ModelConnection, apiKey: string, fetcher: typeof fetch, signal: AbortSignal) {
   requireValue(connection.api, 'MODEL_CONFIG_INVALID', '获取模型列表前请选择 API 协议。')
   const anthropic = connection.api === 'anthropic-messages'
-  const url = new URL(connection.baseUrl + (anthropic && !connection.baseUrl.endsWith('/v1') ? '/v1/models' : '/models'))
+  const url = new URL(modelBaseUrl(connection.api, connection.baseUrl) + (anthropic ? '/v1/models' : '/models'))
   if (anthropic) url.searchParams.set('limit', '1000')
   const headers: Record<string, string> = anthropic ? { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' } : { authorization: `Bearer ${apiKey}` }
   const found = new Map<string, DiscoveredModel>(), cursors = new Set<string>()
@@ -82,13 +83,13 @@ export async function checkModel(registration: ModelRegistration, apiKey: string
   const start = Date.now()
   try {
     const registry = new ModelRegistry([registration], { ...options, env: () => apiKey })
-    const { model, thinkingLevel } = registry.resolve({ provider: registration.provider, model: registration.model })
+    const { model } = registry.resolve({ provider: registration.provider, model: registration.model, reasoningEffort: 'provider-default' })
     const result = await registry.stream(model, { messages: [{ role: 'user', content: 'Reply with OK.', timestamp: start }] }, {
-      signal, maxRetries: 0, timeoutMs: 15000, reasoning: thinkingLevel === 'off' ? undefined : thinkingLevel,
-      maxTokens: Math.min(thinkingLevel === 'off' ? 32 : 1024, model.maxTokens),
+      signal, maxRetries: 0, timeoutMs: 15000, reasoningSelection: 'provider-default',
+      maxTokens: Math.min(1024, model.maxTokens),
     }).result()
     if (result.stopReason === 'error' || result.stopReason === 'aborted') throw new Error(result.errorMessage || result.stopReason)
-    return { status: 'passed', checkedAt: new Date().toISOString(), durationMs: Date.now() - start, message: '模型调用成功。' }
+    return { status: 'passed', checkedAt: new Date().toISOString(), durationMs: Date.now() - start, message: '服务默认参数下调用成功；思考控制支持情况以渠道文档和实际请求为准。' }
   } catch (error) {
     const failure = inspectionError(error)
     return { status: 'failed', checkedAt: new Date().toISOString(), durationMs: Date.now() - start, code: failure.code, message: failure.message }

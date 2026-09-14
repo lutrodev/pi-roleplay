@@ -18,6 +18,7 @@ import { useReaderScroll } from './reader-scroll.ts'
 import { ReplySuggestions } from './reply-suggestions.tsx'
 import { StoryPanel, type StoryPanelTarget } from './panel.tsx'
 import { RunFeedback } from './run-feedback.tsx'
+import { SubagentProgress } from './subagent-progress.tsx'
 import { RunActivity } from './run-activity.tsx'
 import { RunProgressView, modelRequestsQueued, useLiveRunActivity } from './run-progress.tsx'
 import { RoundProcess } from './process.tsx'
@@ -41,6 +42,7 @@ function StoryReader({ storyId }: { storyId: string }) {
   const query = useStory(storyId), settings = useSettings(), action = useAction(), history = useReadingHistory(storyId, query.data), draft = useStoryDraft(storyId)
   const [inspector, setInspector] = useState<StoryPanelTarget | null>(initialPanel), [profile, setProfile] = useState<'basics' | 'models' | null>(null), [writingPrompt, setWritingPrompt] = useState(false), [rename, setRename] = useState(false), [title, setTitle] = useState(''), [editingId, setEditingId] = useState<string | null>(null)
   const [view, setView] = useState<'conversation' | 'trace'>('conversation'), [traceOpened, setTraceOpened] = useState(false), [traceRun, setTraceRun] = useState<string | null>(null)
+  const [traceAgent, setTraceAgent] = useState<string | null>(null)
   const readingCheckpoint = useRef({ top: 0, follow: true })
   const panelGuard = useDialogGuard()
   const chooseInspector = useCallback((next: StoryPanelTarget | null) => panelGuard.context.requestClose(() => { setInspector(next); rememberPanel(next) }), [panelGuard.context.requestClose])
@@ -48,11 +50,11 @@ function StoryReader({ storyId }: { storyId: string }) {
   const summaryRequest = useRef<{ expectedRevision: number; requestId: string } | undefined>(undefined)
   const data = query.data, preferences = settings.data?.preferences, story = data?.story, runs = data?.runs ?? []
   const active = runs.find(run => ['queued', 'running', 'waiting_user'].includes(run.status)), latest = active ?? runs.find(run => run.id === story?.conversationRunId)
-  const liveActivity = useLiveRunActivity(active, query.connection, view === 'conversation')
+  const liveActivity = useLiveRunActivity(latest, query.connection, true)
   const { scroll, follow, atBottom, jump, onScroll } = useReaderScroll(storyId, !!story && !!preferences, story?.revision)
-  const openTrace = (runId?: string) => panelGuard.context.requestClose(() => {
+  const openTrace = (runId?: string, agentId?: string) => panelGuard.context.requestClose(() => {
     if (view === 'conversation') readingCheckpoint.current = { top: scroll.current?.scrollTop ?? 0, follow: follow.current }
-    follow.current = false; setInspector(null); rememberPanel(null); setTraceRun(runId ?? null); setTraceOpened(true); setView('trace')
+    follow.current = false; setInspector(null); rememberPanel(null); setTraceRun(runId ?? null); setTraceAgent(agentId ?? null); setTraceOpened(true); setView('trace')
   })
   const showConversation = () => { if (view === 'conversation') return; setView('conversation'); requestAnimationFrame(() => { if (scroll.current) scroll.current.scrollTop = readingCheckpoint.current.top; follow.current = readingCheckpoint.current.follow }) }
   const hash = useRouterState({ select: state => state.location.hash }), revealed = useRef(''), [target, setTarget] = useState<string | null>(null)
@@ -76,8 +78,10 @@ function StoryReader({ storyId }: { storyId: string }) {
   const busy = !!active || summary?.status === 'running' && summary.trigger === 'manual'
   const traceEntries = roundTraceEntries(messages, latest)
   const committed = !!latest && story.messages.some(message => message.runId === latest.id && (message.kind === 'narrative' || message.kind === 'message') && message.role === 'assistant')
-  const activityAnchor = active && messages.findLast(message => message.runId === active.id && message.role === 'user')?.id
-  const progress = active && <RunProgressView key={active.id} run={active} connection={query.connection} snapshot={liveActivity.data} unavailable={!!liveActivity.error} />
+  const activityAnchor = latest && messages.findLast(message => message.runId === latest.id && message.role === 'user')?.id
+  const progress = latest && <Fragment key={latest.id}>{active && <RunProgressView run={active} connection={query.connection} snapshot={liveActivity.data} unavailable={!!liveActivity.error} />}
+    <SubagentProgress run={latest} snapshot={liveActivity.data} synchronized={query.connection === 'live' && !liveActivity.error && !sharedConnectionError} inspect={callId => openTrace(latest.id, callId)} />
+  </Fragment>
   const activity = <RunActivity story={story} run={active ?? latest} activeTools={data.activeTools} connection={query.connection} requestsQueued={!liveActivity.error && modelRequestsQueued(active, liveActivity.data)} />
   return <div className="story-page"><div className="story-workspace"><div className="conversation-main">
     <PageHeader title={story.title} detail={story.archived ? uiT("已归档") : undefined} actions={<>
@@ -128,7 +132,7 @@ function StoryReader({ storyId }: { storyId: string }) {
         </div>
       </div>{!atBottom && <Button className="jump-latest" onClick={jump}><ArrowDown size={15} />{uiT("回到最新")}</Button>}</div>
       <Composer story={story} active={active} preferences={preferences} state={draft} openSettings={() => setProfile('models')} onSent={jump} editing={editingId !== null} suggestions={<ReplySuggestions story={story} preferences={preferences} busy={busy} insert={draft.suggest} />} />
-      </div>{traceOpened && <div className="trajectory-surface" id="trajectory-view" role="tabpanel" aria-labelledby="trace-tab" hidden={view !== 'trace'}><TracePanel story={story} runs={runs} runId={traceRun} onRunChange={setTraceRun} visible={view === 'trace'} returnToConversation={showConversation} /></div>}
+      </div>{traceOpened && <div className="trajectory-surface" id="trajectory-view" role="tabpanel" aria-labelledby="trace-tab" hidden={view !== 'trace'}><TracePanel story={story} runs={runs} runId={traceRun} onRunChange={setTraceRun} agentId={traceAgent} activity={query.connection === 'live' && !liveActivity.error && !sharedConnectionError ? liveActivity.data : undefined} visible={view === 'trace'} returnToConversation={showConversation} /></div>}
     </div><StoryPanel onTrace={() => openTrace()} target={inspector} choose={chooseInspector} close={closeInspector} guard={panelGuard} story={story} latestReplyId={data?.latestReplyId ?? null} runs={runs} preferences={preferences} historyBusy={history.busy || editingId !== null} onJump={id => { closeInspector(); requestAnimationFrame(() => reveal(id)) }} /></div>
     <Modal open={profile !== null} onOpenChange={open => { if (!open) setProfile(null) }} title={uiT("会话设置")} size="editor">{profile && <ProfileEditor story={story} initialTab={profile} disabled={busy || editingId !== null} done={() => setProfile(null)} />}</Modal>
     <WritingPromptDialog open={writingPrompt} onOpenChange={setWritingPrompt} story={story} disabled={busy || editingId !== null} />

@@ -21,12 +21,13 @@ import { ToolClient } from '../apps/server/src/runtime/tool-client.ts'
 import { createToolServer } from '../apps/tools/src/server.ts'
 import type { ExecutionMode, JsonObject, StoryProfile } from '../packages/rp-core/src/types.ts'
 import { fixture, profile } from './helpers.ts'
+import { streamingTextResponse } from './streaming-response.ts'
 import { WriterHistoryService } from '../apps/server/src/services/writer-history-service.ts'
 import { historyConfig } from './writer-history-fixture.ts'
 
 const cleanup: (() => Promise<void>)[] = []
 afterEach(async () => { for (const close of cleanup.splice(0)) await close() })
-type Reply = { text?: string; calls?: { name: string; arguments: object }[] }
+type Reply = { stream?: string; text?: string; calls?: { name: string; arguments: object }[] }
 
 async function setup(mode: ExecutionMode, replies: Reply[], attachment?: 'image' | 'text', options: { skillFixture?: boolean; tasks?: boolean; identity?: string; writerHistory?: boolean; storyRoutes?: (ids: Record<string, string>) => Partial<StoryProfile['runtime']> } = {}) {
   const x = fixture(), config = profile(); config.runtime.executionMode = mode
@@ -55,6 +56,7 @@ async function setup(mode: ExecutionMode, replies: Reply[], attachment?: 'image'
       hooks.onRequest?.(index)
       const next = replies[index]
       if (!next) throw new Error('Unexpected provider request')
+      if (next.stream) return streamingTextResponse(next.stream, init?.signal)
       const delta = { role: 'assistant', content: next.text ?? '', ...(next.calls ? { tool_calls: next.calls.map((call, order) => ({ index: order, id: `call-${index}-${order}`, type: 'function', function: { name: call.name, arguments: JSON.stringify(call.arguments).replaceAll('INPUT_FILE', file?.storageKey ?? '').replaceAll('SKILL_ROOT', join(x.directory, 'skills')).replaceAll('INPUT_ROOT', x.files.directory).replaceAll('PLAN_ID', taskIds['规划'] ?? '').replaceAll('POLISH_ID', taskIds['润色'] ?? '') } })) } : {}) }
       return new Response(`data: ${JSON.stringify({ id: `reply-${index}`, choices: [{ index: 0, delta, finish_reason: next.calls ? 'tool_calls' : 'stop' }] })}\n\ndata: [DONE]\n\n`, { headers: { 'content-type': 'text/event-stream' } })
     },
@@ -81,6 +83,41 @@ async function setup(mode: ExecutionMode, replies: Reply[], attachment?: 'image'
 }
 
 describe('Pi with concrete system tools', () => {
+  it('exposes actual task streaming and retains its invocation summary after the parent finishes', async () => {
+    const x = await setup('agent', [
+      { calls: [{ name: 'rp_run_subagent', arguments: { subagent: 'PLAN_ID', task: '核对灯塔档案。', input: {} } }] },
+      { stream: '正在核对灯塔的档案记录，确认人物关系和时间顺序。检查结束，记录一致。' },
+      { text: '档案核对结束。' },
+    ], undefined, { tasks: true })
+    try {
+      x.queue.wake()
+      const trace = new TraceService(x.stories)
+      await expect.poll(() => trace.activity(x.run.id).agents[0]?.text, { timeout: 5000 }).toContain('正在核对灯塔')
+      const state = trace.activity(x.run.id), child = state.agents[0]!
+      expect(child).toMatchObject({ name: '规划', status: 'running', phase: 'responding', requestCount: 1, task: '核对灯塔档案。' })
+      expect(state.live.some(request => request.outputCharacters > 0)).toBe(true)
+      expect(new TraceService(x.stories).activity(x.run.id).agents[0]!.callId).toBe(child.callId)
+      await x.queue.idle()
+      expect(x.stories.run(x.run.id).status).toBe('completed')
+      expect(trace.activity(x.run.id).agents[0]).toMatchObject({ callId: child.callId, status: 'completed', text: '正在核对灯塔的档案记录，确认人物关系和时间顺序。检查结束，记录一致。' })
+      expect(x.stories.snapshot(x.story.id).messages.some(message => message.text.includes('正在核对灯塔'))).toBe(false)
+    } finally { await x.queue.close() }
+  })
+  it('distinguishes a stopped task from a failed task after actual Pi stream cancellation', async () => {
+    const x = await setup('agent', [
+      { calls: [{ name: 'rp_run_subagent', arguments: { subagent: 'PLAN_ID', task: '核对灯塔档案。', input: {} } }] },
+      { stream: '正在核对灯塔的档案记录，确认人物关系和时间顺序。'.repeat(12) },
+    ], undefined, { tasks: true })
+    try {
+      x.queue.wake()
+      const trace = new TraceService(x.stories)
+      await expect.poll(() => trace.activity(x.run.id).agents[0]?.text, { timeout: 5000 }).toContain('正在核对灯塔')
+      await x.queue.cancel(x.run.id); await x.queue.idle()
+      expect(x.stories.run(x.run.id).status).toBe('cancelled')
+      expect(new TraceService(x.stories).activity(x.run.id)).toMatchObject({ live: [], tools: [], agents: [{ status: 'cancelled' }] })
+      expect(x.stories.snapshot(x.story.id).messages.some(message => message.text.includes('正在核对灯塔'))).toBe(false)
+    } finally { await x.queue.close() }
+  })
   it('dispatches independent thinking strengths for the main Agent, inherited Writer, and inherited task models', async () => {
     const x = await setup('agent', [
       { calls: [{ name: 'rp_run_subagent', arguments: { subagent: 'PLAN_ID', task: '规划', input: {} } }] }, { text: '先读信。' },
@@ -89,10 +126,10 @@ describe('Pi with concrete system tools', () => {
       { calls: [{ name: 'rp_commit_turn', arguments: { narrative: '她展开来信。' } }] },
     ], undefined, { tasks: true, storyRoutes: ids => ({ reasoningEffort: 'medium', writerRoute: { kind: 'inherit', reasoningEffort: 'high' },
       subagentRoutes: { [ids['规划']!]: { kind: 'inherit', reasoningEffort: 'low' }, [ids['润色']!]: { kind: 'inherit', reasoningEffort: 'off' } } }) })
-    x.models.replace(x.models.registrations().map(model => ({ ...model, reasoning: true })))
+    x.models.replace(x.models.registrations().map(model => ({ ...model, reasoning: true, reasoningControl: { mode: 'effort', format: 'openai', levels: { low: 'low', medium: 'medium', high: 'high' }, off: 'none' } })))
     x.queue.wake(); await x.queue.idle()
     expect(x.stories.run(x.run.id).status).toBe('completed')
-    expect(x.requests.map(request => request.reasoning_effort)).toEqual(['medium', 'low', 'medium', 'high', 'medium', undefined, 'medium'])
+    expect(x.requests.map(request => request.reasoning_effort)).toEqual(['medium', 'low', 'medium', 'high', 'medium', 'none', 'medium'])
     expect(new Set(x.requests.map(request => request.model))).toEqual(new Set(['rp-tools']))
     expect(x.faults).toEqual([])
     await x.queue.close()

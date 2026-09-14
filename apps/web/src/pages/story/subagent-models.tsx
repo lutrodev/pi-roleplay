@@ -5,6 +5,7 @@ import { Bot, Feather, RotateCcw, Workflow } from 'lucide-react'
 import { resolveModelSelection, type ModelSelection, type SubagentCatalog } from '../../../../../packages/rp-core/src/agents/catalog.ts'
 import type { ModelRoute, StorySnapshot } from '../../../../../packages/rp-core/src/types.ts'
 import { CancelButton, EditorForm } from '../../components/form-guard.tsx'
+import { reasoningLabel } from '../../components/reasoning-control.tsx'
 import { ModelPicker } from '../../components/model-picker.tsx'
 import { SettingsGroup } from '../../components/settings-layout.tsx'
 import { Button, ErrorNotice, Loading, Modal } from '../../components/ui.tsx'
@@ -45,7 +46,7 @@ function StorySubagentForm({ story, disabled, done }: { story: StorySnapshot; di
   const describe = (route: ModelRoute | undefined) => {
     if (!route) return uiT('尚未选择模型')
     const model = models.data?.models.find(item => item.provider === route.provider && item.model === route.model)
-    return [model?.label ?? route.model,
+    return [model?.label ?? route.model, reasoningLabel(route.reasoningEffort ?? model?.defaultThinkingLevel ?? 'provider-default'),
       models.data && (!model || !model.configured) ? uiT('当前不可用') : null].filter(Boolean).join(' · ')
   }
   const change = (id: string, route: ModelSelection | undefined) => {

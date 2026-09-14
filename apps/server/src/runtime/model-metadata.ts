@@ -3,7 +3,7 @@ import type { ModelRegistration } from './models.ts'
 import { catalogCandidates, catalogReasoning } from './model-reasoning.ts'
 
 export type MetadataSource = 'provider' | 'catalog' | 'manual' | 'unknown'
-export type ModelMetadata = Pick<ModelRegistration, 'label' | 'input' | 'reasoning' | 'contextWindow' | 'maxTokens'> & Pick<Model<Api>, 'thinkingLevelMap' | 'compat'>
+export type ModelMetadata = Pick<ModelRegistration, 'label' | 'input' | 'reasoning' | 'reasoningControl' | 'contextWindow' | 'maxTokens'> & Pick<Model<Api>, 'thinkingLevelMap' | 'compat'>
 export type MetadataSources = Record<'label' | 'input' | 'reasoning' | 'contextWindow' | 'maxTokens', MetadataSource>
 export type ModelIdentity = Pick<ModelRegistration, 'provider' | 'model' | 'api' | 'baseUrl'>
 
@@ -29,5 +29,6 @@ export function resolveMetadata(registration: ModelRegistration, remote?: ModelM
   }
   // This is the existing application budget for unlisted models, not a claimed provider limit.
   if (sources.maxTokens === 'unknown') values.maxTokens = Math.min(values.maxTokens, values.contextWindow)
+  if (registration.reasoning === undefined && registration.reasoningControl && registration.reasoningControl.mode !== 'provider') { values.reasoning = true; sources.reasoning = 'manual' }
   return { ...values, sources, thinkingLevelMap: detected.thinkingLevelMap, compat: { ...catalog.compat, ...remote?.compat } }
 }

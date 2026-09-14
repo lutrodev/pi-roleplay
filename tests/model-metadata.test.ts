@@ -55,9 +55,10 @@ it('keeps discovery read-only, persists selected metadata on save, and sends det
   const restored = new ModelCatalogService(x.assets, [], x.key, x.options)
   const route = { provider: 'service', model: metadata.id }, image = { type: 'image' as const, mimeType: 'image/png', data: 'AA==' }
   const resolved = restored.models.resolve(route, [image])
-  expect(resolved.thinkingLevel).toBe('medium')
+  expect(resolved.reasoning.effective).toBe('provider-default')
   await restored.models.stream(resolved.model, { messages: [{ role: 'user', timestamp: 0, content: [{ type: 'text', text: '合成图片测试' }, image] }] }, { reasoning: resolved.thinkingLevel === 'off' ? undefined : resolved.thinkingLevel }).result()
-  expect(x.requests.at(-1)?.body).toMatchObject({ model: metadata.id, reasoning_effort: 'medium', max_completion_tokens: 8192, messages: [{ content: [{ type: 'text' }, { type: 'image_url' }] }] })
+  expect(x.requests.at(-1)?.body?.reasoning_effort).toBeUndefined()
+  expect(x.requests.at(-1)?.body).toMatchObject({ model: metadata.id, max_completion_tokens: 8192, messages: [{ content: [{ type: 'text' }, { type: 'image_url' }] }] })
   const persisted = result.providers[0]!.models.map(fields)
   restored.update(2, { id: 'service', label: 'Renamed', models: persisted })
   expect(restored.models.list()[0]?.sources.input).toBe('provider')

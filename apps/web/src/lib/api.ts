@@ -32,7 +32,7 @@ export async function api<T>(path: string, method = 'GET', body?: unknown, signa
   return value as T
 }
 export interface Settings { revision: number; preferences: Preferences }
-export interface ModelInfo extends ModelRoute { label: string; providerLabel: string; configured: boolean; input: string[]; reasoning: boolean; sources: MetadataSources; contextWindow: number; maxTokens: number; thinkingLevels: string[]; defaultThinkingLevel: string; reasoningSource: MetadataSource }
+export interface ModelInfo extends ModelRoute { label: string; providerLabel: string; configured: boolean; input: string[]; reasoning: boolean; sources: MetadataSources; contextWindow: number; maxTokens: number; thinkingLevels: string[]; defaultThinkingLevel: string; reasoningSource: MetadataSource; reasoningControl: import('../../../../packages/protocol/src/reasoning.ts').ReasoningDescriptor }
 export type AssetItem = Omit<AssetRecord, 'data' | 'sourceHash'> & { description?: string; contentCharacters?: number | null }
 export type StoryData = { story: StorySnapshot; runs: RunRecord[]; activeTools: ActiveTool[]; history: { before: string | null; total: number }; latestReplyId: string | null; forkSourceAvailable?: boolean }
 export function notifyStoryDeleted(storyId: string) { window.dispatchEvent(new CustomEvent('rp-story-deleted', { detail: storyId })) }

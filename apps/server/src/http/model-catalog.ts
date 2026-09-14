@@ -5,8 +5,8 @@ import { dataObject, id, revision, strict } from './schemas.ts'
 
 export function registerModelCatalog(app: FastifyInstance, catalog: ModelCatalogService) {
   app.get('/api/settings/providers', async () => catalog.snapshot())
-  app.post<{ Body: { provider: string; model: string; connection: unknown; discoveryId?: string } }>('/api/settings/models/metadata', {
-    schema: { body: Type.Object({ provider: id, model: Type.String({ minLength: 1, maxLength: 200 }), connection: dataObject, discoveryId: Type.Optional(Type.String({ maxLength: 100 })) }, strict) },
+  app.post<{ Body: Parameters<ModelCatalogService['previewMetadata']>[0] }>('/api/settings/models/metadata', {
+    schema: { body: Type.Object({ provider: id, model: Type.String({ minLength: 1, maxLength: 200 }), connection: dataObject, discoveryId: Type.Optional(Type.String({ maxLength: 100 })), reasoningContext: Type.Optional(dataObject) }, strict) },
   }, async request => catalog.previewMetadata(request.body))
   app.post<{ Body: { connection: unknown; provider?: string; apiKey?: string } }>('/api/settings/providers/discover', {
     schema: { body: Type.Object({ connection: dataObject, provider: Type.Optional(id), apiKey: Type.Optional(Type.String({ maxLength: 8192 })) }, strict) },

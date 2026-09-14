@@ -31,7 +31,7 @@ export function discoveryMetadata(value: Record<string, unknown>, connection: Mo
     const effort = record(capabilities.effort)
     if (effort.supported === true) {
       metadata.thinkingLevelMap = Object.fromEntries(['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'].map(level => [level,
-        level === 'off' ? 'off' : bool(record(effort[level]).supported) === true ? level : null]))
+        level === 'off' ? bool(record(record(thinking.types).disabled).supported) === true ? 'off' : null : bool(record(effort[level]).supported) === true ? level : null]))
     }
   }
   return metadata

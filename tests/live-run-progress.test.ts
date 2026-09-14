@@ -45,7 +45,7 @@ describe('live process boundary', () => {
     } finally { controller.abort(); await stream.result() }
     expect(modelProgress(x.stories, x.run.id)).toEqual([])
     x.stories.setRunStatus(x.run.id, 'cancelled')
-    expect(x.trace.activity(x.run.id)).toEqual({ runId: x.run.id, requests: [], tools: [], live: [] })
+    expect(x.trace.activity(x.run.id)).toEqual({ runId: x.run.id, requests: [], tools: [], live: [], agents: [] })
   })
 
   it('isolates concurrent requests and instances, bounds snippets, and never exposes raw reasoning', () => {
@@ -75,7 +75,7 @@ describe('live process boundary', () => {
     x.journal.model('writer', 'provider:response', { requestId: 'writer', scope: 'writer:one', response: { content: [{ type: 'text', text: 'Writer 正文不应成为过程片段' }] } })
     const state = x.trace.activity(x.run.id)
     expect(state.live).toEqual([])
-    expect(state.tools).toEqual([{ callId: 'read-file', name: 'read', status: 'running', parentCallId: undefined, preview: 'lighthouse.txt' }])
+    expect(state.tools).toMatchObject([{ callId: 'read-file', name: 'read', status: 'running', preview: 'lighthouse.txt' }])
     for (const hidden of ['内部推理', '不应公开', 'Writer 正文', '接下来核对灯塔记录']) expect(JSON.stringify(state)).not.toContain(hidden)
     expect(state.requests).toHaveLength(1)
   })
@@ -83,7 +83,7 @@ describe('live process boundary', () => {
 
 describe('two distinct progress surfaces', () => {
   const run: RunRecord = { id: 'run', storyId: 'story', requestId: 'input', inputHash: 'hash', turnId: 'turn', status: 'running', draft: '', error: null, createdAt: '2026-09-07T00:00:00Z', updatedAt: '2026-09-07T00:00:00Z' }
-  const snapshot = (): RunActivitySnapshot => ({ runId: run.id, requests: [{ id: 'main', scope: 'main', model: 'main-model', provider: 'test', status: 'running', startedAt: run.createdAt }], live: [{ requestId: 'main', phase: 'responding', text: '先检查资料，再请 Writer 写作。' }], tools: [] })
+  const snapshot = (): RunActivitySnapshot => ({ runId: run.id, requests: [{ id: 'main', scope: 'main', model: 'main-model', provider: 'test', status: 'running', startedAt: run.createdAt }], live: [{ requestId: 'main', phase: 'responding', updatedAt: run.createdAt, outputCharacters: 6, text: '先检查资料，再请 Writer 写作。' }], tools: [], agents: [] })
   const render = (current = run, data = snapshot(), connection: 'live' | 'reconnecting' = 'live') => renderToStaticMarkup(createElement(RunProgressView, { run: current, snapshot: data, connection }))
   it('renders a live process before any prose exists, without duplicating the reply footer entry or generic spinner', () => {
     const html = render()
@@ -96,8 +96,8 @@ describe('two distinct progress surfaces', () => {
   })
   it('follows Writer work and its character count without duplicating Writer prose in process text', () => {
     const data = snapshot(); data.requests[0]!.status = 'completed'; data.requests.push({ ...data.requests[0]!, id: 'writer', scope: 'writer:call', status: 'running' })
-    data.live = [{ requestId: 'writer', phase: 'responding', text: '真正的正文🌙' }]
-    data.tools = [{ callId: 'writer', name: 'rp_write_turn', status: 'running', preview: '' }]
+    data.live = [{ requestId: 'writer', phase: 'responding', updatedAt: run.createdAt, outputCharacters: 6, text: '真正的正文🌙' }]
+    data.tools = [{ callId: 'writer', name: 'rp_write_turn', status: 'running', startedAt: run.createdAt, updatedAt: run.createdAt, preview: '' }]
     const current = { ...run, draft: '真正的正文🌙' }, view = progressPresentation(current, data), html = render(current, data)
     expect(view.title).toContain('正在写作 · 6 字'); expect(view.text).toBeUndefined()
     expect(html).not.toContain(current.draft)
@@ -112,12 +112,12 @@ describe('two distinct progress surfaces', () => {
   it('shows a queued Writer honestly in both progress surfaces and clears waiting when a request starts', () => {
     const data = snapshot()
     data.requests[0]!.scope = 'writer:call'; data.live[0]!.phase = 'queued'; data.live[0]!.text = ''
-    data.tools = [{ callId: 'writer', name: 'rp_write_turn', status: 'running', preview: '' }]
+    data.tools = [{ callId: 'writer', name: 'rp_write_turn', status: 'running', startedAt: run.createdAt, updatedAt: run.createdAt, preview: '' }]
     expect(progressPresentation(run, data).label).toBe('Writer 已排队，等待请求名额')
     expect(modelRequestsQueued(run, data)).toBe(true)
     const html = renderToStaticMarkup(createElement(RunActivity, { story: { archived: false, messages: [], maintenance: {} }, run, activeTools: [], requestsQueued: modelRequestsQueued(run, data) }))
     expect(html).toContain('等待开始'); expect(html).not.toContain('正在构思')
-    data.live.push({ requestId: 'parallel-child', phase: 'responding', text: '' })
+    data.live.push({ requestId: 'parallel-child', phase: 'responding', updatedAt: run.createdAt, outputCharacters: 6, text: '' })
     expect(modelRequestsQueued(run, data)).toBe(false)
     expect(modelRequestsQueued({ ...run, id: 'another' }, data)).toBe(false)
   })

@@ -25,11 +25,12 @@ export function ModelPicker({ value, onChange, inheritLabel = uiT('跟随系统�
   const trigger = <Button className="model-picker-trigger" aria-label={uiT('选择%{label}：%{name}', { label, name: title })} aria-haspopup="dialog" onClick={() => setOpen(true)}><span><strong>{title}</strong><small>{defaultChoice?.selected ? defaultChoice.detail : value ? selected ? selected.configured ? selected.providerLabel : uiT('缺少密钥') : uiT('模型配置已不可用') : inheritDetail ?? effective?.label ?? uiT('尚未选择模型')}</small></span><ChevronDown size={16} /></Button>
   return <div className={'model-picker model-picker-' + layout}>{layout === 'row' && <div className="model-picker-label">{label}</div>}<div className="model-picker-controls"><ModelSelect trigger={trigger} open={open} onOpenChange={setOpen} value={value} onChange={onChange}
       inheritLabel={allowInherit ? inheritLabel : undefined} inheritDetail={inheritDetail ?? effective?.label ?? uiT('尚未选择模型')} defaultChoice={defaultChoice} />
-    {reasoningModel?.thinkingLevels.some(level => level !== 'off') && <div className="model-thinking-row"><span>{uiT('思考强度')}</span><ReasoningControl label={uiT('%{label}思考强度', { label })}
-      levels={reasoningModel.thinkingLevels} value={fixedReasoning ? value?.reasoningEffort : inheritedReasoning?.value}
+    {reasoningModel && <div className="model-thinking-row"><span>{uiT('思考强度')}</span><ReasoningControl label={uiT('%{label}思考强度', { label })}
+      levels={reasoningModel.thinkingLevels} control={reasoningModel.reasoningControl.control} value={fixedReasoning ? value?.reasoningEffort : inheritedReasoning?.value}
       defaultLevel={(!fixedReasoning ? inheritedRoute?.reasoningEffort : undefined) ?? reasoningModel.defaultThinkingLevel}
       defaultLabel={fixedReasoning ? uiT('模型默认') : inheritedReasoning?.label ?? uiT('跟随主模型')}
-      onChange={effort => fixedReasoning ? onChange({ ...value!, reasoningEffort: effort }) : inheritedReasoning?.onChange(effort)} /></div>}</div>
+      onChange={effort => fixedReasoning ? onChange({ ...value!, reasoningEffort: effort }) : inheritedReasoning?.onChange(effort)} /></div>}
+    {reasoningModel && <small className="model-reasoning-source">{fixedReasoning ? value?.reasoningEffort ? uiT('独立设置 · 思考参数已单独指定') : uiT('独立模型 · 思考使用该模型默认值') : inheritedReasoning?.value ? uiT('模型跟随 · 思考参数已单独指定') : uiT('模型与思考参数一同继承')}</small>}</div>
     {!open && <ErrorNotice source="read" error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />}
 
   </div>

@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { SummaryService } from '../apps/server/src/services/summary-service.ts'
 import { StoryService } from '../apps/server/src/services/story-service.ts'
-import { ModelRegistry } from '../apps/server/src/runtime/models.ts'
+import { ModelRegistry, type ModelRegistration } from '../apps/server/src/runtime/models.ts'
 import { RunQueue } from '../apps/server/src/runtime/queue.ts'
 import { RpError } from '../packages/rp-core/src/errors.ts'
 import { SUMMARY_HEADINGS } from '../packages/rp-core/src/context/summary.ts'
 import { fixture, message, profile } from './helpers.ts'
+import { anthropicResponse } from './anthropic-response.ts'
 
 const cleanup: (() => Promise<void>)[] = []
 afterEach(async () => { for (const close of cleanup.splice(0)) await close() })
@@ -38,6 +39,39 @@ function setup(singleExchange = false) {
 }
 
 describe('durable summary lifecycle', () => {
+  it.each([
+    ['openai-completions', 500, undefined, 500],
+    ['anthropic-messages', 16384, 8192, 12288],
+    ['anthropic-messages', 10000, 8192, 10000],
+  ] as const)('allocates summary thinking and answer tokens within the app cap (%s, %s)', async (api, outputTokens, budget, expected) => {
+    const x = setup(), requests: Record<string, unknown>[] = []
+    const registration: ModelRegistration = { ...route, keyEnv: 'SUMMARY_KEY', api, baseUrl: 'https://model.test/v1', maxTokens: 32000, outputTokens,
+      ...(budget ? { reasoningControl: { mode: 'budget', format: 'anthropic', levels: { high: budget } }, defaultReasoningEffort: 'high' } : {}) }
+    const models = new ModelRegistry([registration], { env: () => 'synthetic-key', fetch: async (_url, init) => {
+      requests.push(JSON.parse(String(init?.body)))
+      return api === 'anthropic-messages' ? anthropicResponse(summaryText) : new Response(`data: ${JSON.stringify({ choices: [{ index: 0, delta: { role: 'assistant', content: summaryText }, finish_reason: 'stop' }] })}\n\ndata: [DONE]\n\n`, { headers: { 'content-type': 'text/event-stream' } })
+    } })
+    const summaries = new SummaryService(x.stories, models, error => { throw error })
+    try {
+      const before = x.stories.snapshot(x.storyId)
+      summaries.startManual(x.storyId, before.revision, 'budget-summary', route)
+      await summaries.idle()
+      expect(requests).toHaveLength(1)
+      expect(requests[0]?.[api === 'anthropic-messages' ? 'max_tokens' : 'max_completion_tokens']).toBe(expected)
+      if (budget) expect(requests[0]?.thinking).toMatchObject({ type: 'enabled', budget_tokens: budget })
+      expect(x.stories.snapshot(x.storyId)).toMatchObject({ checkpoint: { text: summaryText }, maintenance: { summary: { status: 'completed' } }, messages: before.messages })
+      if (budget) {
+        models.replace([{ ...registration, outputTokens: budget + 1023 }])
+        x.service.edit(x.storyId, x.stories.snapshot(x.storyId).revision, x.messages[0]!.id, '修改后的原文。'.repeat(500))
+        const revision = x.stories.snapshot(x.storyId).revision
+        expect(() => summaries.startManual(x.storyId, revision, 'invalid-budget', route)).toThrow('正文保留至少 1024')
+        expect(x.stories.snapshot(x.storyId).revision).toBe(revision)
+        x.stories.assertIdle(x.storyId)
+        expect(requests).toHaveLength(1)
+      }
+    } finally { await summaries.close() }
+  })
+
   it('starts at exactly 80 percent including the output reserve and waits for a successful prior run only at the next boundary', async () => {
     const x = setup(), run = x.service.send(x.storyId, 'turn-n', [{ text: '当前输入', attachmentIds: [] }]).run
     x.stories.setRunStatus(run.id, 'running')

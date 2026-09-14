@@ -52,7 +52,7 @@ describe('Pi model adapter and route validation', () => {
   })
 
   it('preserves per-story reasoning for selected and inherited main models and rejects unsupported effort', () => {
-    const registry = new ModelRegistry([{ ...custom, reasoning: true }], { env: () => 'configured' })
+    const registry = new ModelRegistry([{ ...custom, reasoning: true, reasoningControl: { mode: 'effort' as const, format: 'openai' as const, levels: { low: 'low', medium: 'medium', high: 'high' } } }], { env: () => 'configured' })
     const config = normalizeProfile({ ...profile(), runtime: { executionMode: 'agent', reasoningEffort: 'high' } }, 0) as StoryProfile
     expect(registry.routes(config, { main: route }).main).toEqual({ ...route, reasoningEffort: 'high' })
     config.runtime = { ...config.runtime, ...route, reasoningEffort: 'low' }

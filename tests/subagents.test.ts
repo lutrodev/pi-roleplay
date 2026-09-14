@@ -5,7 +5,7 @@ import { fixture } from './helpers.ts'
 
 const clean: (() => void)[] = []
 afterEach(() => clean.splice(0).forEach(close => close()))
-const model: ModelRegistration = { provider: 'test', model: 'task', keyEnv: 'TEST_TASK_KEY', api: 'openai-completions', baseUrl: 'https://model.test/v1', contextWindow: 32000, maxTokens: 4096, reasoning: true }
+const model: ModelRegistration = { provider: 'test', model: 'task', keyEnv: 'TEST_TASK_KEY', api: 'openai-completions', baseUrl: 'https://model.test/v1', contextWindow: 32000, maxTokens: 4096, reasoning: true, reasoningControl: { mode: 'effort', format: 'openai', levels: { high: 'high' } } }
 function setup() {
   const x = fixture(); clean.push(x.close)
   const models = new ModelRegistry([model], { env: () => 'synthetic-key' })

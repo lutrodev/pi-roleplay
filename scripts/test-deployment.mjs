@@ -73,7 +73,7 @@ async function deployment(name) {
   const compose = await readFile(join(path, 'deploy/compose.yaml'), 'utf8')
   // Test-only host provider route and shorter health sampling; production service/mount/security layout is preserved.
   await writeFile(join(path, 'deploy/compose.yaml'), compose.replace('  app:\n', '  app:\n    extra_hosts: ["host.docker.internal:host-gateway"]\n').replaceAll('interval: 15s', 'interval: 1s'))
-  await writeFile(join(path, 'config/models.json'), JSON.stringify({ models: [{ provider: 'fixture', model: 'gpt-6-astra', keyEnv: 'RP_MODEL_API_KEY', api: 'openai-completions', baseUrl: `http://host.docker.internal:${providerPort}/v1`, contextWindow: 128000, maxTokens: 8192 }], main: { provider: 'fixture', model: 'gpt-6-astra' } }))
+  await writeFile(join(path, 'config/models.json'), JSON.stringify({ models: [{ provider: 'fixture', model: 'gpt-6-astra', reasoningControl: { mode: 'effort', format: 'openai', levels: { low: 'low', high: 'high' }, off: 'none' }, keyEnv: 'RP_MODEL_API_KEY', api: 'openai-completions', baseUrl: `http://host.docker.internal:${providerPort}/v1`, contextWindow: 128000, maxTokens: 8192 }], main: { provider: 'fixture', model: 'gpt-6-astra' } }))
   await writeFile(join(path, 'secrets/models.env'), 'RP_MODEL_API_KEY=synthetic-deployment-key\n')
   const target = { path, dc, run, origin: `http://127.0.0.1:${http}`, cookie: '' }
   targets.push(target)
@@ -232,7 +232,7 @@ try {
   passed.push('Reply suggestions saved with the narrative survive cold backup and restore without a new generation request')
   assert.deepEqual(result.messages, snapshot.messages)
   assert.deepEqual(result.profile.runtime, snapshot.profile.runtime)
-  passed.push('Catalog-recognized reasoning reaches real container requests: main high, inherited Writer low; independent settings survive cold backup and restore')
+  passed.push('Explicit channel reasoning controls reach real container requests: main high, inherited Writer low; independent settings survive cold backup and restore')
   assert.deepEqual(result.profile.variables, { enabled: false, mvu: false })
   assert.equal((await restored.api(`/stories/${story.id}/files/preview?path=vps.txt`)).text, 'VPS 工作文件\n')
   assert.equal((await restored.api(`/stories/${branch.id}/files/preview?path=vps.txt`)).text, 'VPS 工作文件\n')

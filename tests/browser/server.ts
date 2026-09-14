@@ -13,6 +13,7 @@ import { seedTrajectoryMutations } from './trajectory-mutations-fixture.ts'
 import { seedTrajectoryScenario } from './trajectory-fixture.ts'
 import { streamingTextResponse } from '../streaming-response.ts'
 import { seedConversationBoundaries } from './boundary-fixture.ts'
+import { subagentResponse, seedSubagentProgress } from './subagent-response.ts'
 import { activityResponse } from './activity-response.ts'
 import { browserModelMetadata } from './model-metadata-fixture.ts'
 
@@ -52,6 +53,10 @@ const app = await createServer({ dataDirectory: join(root, 'data'), publicOrigin
     return response
   }
   const body = JSON.parse(String(init?.body)) as { messages: { role: string; content?: unknown; name?: string; tool_calls?: unknown[] }[]; tools?: { function: { name: string; parameters?: { anyOf?: { required?: string[] }[] } } }[] }
+  if (process.env.RP_BROWSER_SUBAGENT_SCENARIO === '1') {
+    const response = await subagentResponse(body, init?.signal)
+    if (response) return response
+  }
   const names = body.tools?.map(tool => tool.function.name) ?? [], system = JSON.stringify(body.messages.filter(message => message.role === 'system')), last = body.messages.at(-1)
   let text = '', call: { name: string; args: object } | undefined
   if (system.includes(SUMMARY_INSTRUCTION.slice(0, 25))) {
@@ -128,8 +133,9 @@ await app.app.listen({ host: '127.0.0.1', port })
 app.queue.wake(); await app.queue.idle()
 if (process.env.RP_BROWSER_TRACE_MUTATIONS === '1') await seedTrajectoryMutations(app)
 if (process.env.RP_BROWSER_TRACE_SCENARIO === '1') seedTrajectoryScenario(app)
+const subagentStoryId = process.env.RP_BROWSER_SUBAGENT_SCENARIO === '1' ? await seedSubagentProgress(app, workspaces) : undefined
 const boundaryCases = process.env.RP_BROWSER_BOUNDARY_SCENARIO === '1' ? await seedConversationBoundaries(app) : undefined
-process.stdout.write(JSON.stringify({ url: origin, password, storyId, root, pid: process.pid, providerPolicy: allowClinePass ? 'synthetic fixture plus explicitly enabled ClinePass' : 'synthetic only', persistent: Boolean(persistentRoot), boundaryCases }) + '\n')
+process.stdout.write(JSON.stringify({ url: origin, password, storyId, root, pid: process.pid, providerPolicy: allowClinePass ? 'synthetic fixture plus explicitly enabled ClinePass' : 'synthetic only', persistent: Boolean(persistentRoot), subagentStoryId, boundaryCases }) + '\n')
 let closing = false
 async function close() { if (closing) return; closing = true; await app.app.close(); await tools.app.close(); if (!persistentRoot) await rm(root, { recursive: true, force: true }) }
 process.once('SIGINT', () => { void close().then(() => process.exit(0)) }); process.once('SIGTERM', () => { void close().then(() => process.exit(0)) })

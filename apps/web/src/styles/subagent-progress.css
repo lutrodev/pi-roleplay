@@ -1,0 +1,34 @@
+.subagent-progress { margin: 6px 0 18px; min-width: 0; color: var(--muted); font-size: var(--ui-caption-size); }
+.subagent-progress-heading, .subagent-progress-row { display: flex; width: 100%; align-items: center; gap: 8px; min-height: 36px; border: 0; background: transparent; text-align: left; padding: 6px 0; border-radius: 4px; }
+.subagent-progress-heading:hover, .subagent-progress-row:hover { background: var(--soft); }
+.subagent-progress-heading { font-size: var(--ui-caption-size); }
+.subagent-progress-count { margin-left: auto; color: var(--muted); font-size: var(--ui-caption-size); }
+.subagent-progress-list { border-left: 1px solid var(--border); margin-left: 7px; padding-left: 14px; }
+.subagent-progress-row { font-size: var(--ui-caption-size); gap: 8px; }
+.subagent-progress-row strong { font-size: var(--ui-field-size); color: var(--text); font-weight: 500; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.subagent-progress-status { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.subagent-progress-row time { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.subagent-progress-item[data-status="failed"] .subagent-progress-status { color: var(--danger); }
+.subagent-progress-item[data-status="interrupted"] .subagent-progress-status { color: var(--warning); }
+.subagent-progress-item[data-status="completed"] .subagent-progress-row > svg { color: var(--success); }
+.subagent-progress-detail { padding: 4px 0 12px 21px; overflow-wrap: anywhere; }
+.subagent-progress-detail > p { color: var(--text); }
+.subagent-progress-meta { display: flex; flex-wrap: wrap; gap: 3px 12px; margin: 6px 0; }
+.subagent-progress-output { margin-top: 10px; }
+.subagent-progress-output p { color: var(--text); margin-top: 3px; white-space: pre-wrap; }
+.subagent-progress-tools { list-style: none; padding: 0; margin: 10px 0 0; }
+.subagent-progress-tools li { display: flex; gap: 10px; justify-content: space-between; padding: 3px 0; }
+.subagent-progress-tools li > span { min-width: 0; }
+.subagent-progress-tools small { white-space: nowrap; }
+.subagent-progress-inspect { margin-top: 6px; padding-inline: 0; font-size: var(--ui-caption-size); }
+.subagent-progress-quiet { padding-left: 21px; color: var(--warning); font-size: var(--ui-caption-size); }
+.trajectory-live-output { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: var(--ui-caption-size); overflow-wrap: anywhere; }
+.trajectory-live-output p { margin-top: 6px; white-space: pre-wrap; color: var(--text); }
+@media (max-width: 600px) {
+  .subagent-progress-heading, .subagent-progress-row { min-height: 44px; }
+  .subagent-progress-row { flex-wrap: wrap; column-gap: 6px; }
+  .subagent-progress-row strong { flex: 1; }
+  .subagent-progress-status { order: 1; width: 100%; margin: -5px 0 0 19px; white-space: normal; }
+  .subagent-progress-detail { padding-left: 19px; }
+  .subagent-progress-inspect { min-height: 44px; }
+}

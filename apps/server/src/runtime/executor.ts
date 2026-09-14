@@ -240,7 +240,7 @@ export class RunExecutor {
       },
     }
     const prune = contextPruner(value => journal.model(journal.callId(value.toolCallId), 'context:pruned', value))
-    const mainStream = journalStream(journal, this.models, 'main')
+    const mainStream = this.models.bindReasoning(routes.main, journalStream(journal, this.models, 'main'))
     const agent = new Agent({
       initialState: { ...resolved, systemPrompt: context.systemPrompt, tools: boundedTools([writer, commit, reply, ...resources.tools(scope)], parallel), messages: conversation().filter(message => (message as ParentMessage).rpRunId !== runId) },
       streamFn: (model, request, options) => mainStream(model, { ...request, systemPrompt: context.systemPrompt }, options),

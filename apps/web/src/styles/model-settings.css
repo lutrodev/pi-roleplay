@@ -67,6 +67,8 @@
 .model-identity code { display: block; margin-top: 4px; font-family: inherit; color: var(--muted); font-size: var(--ui-caption-size); overflow-wrap: anywhere; }
 .model-editor .provider-advanced { border-top: 1px solid var(--border); }
 .model-editor .provider-advanced > summary { padding-block: 9px; }
+.model-default-value { display: block; padding-block: 8px; color: var(--muted); font-size: var(--ui-field-size); }
+.model-advanced > .stack > .model-capability-settings + .model-capability-settings { border-top: 1px solid var(--border); padding-top: 16px; }
 .model-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 0 8px; }
 .model-section-heading h3 { font-size: var(--ui-field-size); font-weight: 550; }
 .model-section-heading p { font-size: var(--ui-caption-size); color: var(--muted); margin-top: 4px; }
@@ -148,6 +150,13 @@
 .reasoning-trigger { flex-shrink: 0; min-height: 34px; padding: 6px 9px; gap: 5px; color: var(--muted); font-size: 12px; font-weight: 400; }
 .reasoning-trigger:hover { color: var(--text); }
 .reasoning-menu { min-width: 220px; }
+.model-reasoning-source { display: block; color: var(--muted); font-size: 11px; line-height: 1.6; margin-top: 4px; }
+.reasoning-adapter-fields { margin: 12px 0; padding: 16px; border: 1px solid var(--border); border-radius: 8px; }
+.reasoning-level-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.reasoning-level-fields legend { font-size: 13px; font-weight: 600; }
+.reasoning-level-field { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(0, 1fr); gap: 12px; align-items: center; min-height: 40px; }
+.reasoning-level-field label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.reasoning-level-field input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
 .model-picker-dialog { --modal-width: 520px; }
 .model-chooser { display: flex; flex-direction: column; min-height: 0; gap: 12px; }
 .model-options { min-height: min(200px, 30dvh); max-height: min(440px, 56dvh); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 2px; }
@@ -188,6 +197,7 @@
 }
 @media (max-width: 540px) {
   .task-agent-basics, .task-agent-tools { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .model-dialog.modal-editor:has(.model-editor) { top: auto; bottom: 0; height: auto; max-height: 100dvh; border-radius: 16px 16px 0 0; }
   .model-settings-layout .settings-content { padding: 20px 16px 0; }
   .model-dialog.modal-editor .modal-body { display: flex; flex-direction: column; flex: 1; }
   .model-dialog .model-editor, .model-dialog .connection-complete { flex: 1 0 auto; }
