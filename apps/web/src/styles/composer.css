@@ -60,13 +60,15 @@
 
 @container composer (max-width: 760px) {
   .model-selector .model-label-full { display: none; }
-  .composer-model-controls .reasoning-trigger { min-height: 44px; padding-inline: 6px; }
+  .composer-model-controls :is(.reasoning-trigger, .reasoning-value) { min-height: 44px; padding-inline: 6px; }
   .model-selector .model-label-compact { display: block; }
 }
 .composer-toolbar:has(.composer-quick-reply:nth-child(4)) { grid-template: 'utilities utilities utilities utilities' auto 'add mode model send' auto / auto auto minmax(0, 1fr) auto; }
 @container composer (max-width: 560px) {
   .composer-toolbar { grid-template: 'utilities utilities utilities utilities' auto 'add mode model send' auto / auto auto minmax(0, 1fr) auto; gap: 4px; }
   .composer-utilities { justify-content: space-between; padding-inline: 4px; }
+  .composer-model-controls .reasoning-full-label { display: none; }
+  .composer-model-controls :is(.reasoning-compact-icon, .reasoning-compact-label) { display: inline; }
 }
 @container composer (max-width: 310px) {
   .composer-toolbar:has(.stop-button) { grid-template-areas: 'utilities utilities model model' 'add mode mode send'; }

@@ -13,8 +13,9 @@ export function ModelDefaultThinking({ model, patch, auto, loading }: { model: M
   const control = model.reasoningControl ?? auto?.reasoningControl.control ?? { mode: 'provider' }
   const levels = controlLevels(control), selected = model.defaultReasoningEffort ?? 'provider-default'
   const ready = !!model.reasoningControl || !loading
-  return <Field layout="row" label={uiT('默认思考')} help={uiT('通常使用服务默认，也可在会话中单独调整。')}>
-    {ready && levels.length === 1 && levels.includes(selected) ? <span className="model-default-value">{reasoningLabel(selected)}</span>
+  const readOnly = ready && levels.length === 1 && levels.includes(selected)
+  return <Field layout="row" label={uiT('默认思考')} help={readOnly ? uiT('由模型决定，无需设置。') : uiT('选择思考的深入程度，也可在会话中调整。')}>
+    {readOnly ? <span className="model-default-value">{reasoningLabel(selected)}</span>
       : <Select value={selected} disabled={!ready} onChange={event => patch({ defaultReasoningEffort: event.target.value === 'provider-default' ? undefined : event.target.value })}>
         {!levels.includes(selected) && <option value={selected} disabled>{uiT('当前档位不可用')}</option>}
         {levels.map(level => <option value={level} key={level}>{reasoningLabel(level)}</option>)}

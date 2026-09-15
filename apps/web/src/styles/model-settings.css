@@ -147,7 +147,9 @@
 .model-picker-trigger svg { flex-shrink: 0; }
 .model-thinking-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 5px; }
 .model-thinking-row > span { color: var(--muted); font-size: 11px; }
-.reasoning-trigger { flex-shrink: 0; min-height: 34px; padding: 6px 9px; gap: 5px; color: var(--muted); font-size: 12px; font-weight: 400; }
+.reasoning-trigger, .reasoning-value { flex-shrink: 0; min-height: 34px; padding: 6px 9px; gap: 5px; color: var(--muted); font-size: 12px; font-weight: 400; }
+.reasoning-value { display: inline-flex; align-items: center; white-space: nowrap; }
+.reasoning-compact-icon, .reasoning-compact-label { display: none; }
 .reasoning-trigger:hover { color: var(--text); }
 .reasoning-menu { min-width: 220px; }
 .model-reasoning-source { display: block; color: var(--muted); font-size: 11px; line-height: 1.6; margin-top: 4px; }

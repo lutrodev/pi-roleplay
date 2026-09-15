@@ -26,11 +26,11 @@ export function ModelPicker({ value, onChange, inheritLabel = uiT('跟随系统�
   return <div className={'model-picker model-picker-' + layout}>{layout === 'row' && <div className="model-picker-label">{label}</div>}<div className="model-picker-controls"><ModelSelect trigger={trigger} open={open} onOpenChange={setOpen} value={value} onChange={onChange}
       inheritLabel={allowInherit ? inheritLabel : undefined} inheritDetail={inheritDetail ?? effective?.label ?? uiT('尚未选择模型')} defaultChoice={defaultChoice} />
     {reasoningModel && <div className="model-thinking-row"><span>{uiT('思考强度')}</span><ReasoningControl label={uiT('%{label}思考强度', { label })}
-      levels={reasoningModel.thinkingLevels} control={reasoningModel.reasoningControl.control} value={fixedReasoning ? value?.reasoningEffort : inheritedReasoning?.value}
+      levels={reasoningModel.thinkingLevels} value={fixedReasoning ? value?.reasoningEffort : inheritedReasoning?.value}
       defaultLevel={(!fixedReasoning ? inheritedRoute?.reasoningEffort : undefined) ?? reasoningModel.defaultThinkingLevel}
-      defaultLabel={fixedReasoning ? uiT('模型默认') : inheritedReasoning?.label ?? uiT('跟随主模型')}
+      resetLabel={fixedReasoning ? uiT('恢复默认') : inheritedReasoning?.label ?? uiT('跟随主模型')}
       onChange={effort => fixedReasoning ? onChange({ ...value!, reasoningEffort: effort }) : inheritedReasoning?.onChange(effort)} /></div>}
-    {reasoningModel && <small className="model-reasoning-source">{fixedReasoning ? value?.reasoningEffort ? uiT('独立设置 · 思考参数已单独指定') : uiT('独立模型 · 思考使用该模型默认值') : inheritedReasoning?.value ? uiT('模型跟随 · 思考参数已单独指定') : uiT('模型与思考参数一同继承')}</small>}</div>
+    {reasoningModel && <small className="model-reasoning-source">{(fixedReasoning ? value?.reasoningEffort : inheritedReasoning?.value) ? uiT('已单独设置思考强度') : fixedReasoning ? uiT('使用该模型的默认思考强度') : uiT('思考强度随模型设置')}</small>}</div>
     {!open && <ErrorNotice source="read" error={query.error} retry={() => void query.refetch()} retrying={query.isFetching} />}
 
   </div>
