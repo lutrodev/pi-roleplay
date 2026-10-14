@@ -1,6 +1,7 @@
 import type { AgentEvent, AgentTool } from '@earendil-works/pi-agent-core'
 import { Type, type AssistantMessage } from '@earendil-works/pi-ai'
 import { writerDeliveryTemplate, type WriterDelivery } from '../../../../packages/rp-core/src/agents/writer-delivery.ts'
+import { terminalArchive } from '../../../../packages/rp-core/src/agents/writer-terminal.ts'
 import { RpError, requireValue } from '../../../../packages/rp-core/src/errors.ts'
 import { createRoleplayMacroStream } from '../../../../packages/rp-core/src/macro/syntax.js'
 
@@ -18,23 +19,26 @@ export class WriterDeliverySession {
   private finalText = ''
 
   constructor(readonly config: WriterDelivery, readonly onText?: (text: string, final: boolean) => void,
-    readonly identities?: { userName?: string; characterName?: string }) {}
+    readonly identities?: { userName?: string; characterName?: string }, readonly examples = '') {}
 
   system(base: string) {
+    if (this.config.mode === 'terminal') return writerDeliveryTemplate(this.config.system, this.config)
     return `${base}\n\n${writerDeliveryTemplate(this.config.system, this.config)}\n\nWriter delivery for this run: the complete Writer reply must be delivered by calling ${this.config.toolName} with the single string field ${this.config.fieldName}. This replaces only the default plain-text delivery channel. Read-only reference tools remain available; use them before delivery when needed. Call the delivery tool exactly once, in a message without other tool calls. It accepts output only and performs no file, shell, or story-state operations. The reply may be narrative or a clarification/refusal; the parent still decides how to present or commit it.`
   }
 
   get invocation() { return writerDeliveryTemplate(this.config.invocation, this.config) }
 
-  tools(readonlyTools: AgentTool[], context: string): AgentTool[] {
+  tools(readonlyTools: AgentTool[], context: string, system = ''): AgentTool[] {
     requireValue(!readonlyTools.some(tool => tool.name === this.config.toolName), 'WRITER_DELIVERY_CONFLICT', '正文交付工具名与 Writer 的只读工具重名，请更换交付工具名。')
     const tool: AgentTool = {
       name: this.config.toolName, label: 'Writer 正文交付',
-      description: `${writerDeliveryTemplate(this.config.toolDescription, this.config)}\n\n<writer_context>\n${context}\n</writer_context>`,
+      description: `${writerDeliveryTemplate(this.config.toolDescription, this.config)}\n\n${this.config.mode === 'terminal'
+        ? terminalArchive(system, this.examples, context) : `<writer_context>\n${context}\n</writer_context>`}`,
       parameters: Type.Object({ [this.config.fieldName]: Type.String({ minLength: 1, maxLength: outputLimit,
         description: writerDeliveryTemplate(this.config.fieldDescription, this.config) }) }, { additionalProperties: false }),
       execute: async (id, _args, signal) => {
         signal?.throwIfAborted()
+        requireValue(this.config.mode !== 'terminal', 'WRITER_DELIVERY_INVALID', '终端显示载体必须在响应解包时处理，不能作为工具执行。', 502)
         if (this.error) throw this.error
         if (!this.pending || this.pending.callId !== id || this.delivered) throw invalidOutput()
         this.finalText = this.render(this.pending.text, true)
@@ -74,7 +78,8 @@ export class WriterDeliverySession {
     if (!call) { if (this.attempted) this.onText?.(this.preview, true); return }
     try {
       if (this.error) throw this.error
-      if (message.stopReason !== 'toolUse' || calls.length !== 1) throw invalidOutput()
+      if (message.stopReason !== 'toolUse' || calls.filter(block => block.name === this.config.toolName).length !== 1
+        || this.config.mode !== 'terminal' && calls.length !== 1) throw invalidOutput()
       const raw = this.raw.get(message.content.indexOf(call))
       // Pi repairs partial JSON for display. A repaired/truncated JSON string must never become final prose.
       const args: unknown = raw === undefined ? call.arguments : JSON.parse(raw)
@@ -88,6 +93,23 @@ export class WriterDeliverySession {
       this.error = error instanceof RpError ? error : invalidOutput()
       this.onText?.(this.preview, true)
     }
+  }
+
+  get failure() { return this.error }
+
+  /** Remove only our synthetic carrier. Real tool calls and provider failures remain visible. */
+  unwrap(message: AssistantMessage): AssistantMessage {
+    this.finishMessage(message)
+    const own = message.content.some(block => block.type === 'toolCall' && block.name === this.config.toolName)
+    if (!own) return message
+    const content = message.content.filter(block => block.type === 'toolCall' && block.name !== this.config.toolName || block.type === 'thinking')
+    if (!this.error && this.pending) {
+      this.finalText = this.render(this.pending.text, true)
+      this.delivered = true
+      content.push({ type: 'text', text: this.finalText })
+      return { ...message, content, stopReason: content.some(block => block.type === 'toolCall') ? 'toolUse' : 'stop' }
+    }
+    return { ...message, content, ...(message.stopReason === 'toolUse' ? { stopReason: 'error' as const, errorMessage: this.error?.message ?? invalidOutput().message } : {}) }
   }
 
   private render(source: string, final: boolean) {

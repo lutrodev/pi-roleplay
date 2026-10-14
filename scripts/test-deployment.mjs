@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url'
 import { setTimeout as pause } from 'node:timers/promises'
 import { historyConfig } from '../tests/writer-history-fixture.ts'
 import { defaultWriterDelivery } from '../packages/rp-core/src/agents/writer-delivery.ts'
+import { terminalWriterHistory } from '../packages/rp-core/src/agents/writer-history-example.ts'
 
 const root = fileURLToPath(new URL('../', import.meta.url)), directory = await realpath(await mkdtemp(join(tmpdir(), 'rp-deployment-')))
 const targets = [], passed = [], evidence = {}, requests = []
@@ -30,10 +31,14 @@ const provider = createServer(async (request, response) => {
       waiting = false
       if (response.destroyed) return
     }
-    if (performed.includes('rp_write_turn')) call = { name: 'rp_commit_turn', args: { narrative, runSummary: '修好的船已经归还。', ...(!JSON.stringify(body.messages.filter(message => message.role === 'system')).includes('Reply options are disabled.') ? { extensions: { 'rp.reply-options': { options: ['沿海岸走向灯塔。', '留在码头检查旧船。'] } } } : {}) } }
-    else if (performed.includes('bash')) call = { name: 'rp_write_turn', args: { action: 'write' } }
+    if (performed.includes('rp_write_turn')) call = { name: 'rp_commit_turn', args: {
+      ...(body.tools.find(tool => tool.function.name === 'rp_commit_turn')?.function.parameters?.anyOf?.some(schema => schema.required?.includes('narrative')) ? { narrative } : {}),
+      runSummary: '修好的船已经归还。', ...(!JSON.stringify(body.messages.filter(message => message.role === 'system' || message.role === 'developer')).includes('Reply options are disabled.') ? { extensions: { 'rp.reply-options': { options: ['沿海岸走向灯塔。', '留在码头检查旧船。'] } } } : {}),
+    } }
+    else if (performed.includes('bash') || !names.includes('bash')) call = { name: 'rp_write_turn', args: { action: 'write' } }
     else call = { name: 'bash', args: { command: 'printf "VPS 工作文件\\n" > vps.txt; id -u; test ! -e /data/app.sqlite && test ! -e /run/secrets/session_key && test ! -e /var/run/docker.sock && printf "private-files-absent\\n"; printf "%s\\n" "${RP_MODEL_API_KEY-unset}"; (printf bad > /inputs/forbidden) 2>/dev/null || printf "inputs-read-only\\n"; cat vps.txt' } }
   } else if (names.includes('writer_display')) call = { name: 'writer_display', args: { display_stream: narrative } }
+  else if (names.some(name => name.startsWith('dispatch_chapter_'))) call = { name: names.find(name => name.startsWith('dispatch_chapter_')), args: { display_stream: narrative } }
   else text = narrative
   const delta = { role: 'assistant', content: text, ...(call ? { tool_calls: [{ index: 0, id: randomUUID(), type: 'function', function: { name: call.name, arguments: JSON.stringify(call.args) } }] } : {}) }
   response.writeHead(200, { 'content-type': 'text/event-stream' })
@@ -124,7 +129,7 @@ try {
   const savedPreferences = await source.api('/settings', 'PUT', { expectedRevision: settings.revision, preferences: { ...settings.preferences, quickRepliesEnabled: false, replyOptionsEnabled: false, subagentsEnabled: false, reading: { ...settings.preferences.reading, showAvatars: false, showStateCard: false, dialogueColor: 'purple', theme: 'dark' } } })
   const initialHistory = await source.api('/settings/writer-history')
   assert.equal(initialHistory.config.enabled, false)
-  const savedHistory = await source.api('/settings/writer-history', 'PUT', { expectedRevision: initialHistory.revision, config: { ...historyConfig(), delivery: defaultWriterDelivery() } })
+  let savedHistory = await source.api('/settings/writer-history', 'PUT', { expectedRevision: initialHistory.revision, config: { ...historyConfig(), delivery: defaultWriterDelivery() } })
   const workspace = (await source.api('/workspaces', 'POST', { name: 'VPS 工作区', access: 'read-write' }, 201)).workspace
   assert.equal(workspace.directory, `workspace-${workspace.id}`)
   const story = (await source.api('/stories', 'POST', { title: 'VPS 原创验收', workspaceId: workspace.id, profile: { runtime: { executionMode: 'agent', reasoningEffort: 'high', writerRoute: { kind: 'inherit', reasoningEffort: 'low' } }, variables: { enabled: false, mvu: false } } }, 201)).story
@@ -151,6 +156,31 @@ try {
   const branch = (await source.api(`/stories/${story.id}/messages/${snapshot.messages.at(-1).id}/fork`, 'POST', { expectedRevision: snapshot.revision }, 201)).story
   assert.equal((await source.api(`/stories/${branch.id}/files/preview?path=vps.txt`)).text, 'VPS 工作文件\n')
   passed.push('Real Pi network protocol → Linux Bash → Writer → atomic narrative, attachment and work-file preview')
+
+  const terminalConfig = terminalWriterHistory(); terminalConfig.enabled = true
+  terminalConfig.rounds[0].steps[0].resultJson = '{"entry":900719925474099312345}'
+  savedHistory = await source.api('/settings/writer-history', 'PUT', { expectedRevision: savedHistory.revision, config: terminalConfig })
+  const terminalStory = (await source.api('/stories', 'POST', { title: '终端归档部署验收', profile: { runtime: { executionMode: 'chat' } } }, 201)).story
+  const terminalRun = await source.api(`/stories/${terminalStory.id}/messages`, 'POST', { requestId: randomUUID(), inputs: [{ text: '检查山城电台的试播信号。', attachmentIds: [file.id] }] }, 202)
+  await until(async () => {
+    const run = (await source.api(`/runs/${terminalRun.run.id}`)).run
+    assert.notEqual(run.status, 'failed', JSON.stringify(run.error))
+    return run.status === 'completed'
+  }, 'Terminal archive commit')
+  const terminalRequest = requests.find(request => request.tools?.some(tool => tool.function.name.startsWith('dispatch_chapter_')))
+  assert(terminalRequest)
+  assert.deepEqual(terminalRequest.messages.slice(1).map(message => message.role), ['user', 'assistant', 'user'])
+  assert.equal(terminalRequest.tool_choice, 'auto')
+  const carrier = terminalRequest.tools.find(tool => tool.function.name.startsWith('dispatch_chapter_')).function
+  assert.match(carrier.name, /^dispatch_chapter_[a-f0-9]{16}$/)
+  assert(carrier.description.includes('900719925474099312345'))
+  assert(carrier.description.includes('cat chapter_01_preview.txt\n检查山城电台的试播信号。'))
+  assert(!JSON.stringify(terminalRequest.messages).includes('检查山城电台的试播信号。'))
+  assert.equal((await source.api(`/stories/${terminalStory.id}`)).story.messages.at(-1).text, narrative)
+  assert(!JSON.stringify(await source.api(`/runs/${terminalRun.run.id}/tools`)).includes(carrier.name))
+  evidence.terminalRequest = { roles: terminalRequest.messages.map(message => message.role), toolName: carrier.name,
+    toolChoice: terminalRequest.tool_choice, field: carrier.parameters.required, contextArchived: true, syntheticExecution: false }
+  passed.push('Terminal archive through real Docker HTTP: four-message guide, per-input preview, lossless example metadata, auto choice, decoded text and no synthetic tool execution')
 
   const enabledSuggestions = await source.api('/settings', 'PUT', { expectedRevision: savedPreferences.revision, preferences: { ...savedPreferences.preferences, replyOptionsEnabled: true } })
   const suggestionStory = (await source.api('/stories', 'POST', { title: '回复建议原子提交恢复', profile: { runtime: { executionMode: 'agent' } } }, 201)).story

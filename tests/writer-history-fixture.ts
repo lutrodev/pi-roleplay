@@ -1,4 +1,11 @@
 import type { WriterHistoryConfig } from '../packages/rp-core/src/agents/writer-history.ts'
+import { terminalWriterHistory } from '../packages/rp-core/src/agents/writer-history-example.ts'
+import { defaultWriterDelivery } from '../packages/rp-core/src/agents/writer-delivery.ts'
+
+/** Existing generic tool-delivery settings remain supported independently of terminal mode. */
+export function toolHistoryConfig(): WriterHistoryConfig {
+  return { ...terminalWriterHistory(), delivery: defaultWriterDelivery() }
+}
 
 /** Authored benign fixture, never installed as user configuration. */
 export function historyConfig(): WriterHistoryConfig {

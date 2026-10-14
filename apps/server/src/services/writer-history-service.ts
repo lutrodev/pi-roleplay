@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto'
-import { compileWriterHistory, normalizeWriterHistory, type FrozenWriterHistory, type WriterHistorySettings } from '../../../../packages/rp-core/src/agents/writer-history.ts'
+import { createHash, randomBytes } from 'node:crypto'
+import { compileWriterHistory, normalizeWriterHistory, writerHistoryArchive, type FrozenWriterHistory, type WriterHistorySettings } from '../../../../packages/rp-core/src/agents/writer-history.ts'
 import { exampleWriterHistory } from '../../../../packages/rp-core/src/agents/writer-history-example.ts'
 import { RpError, requireValue } from '../../../../packages/rp-core/src/errors.ts'
 import type { JsonValue } from '../../../../packages/rp-core/src/types.ts'
@@ -34,10 +34,14 @@ export class WriterHistoryService {
   capture(): FrozenWriterHistory | undefined {
     const { revision, config } = this.snapshot()
     if (!config.enabled) return undefined
-    const messages = compileWriterHistory(config)
-    const delivery = config.delivery?.mode === 'tool' ? structuredClone(config.delivery) : undefined
-    return { metadata: { revision, digest: createHash('sha256').update(JSON.stringify(delivery ? { messages, delivery } : messages)).digest('hex'),
-      messageCount: messages.length, toolCallCount: config.rounds.reduce((sum, round) => sum + round.steps.length, 0), ...(delivery ? { guideMessageCount: 2 } : {}) }, messages, ...(delivery ? { delivery } : {}) }
+    const delivery = config.delivery && config.delivery.mode !== 'text' ? structuredClone(config.delivery) : undefined
+    if (delivery?.mode === 'terminal') delivery.toolName += `_${randomBytes(8).toString('hex')}`
+    const messages = compileWriterHistory({ ...config, ...(delivery ? { delivery } : {}) })
+    const terminalExamples = writerHistoryArchive(config)
+    const frozen = { messages, ...(delivery ? { delivery } : {}), ...(terminalExamples === undefined ? {} : { terminalExamples }) }
+    return { metadata: { revision, digest: createHash('sha256').update(JSON.stringify(delivery ? frozen : messages)).digest('hex'),
+      messageCount: messages.length, toolCallCount: delivery?.mode === 'terminal' ? 0 : config.rounds.reduce((sum, round) => sum + round.steps.length, 0),
+      ...(delivery ? { guideMessageCount: 2 } : {}) }, ...frozen }
   }
   private save(value: WriterHistorySettings) { this.assets.setSetting(storageKey, JSON.parse(JSON.stringify(value)) as JsonValue) }
 }

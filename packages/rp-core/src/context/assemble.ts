@@ -9,6 +9,7 @@ import { composeSystemPrompt } from './system-prompt.ts'
 import { stateContext, stateLoreActivation } from './state.ts'
 import type { Preferences } from '../settings/preferences.ts'
 import { storyVariables } from '../story/variables.ts'
+import { terminalInput } from '../agents/writer-terminal.ts'
 
 export interface ContextPolicy { identity?: string; writerModel?: string; skillInstructions?: string; replyOptions?: Preferences['replyOptions'] }
 
@@ -161,6 +162,14 @@ export function assembleContext(input: ContextInput) {
   const candidates = sources.map(item => item.id === 'rp.conversation-summary' ? { ...item, text: renderSummary(checkpoint?.text), revision: digest(checkpoint) }
     : item.id === 'rp.conversation' ? { ...item, text: renderHistory(recent), revision: digest(recent), messageCount: recent.length } : item)
   const compiled = compileContextBuild({ layout, candidates: candidates.filter(item => item.text.length > 0), unavailable: missing })
+  const archived = candidates.map(item => item.id === 'rp.conversation' ? { ...item, text: recent.length ? [HISTORY_CONTEXT_NOTE,
+    '<已归档历史章节>', ...recent.map((message, index) => message.role === 'user'
+      ? terminalInput(terminalMessageText(message), `history_${index + 1}_${message.id.replace(/[^a-zA-Z0-9_-]/g, '')}.txt`)
+      : `[system@stream-output] kind=${message.kind === 'narrative' || message.kind === 'opening' ? 'narrative' : 'discussion'}:\n${terminalMessageText(message)}`),
+    '</已归档历史章节>'].join('\n\n') : '' }
+    : item.id === 'rp.current-input' ? { ...item, text: current.map((message, index) => terminalInput(terminalMessageText(message),
+      index === current.length - 1 ? 'chapter_01.txt' : `current_input_${index + 1}.txt`)).join('\n\n') + attachments + referencedStories } : item)
+  const writerTerminalPrompt = compileContextBuild({ layout, candidates: archived.filter(item => item.text.length > 0), unavailable: missing }).contextText
   const activeIds = new Set(compiled.slots.flatMap(slot => slot.sourceIds))
   // A state contract remains present when there are no namespaces, so a previous contract cannot leak forward.
   const commitContext = activeIds.has('rp.state') || !state.text ? state.parentText : ''
@@ -172,7 +181,7 @@ export function assembleContext(input: ContextInput) {
   const systemPrompt = composeSystemPrompt({ role: mode, identity: input.policy?.identity, model: model.model, stateEnabled, replyOptions: input.policy?.replyOptions, skillInstructions: input.policy?.skillInstructions, conversation })
   const writerSystemPrompt = composeSystemPrompt({ role: 'writer', identity: input.policy?.identity, model: input.policy?.writerModel ?? model.model, attachments: input.files.length > 0, conversation })
   return {
-    writerPrompt: compiled.contextText, writerSystemPrompt, parentPrompt, systemPrompt,
+    writerPrompt: compiled.contextText, writerTerminalPrompt, writerSystemPrompt, parentPrompt, systemPrompt,
     runtimePrompt: mode === 'chat' ? referencedStories.trim() : '',
     sourceMessageIds: [...recent, ...current].map(message => message.id),
     identities, files: currentFiles, sources: asJson(compiled.fragments) as unknown as JsonObject[],
@@ -191,6 +200,10 @@ function renderMessages(messages: StoryMessage[]) {
     ...(message.role === 'assistant' ? { kind: message.kind === 'narrative' || message.kind === 'opening' ? 'narrative' : 'discussion' } : {}),
     text: message.text, ...(message.attachmentIds.length ? { attachmentIds: message.attachmentIds } : {}),
   })).join('\n')
+}
+
+function terminalMessageText(message: StoryMessage) {
+  return message.text + (message.attachmentIds.length ? `\n[attachmentIds] ${JSON.stringify(message.attachmentIds)}` : '')
 }
 
 function renderCard(data: JsonObject) {

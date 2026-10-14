@@ -154,6 +154,7 @@ export class RunExecutor {
         const result = await runIsolated(this.models, {
           route: routes.writer, systemPrompt: writerSystemPrompt(),
           prompt: renderWriterPrompt(context.writerPrompt, typeof input.brief === 'string' ? input.brief : undefined),
+          terminalPrompt: renderWriterPrompt(context.writerTerminalPrompt, typeof input.brief === 'string' ? input.brief : undefined),
           images: resources.images, tools: resources.readonlyTools, maxSteps: resources.readonlyTools.length ? 6 : 1,
           maxParallelToolCalls: parallel, initialHistory: writerHistory,
           signal: effectiveSignal, identities: context.identities,
@@ -161,7 +162,8 @@ export class RunExecutor {
           onText: (text, final) => persistDraft(text, final),
           onMessage: message => journal.model(journal.callId(callId), `writer:${String(message.role)}`, message),
           onEvent: event => journal.tool(event, `writer:${callId}`, journal.callId(callId)),
-          ...(this.summaries ? { recoverOverflow: async () => { await compact(); return { systemPrompt: writerSystemPrompt(), prompt: renderWriterPrompt(context.writerPrompt, typeof input.brief === 'string' ? input.brief : undefined) } } } : {}),
+          ...(this.summaries ? { recoverOverflow: async () => { await compact(); return { systemPrompt: writerSystemPrompt(), prompt: renderWriterPrompt(context.writerPrompt, typeof input.brief === 'string' ? input.brief : undefined),
+            terminalPrompt: renderWriterPrompt(context.writerTerminalPrompt, typeof input.brief === 'string' ? input.brief : undefined) } } } : {}),
         }).catch(error => {
           // An explicit provider block must not become a retryable parent tool failure.
           if (error instanceof RpError && error.code === 'MODEL_CONTENT_FILTER') terminalWriterError = error
@@ -305,11 +307,11 @@ export class RunExecutor {
       journal.tool(event)
     })
     try {
-      const delivery = writerHistory?.delivery ? new WriterDeliverySession(writerHistory.delivery) : undefined
+      const delivery = writerHistory?.delivery ? new WriterDeliverySession(writerHistory.delivery, undefined, undefined, writerHistory.terminalExamples) : undefined
       this.summaries?.pressure(runId, [
         { route: routes.main, text: context.systemPrompt + JSON.stringify(conversation()) + JSON.stringify(agent.state.tools.map(({ name, description, parameters }) => ({ name, description, parameters }))) },
         { route: routes.writer, text: (delivery?.system(writerSystemPrompt()) ?? writerSystemPrompt()) + (writerHistory ? writerHistoryPreview(writerHistory.messages) : '')
-          + (delivery?.invocation ?? context.writerPrompt) + JSON.stringify((delivery?.tools(resources.readonlyTools, context.writerPrompt) ?? resources.readonlyTools).map(({ name, description, parameters }) => ({ name, description, parameters }))) },
+          + (delivery?.invocation ?? context.writerPrompt) + JSON.stringify((delivery?.tools(resources.readonlyTools, delivery.config.mode === 'terminal' ? context.writerTerminalPrompt : context.writerPrompt, writerSystemPrompt()) ?? resources.readonlyTools).map(({ name, description, parameters }) => ({ name, description, parameters }))) },
       ], routes.main)
       const inputs = conversation().filter(message => (message as ParentMessage).rpRunId === runId)
       this.models.resolve(routes.main, conversation().flatMap(message => Array.isArray(message.content) ? message.content.filter(part => part.type === 'image') as ImageContent[] : []))

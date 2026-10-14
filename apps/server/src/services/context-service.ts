@@ -30,7 +30,7 @@ export class ContextService {
       requireValue(run.status === 'running', 'RUN_STATE_CONFLICT', '当前生成未在运行。', 409)
       const assembly = this.preview(run.storyId, runId, model, files, specialists, parentInstructions, policy)
       const event = this.stories.append(run.storyId, { type: 'context.built', data: {
-        runId, model, writerPrompt: assembly.writerPrompt, parentPrompt: assembly.parentPrompt, sources: assembly.sources,
+        runId, model, writerPrompt: assembly.writerPrompt, writerTerminalPrompt: assembly.writerTerminalPrompt, parentPrompt: assembly.parentPrompt, sources: assembly.sources,
         systemPrompt: assembly.systemPrompt, writerSystemPrompt: assembly.writerSystemPrompt,
         sourceMessageIds: assembly.sourceMessageIds, runtimePrompt: assembly.runtimePrompt,
         attachmentIds: assembly.files.map(file => file.id),
@@ -51,7 +51,7 @@ export class ContextService {
         return assembly
       }
       const event = this.stories.append(run.storyId, { type: 'context.built', data: { runId, model: context.model,
-        writerPrompt: assembly.writerPrompt, parentPrompt: assembly.parentPrompt, sources: assembly.sources,
+        writerPrompt: assembly.writerPrompt, writerTerminalPrompt: assembly.writerTerminalPrompt, parentPrompt: assembly.parentPrompt, sources: assembly.sources,
         systemPrompt: assembly.systemPrompt, writerSystemPrompt: assembly.writerSystemPrompt, sourceMessageIds: assembly.sourceMessageIds, runtimePrompt: assembly.runtimePrompt,
         attachmentIds: assembly.files.map(file => file.id),
       } })

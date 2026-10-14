@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from 'vitest'
-import { terminalWriterHistory } from '../packages/rp-core/src/agents/writer-history-example.ts'
+import { toolHistoryConfig } from './writer-history-fixture.ts'
 import { compileWriterHistory, normalizeWriterHistory, writerHistoryIssues } from '../packages/rp-core/src/agents/writer-history.ts'
 import { WriterHistoryService } from '../apps/server/src/services/writer-history-service.ts'
 import { AppDatabase } from '../apps/server/src/storage/database.ts'
@@ -10,7 +10,7 @@ const cleanup: (() => void)[] = []
 afterEach(() => cleanup.splice(0).forEach(close => close()))
 
 it('provides an editable, disabled example with a native dispatch/acknowledgement prefix', () => {
-  const config = terminalWriterHistory()
+  const config = toolHistoryConfig()
   expect(config.enabled).toBe(false)
   expect(writerHistoryIssues(config)).toEqual([])
   const messages = compileWriterHistory(config)
@@ -22,27 +22,36 @@ it('provides an editable, disabled example with a native dispatch/acknowledgemen
   config.delivery!.toolName = 'custom_output'
   config.delivery!.fieldName = 'reply_text'
   expect(JSON.stringify(compileWriterHistory(config).slice(-2))).toContain('custom_output 的 reply_text')
-  expect(terminalWriterHistory().delivery!.toolName).toBe('writer_display')
+  expect(toolHistoryConfig().delivery!.toolName).toBe('writer_display')
 })
 
 it.each([
   ['toolName', 'read.file'], ['fieldName', '__proto__'], ['fieldName', 'has space'], ['dispatch', ' '],
   ['acknowledgement', ''], ['invocation', ''], ['toolDescription', ''], ['fieldDescription', ''], ['system', 'x'.repeat(20_001)],
 ] as const)('validates enabled delivery settings (%s) and preserves incomplete disabled drafts', (field, text) => {
-  const config = terminalWriterHistory(); config.delivery![field] = text
+  const config = toolHistoryConfig(); config.delivery![field] = text
   expect(normalizeWriterHistory(config)).toEqual(config)
   expect(() => normalizeWriterHistory({ ...config, enabled: true })).toThrow()
 })
 
 it('rejects unknown or mistyped delivery structures even when injection is disabled', () => {
-  const config = terminalWriterHistory()
+  const config = toolHistoryConfig()
   for (const delivery of [null, {}, { ...config.delivery, mode: 'script' }, { ...config.delivery, invocation: 42 }, { ...config.delivery, javascript: 'anything' }])
     expect(() => normalizeWriterHistory({ ...config, delivery })).toThrow('配置')
 })
 
+it('continues counting generic delivery guides toward the existing history size limit', () => {
+  const config = toolHistoryConfig()
+  config.rounds[0]!.user = 'x'.repeat(15_000)
+  config.delivery!.dispatch = 'd'.repeat(6000)
+  expect(writerHistoryIssues(config)).toContain('编译后的 Writer 预置历史不能超过 20,000 字符。')
+  config.delivery!.dispatch = 'dispatch'
+  expect(writerHistoryIssues(config)).toEqual([])
+})
+
 it('freezes delivery settings, includes them in the digest, and restores them from the same SQLite record', () => {
   const x = fixture(); cleanup.push(x.close)
-  const service = new WriterHistoryService(x.assets), config = terminalWriterHistory(); config.enabled = true
+  const service = new WriterHistoryService(x.assets), config = toolHistoryConfig(); config.enabled = true
   service.update(1, config)
   const first = service.capture()!
   config.delivery!.fieldDescription = '下轮使用的新字段说明'
@@ -65,7 +74,7 @@ it('freezes delivery settings, includes them in the digest, and restores them fr
 
 it('selecting plain text retains the delivery draft but removes the dispatch chain and live tool', () => {
   const x = fixture(); cleanup.push(x.close)
-  const service = new WriterHistoryService(x.assets), config = terminalWriterHistory()
+  const service = new WriterHistoryService(x.assets), config = toolHistoryConfig()
   config.enabled = true; config.delivery!.mode = 'text'; config.delivery!.toolName = ''
   service.update(1, config)
   expect(service.capture()!.messages).toHaveLength(8)

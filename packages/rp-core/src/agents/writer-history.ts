@@ -1,5 +1,6 @@
 import { requireValue } from '../errors.ts'
 import { normalizeWriterDelivery, writerDeliveryIssues, writerDeliveryTemplate, type WriterDelivery } from './writer-delivery.ts'
+import { terminalExamples } from './writer-terminal.ts'
 
 export const WRITER_HISTORY_LIMITS = { rounds: 2, steps: 16, characters: 20_000, bytes: 262_144 } as const
 export interface WriterHistoryStep { name: string; argumentsJson: string; resultJson: string; isError: boolean }
@@ -12,7 +13,7 @@ export type WriterHistoryMessage =
   | { role: 'user'; content: Text[] }
   | { role: 'assistant'; content: [Text] | [{ type: 'toolCall'; id: string; name: string; argumentsJson: string }] }
   | { role: 'toolResult'; toolCallId: string; toolName: string; content: Text[]; isError: boolean }
-export interface FrozenWriterHistory { metadata: WriterHistoryMetadata; messages: WriterHistoryMessage[]; delivery?: WriterDelivery }
+export interface FrozenWriterHistory { metadata: WriterHistoryMetadata; messages: WriterHistoryMessage[]; delivery?: WriterDelivery; terminalExamples?: string }
 
 export const blankWriterHistoryStep = (): WriterHistoryStep => ({ name: '', argumentsJson: '{}', resultJson: '{}', isError: false })
 export const blankWriterHistory = (): WriterHistoryConfig => ({ enabled: false,
@@ -67,14 +68,23 @@ export function writerHistoryIssues(config: WriterHistoryConfig): string[] {
       }
     })
   })
-  if (!issues.length && writerHistoryPreview(compileWriterHistory(config)).length > WRITER_HISTORY_LIMITS.characters)
+  if (!issues.length && writerHistoryPreview(config.delivery?.mode === 'terminal' ? compileWriterHistoryRounds(config) : compileWriterHistory(config)).length > WRITER_HISTORY_LIMITS.characters)
     issues.push('编译后的 Writer 预置历史不能超过 20,000 字符。')
   return issues
 }
 
 /** Pure history compilation; no tool registry or execution is involved. IDs are not editable. */
 export function compileWriterHistory(config: WriterHistoryConfig): WriterHistoryMessage[] {
-  const history = config.rounds.flatMap((round, r) => {
+  const history = config.delivery?.mode === 'terminal' ? [] : compileWriterHistoryRounds(config)
+  if (config.delivery && config.delivery.mode !== 'text') {
+    history.push({ role: 'user', content: [{ type: 'text', text: writerDeliveryTemplate(config.delivery.dispatch, config.delivery) }] },
+      { role: 'assistant', content: [{ type: 'text', text: writerDeliveryTemplate(config.delivery.acknowledgement, config.delivery) }] })
+  }
+  return history
+}
+
+export function compileWriterHistoryRounds(config: WriterHistoryConfig): WriterHistoryMessage[] {
+  return config.rounds.flatMap((round, r) => {
     const messages: WriterHistoryMessage[] = [{ role: 'user', content: [{ type: 'text', text: round.user }] }]
     round.steps.forEach((step, s) => {
       const id = `wh_r${r + 1}_s${s + 1}`
@@ -84,11 +94,10 @@ export function compileWriterHistory(config: WriterHistoryConfig): WriterHistory
     messages.push({ role: 'assistant', content: [{ type: 'text', text: round.assistant }] })
     return messages
   })
-  if (config.delivery?.mode === 'tool') {
-    history.push({ role: 'user', content: [{ type: 'text', text: writerDeliveryTemplate(config.delivery.dispatch, config.delivery) }] },
-      { role: 'assistant', content: [{ type: 'text', text: writerDeliveryTemplate(config.delivery.acknowledgement, config.delivery) }] })
-  }
-  return history
+}
+
+export function writerHistoryArchive(config: WriterHistoryConfig): string | undefined {
+  return config.delivery?.mode === 'terminal' ? terminalExamples(config.rounds) : undefined
 }
 
 /** Render native Pi message content without passing arbitrary-precision numbers through JS numbers. */

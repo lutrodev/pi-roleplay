@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { Type } from '@earendil-works/pi-ai'
-import { terminalWriterHistory } from '../packages/rp-core/src/agents/writer-history-example.ts'
+import { toolHistoryConfig } from './writer-history-fixture.ts'
 import { WriterHistoryService } from '../apps/server/src/services/writer-history-service.ts'
 import { ModelRegistry, type ModelRegistration } from '../apps/server/src/runtime/models.ts'
 import { runIsolated, type IsolatedRequest } from '../apps/server/src/runtime/isolated.ts'
@@ -14,7 +14,7 @@ const registration: ModelRegistration = { provider: 'test', model: 'writer', key
 const route = { provider: 'test', model: 'writer' }
 function history() {
   const x = fixture(); cleanup.push(x.close)
-  const service = new WriterHistoryService(x.assets), config = terminalWriterHistory(); config.enabled = true
+  const service = new WriterHistoryService(x.assets), config = toolHistoryConfig(); config.enabled = true
   service.update(1, config); return service.capture()!
 }
 function toolResponse(raw: string, options: { name?: string; finish?: string; extraCall?: boolean; step?: number } = {}) {

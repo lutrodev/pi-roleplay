@@ -13,7 +13,8 @@ import { streamingTextResponse } from './streaming-response.ts'
 import { WriterHistoryService } from '../apps/server/src/services/writer-history-service.ts'
 import { TraceService } from '../apps/server/src/services/trace-service.ts'
 import { historyConfig } from './writer-history-fixture.ts'
-import { terminalWriterHistory } from '../packages/rp-core/src/agents/writer-history-example.ts'
+import { toolHistoryConfig } from './writer-history-fixture.ts'
+import { terminalWriterHistory as archiveHistoryConfig } from '../packages/rp-core/src/agents/writer-history-example.ts'
 import { readingView, storyNotice } from '../packages/protocol/src/reading.ts'
 import { ModelHistoryService } from '../apps/server/src/services/model-history-service.ts'
 
@@ -39,7 +40,10 @@ function setup(replies: (ScriptedReply | ((signal?: AbortSignal | null) => Respo
     requests.push(JSON.parse(String(init?.body)))
     const next = replies[index]
     if (!next) throw new Error(`Unexpected model call ${index}`)
-    return typeof next === 'function' ? next(init?.signal) : response(next, index)
+    if (typeof next === 'function') return next(init?.signal)
+    const body = requests[index] as { tools?: { function: { name: string } }[] }
+    return response({ ...next, ...(next.calls ? { calls: next.calls.map(call => call.name === '$terminal'
+      ? { ...call, name: body.tools!.find(tool => tool.function.name.startsWith('dispatch_chapter_'))!.function.name } : call) } : {}) }, index)
   } })
   const executor = new RunExecutor(x.stories, new ContextService(x.stories, x.assets), new TurnService(x.stories), registry, x.files)
   const resources = emptyResources()
@@ -55,11 +59,52 @@ const unchangedState = (): StoryState => ({ namespaces: { story: createNamespace
   title: '场景时间', updateMode: 'schema-only', rules: [], schema: { type: 'object', properties: { minute: { type: 'integer' } }, required: ['minute'], additionalProperties: false },
 } }) } })
 
+it.each(['chat', 'agent'] as const)('archives the real %s Writer request and audits raw carrier versus decoded text separately', async mode => {
+  const prose = 'user@linux:~/Documents$ cat chapter_01.txt\n修理好的电台传来一声呼唤。'
+  const x = setup([{ calls: [write] }, { calls: [{ name: '$terminal', args: { display_stream: prose } }] },
+    { calls: [{ name: 'rp_commit_turn', args: mode === 'agent' ? { narrative: prose } : {} }] }], mode)
+  const service = new WriterHistoryService(x.assets), config = archiveHistoryConfig(); config.enabled = true
+  service.update(1, config); x.resources.writerHistory = service.capture()
+  x.queue.wake(); await x.queue.idle()
+  expect(x.stories.run(x.run.id).status).toBe('completed')
+  expect(x.stories.snapshot(x.story.id).messages.at(-1)!.text).toBe(prose)
+  const wire = x.requests[1] as any
+  expect(wire.messages.map((message: any) => message.role)).toEqual(['system', 'user', 'assistant', 'user'])
+  expect(wire.tool_choice).toBe('auto')
+  expect(wire.tools[0].function.description).toContain('cat chapter_01_preview.txt\n走进灯塔。')
+  expect(JSON.stringify(wire.messages)).not.toContain('走进灯塔。')
+  const events = x.stories.eventLog(x.story.id)
+  expect(events.filter(event => event.type === 'tool.started').map(event => event.data.name)).toEqual(['rp_write_turn', 'rp_commit_turn'])
+  const trace = new TraceService(x.stories).trajectory(x.run.id)
+  expect(trace.entries.filter(entry => entry.history?.guide)).toHaveLength(2)
+  expect(trace.entries.filter(entry => entry.history && !entry.history.guide)).toHaveLength(0)
+  const records = events.filter(event => event.type === 'model.message').map(event => event.data)
+  expect(records.some(item => item.role === 'provider:response' && JSON.stringify(item.message).includes('dispatch_chapter_')
+    && JSON.stringify(item.message).includes('toolUse'))).toBe(true)
+  expect(records.some(item => item.role === 'writer:assistant' && (item.message as any).stopReason === 'stop'
+    && (item.message as any).content[0].text === prose)).toBe(true)
+  for (const index of [0, 2]) expect(JSON.stringify(x.requests[index]!.tools)).not.toContain('dispatch_chapter_')
+  expect(x.requests).toHaveLength(3)
+  expect(x.faults).toEqual([])
+  await x.queue.close()
+})
+
+it.each(['length', 'content_filter'] as const)('does not commit a terminal archive after provider %s', async finish => {
+  const x = setup([{ calls: [write] }, { calls: [{ name: '$terminal', args: { display_stream: '未完成终端草稿' } }], finish },
+    { calls: [commit] }, { text: '流程未完成。' }])
+  const service = new WriterHistoryService(x.assets), config = archiveHistoryConfig(); config.enabled = true
+  service.update(1, config); x.resources.writerHistory = service.capture()
+  x.queue.wake(); await x.queue.idle()
+  expect(x.stories.eventsOfTypes(x.story.id, ['writer.completed', 'turn.committed'])).toHaveLength(0)
+  expect(x.stories.run(x.run.id).status).toBe('failed')
+  await x.queue.close()
+})
+
 it.each(['chat', 'agent'] as const)('commits newly delivered tool-argument prose atomically in %s and audits the real delivery', async mode => {
   const prose = '灯塔的门开了，海风跟着旅人走进屋里。'
   const x = setup([{ calls: [write] }, { calls: [{ name: 'writer_display', args: { display_stream: prose } }] },
     { calls: [{ name: 'rp_commit_turn', args: mode === 'agent' ? { narrative: prose } : {} }] }], mode)
-  const history = new WriterHistoryService(x.assets), config = terminalWriterHistory(); config.enabled = true
+  const history = new WriterHistoryService(x.assets), config = toolHistoryConfig(); config.enabled = true
   history.update(1, config); x.resources.writerHistory = history.capture()
   x.queue.wake(); await x.queue.idle()
   expect(x.stories.run(x.run.id).status).toBe('completed')
@@ -82,7 +127,7 @@ it.each(['chat', 'agent'] as const)('commits newly delivered tool-argument prose
 it('routes a tool-delivered clarification as an ordinary reply without committing story state', async () => {
   const text = '请说明接下来应采用谁的视角。', state = unchangedState()
   const x = setup([{ calls: [write] }, { calls: [{ name: 'writer_display', args: { display_stream: text } }] }, { calls: [writerReply] }], 'chat', state)
-  const history = new WriterHistoryService(x.assets), config = terminalWriterHistory(); config.enabled = true
+  const history = new WriterHistoryService(x.assets), config = toolHistoryConfig(); config.enabled = true
   history.update(1, config); x.resources.writerHistory = history.capture()
   x.queue.wake(); await x.queue.idle()
   const story = x.stories.snapshot(x.story.id)
@@ -95,7 +140,7 @@ it('routes a tool-delivered clarification as an ordinary reply without committin
 it.each(['length', 'content_filter'] as const)('never commits a tool-delivered draft after provider %s', async finish => {
   const x = setup([{ calls: [write] }, { calls: [{ name: 'writer_display', args: { display_stream: '不能提交的草稿' } }], finish },
     { calls: [commit] }, { text: '流程未完成。' }])
-  const history = new WriterHistoryService(x.assets), config = terminalWriterHistory(); config.enabled = true
+  const history = new WriterHistoryService(x.assets), config = toolHistoryConfig(); config.enabled = true
   history.update(1, config); x.resources.writerHistory = history.capture()
   x.queue.wake(); await x.queue.idle()
   expect(x.stories.eventsOfTypes(x.story.id, ['writer.completed', 'turn.committed'])).toHaveLength(0)

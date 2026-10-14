@@ -57,6 +57,7 @@ const app = await createServer({ dataDirectory: join(root, 'data'), publicOrigin
     const response = await subagentResponse(body, init?.signal)
     if (response) return response
   }
+  await appendFile(join(root, 'model-requests.jsonl'), JSON.stringify(body) + '\n', { mode: 0o600 })
   const names = body.tools?.map(tool => tool.function.name) ?? [], system = JSON.stringify(body.messages.filter(message => message.role === 'system')), last = body.messages.at(-1)
   let text = '', call: { name: string; args: object } | undefined
   if (system.includes(SUMMARY_INSTRUCTION.slice(0, 25))) {
@@ -91,8 +92,8 @@ const app = await createServer({ dataDirectory: join(root, 'data'), publicOrigin
       call.args = { ...call.args, effects: [{ kind: 'state.update', namespace: 'story', expectedRevision: scenario.stateRevision(), payload: { changes: [{ op: 'increment', path: '/energy', by: -1, reason: '调查灯塔消耗精力' }] } }] }
     }
     if (call.name === 'rp_commit_turn' && body.tools?.find(tool => tool.function.name === 'rp_commit_turn')?.function.parameters?.anyOf?.some(schema => schema.required?.includes('narrative'))) call.args = { ...call.args, narrative }
-  } else if (body.tools?.some(tool => tool.function.description?.includes('<writer_context>'))) {
-    const tool = body.tools.find(tool => tool.function.description?.includes('<writer_context>'))!.function
+  } else if (body.tools?.some(tool => (tool.function.description?.includes('<writer_context>') || tool.function.description?.includes('<current_archive>')))) {
+    const tool = body.tools.find(tool => (tool.function.description?.includes('<writer_context>') || tool.function.description?.includes('<current_archive>')))!.function
     call = { name: tool.name, args: { [tool.parameters!.required![0]!]: tool.description!.includes('BROWSER_WRITER_RESPONSE_TEST') ? writerResponse : narrative } }
   } else text = last?.content === 'Reply with OK.' ? 'OK'
     : browserScenario(body.messages).has('BROWSER_WRITER_RESPONSE_TEST') ? writerResponse : narrative
