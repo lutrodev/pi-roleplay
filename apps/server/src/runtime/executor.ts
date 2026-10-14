@@ -26,6 +26,7 @@ import type { Preferences } from '../../../../packages/rp-core/src/settings/pref
 import type { ToolSettings } from '../../../../packages/rp-core/src/settings/tools.ts'
 import { boundedTools } from './tool-concurrency.ts'
 import { writerHistoryPreview, type FrozenWriterHistory } from '../../../../packages/rp-core/src/agents/writer-history.ts'
+import { WriterDeliverySession } from './writer-delivery.ts'
 import { ModelHistoryService } from '../services/model-history-service.ts'
 import { parentMessages, type ParentMessage } from './parent-history.ts'
 
@@ -304,9 +305,11 @@ export class RunExecutor {
       journal.tool(event)
     })
     try {
+      const delivery = writerHistory?.delivery ? new WriterDeliverySession(writerHistory.delivery) : undefined
       this.summaries?.pressure(runId, [
         { route: routes.main, text: context.systemPrompt + JSON.stringify(conversation()) + JSON.stringify(agent.state.tools.map(({ name, description, parameters }) => ({ name, description, parameters }))) },
-        { route: routes.writer, text: writerSystemPrompt() + (writerHistory ? writerHistoryPreview(writerHistory.messages) : '') + context.writerPrompt + JSON.stringify(resources.readonlyTools.map(({ name, description, parameters }) => ({ name, description, parameters }))) },
+        { route: routes.writer, text: (delivery?.system(writerSystemPrompt()) ?? writerSystemPrompt()) + (writerHistory ? writerHistoryPreview(writerHistory.messages) : '')
+          + (delivery?.invocation ?? context.writerPrompt) + JSON.stringify((delivery?.tools(resources.readonlyTools, context.writerPrompt) ?? resources.readonlyTools).map(({ name, description, parameters }) => ({ name, description, parameters }))) },
       ], routes.main)
       const inputs = conversation().filter(message => (message as ParentMessage).rpRunId === runId)
       this.models.resolve(routes.main, conversation().flatMap(message => Array.isArray(message.content) ? message.content.filter(part => part.type === 'image') as ImageContent[] : []))

@@ -35,7 +35,7 @@ export function LedgerEntry({ entry, rowId = entry.id, agent, depth, selected, e
     <button type="button" className="trajectory-row-main" aria-pressed={selected} aria-label={`${uiT(roleLabels[entry.kind])} · ${entry.model ?? uiT(title)}${label ? ' · ' + label : ''}`} onClick={select}>
       <span className="trajectory-role" data-kind={entry.kind}>{uiT(roleLabels[entry.kind])}</span>
       <span className="trajectory-row-content">
-        {entry.history && <small className="muted">{uiT('预置历史 · 第 %{round} 轮', { round: entry.history.round })}</small>}
+        {entry.history && <small className="muted">{entry.history.guide ? uiT('预置交付调度') : uiT('预置历史 · 第 %{round} 轮', { round: entry.history.round })}</small>}
         {entry.kind === 'tool' && <><strong><Highlight text={uiT(title)} search={search} /></strong><code className="trajectory-tool-name"><Highlight text={entry.title} search={search} /></code></>}
         {entry.kind === 'assistant' && <span className="trajectory-model-name"><Highlight text={entry.model ?? ''} search={search} /></span>}
         <span className="trajectory-preview"><Highlight text={preview || (isActive(status) ? uiT('正在等待返回…') : entry.kind === 'assistant' ? uiT('没有文本内容') : uiT(title))} search={search} /></span>

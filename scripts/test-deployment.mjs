@@ -9,6 +9,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { setTimeout as pause } from 'node:timers/promises'
 import { historyConfig } from '../tests/writer-history-fixture.ts'
+import { defaultWriterDelivery } from '../packages/rp-core/src/agents/writer-delivery.ts'
 
 const root = fileURLToPath(new URL('../', import.meta.url)), directory = await realpath(await mkdtemp(join(tmpdir(), 'rp-deployment-')))
 const targets = [], passed = [], evidence = {}, requests = []
@@ -32,7 +33,8 @@ const provider = createServer(async (request, response) => {
     if (performed.includes('rp_write_turn')) call = { name: 'rp_commit_turn', args: { narrative, runSummary: '修好的船已经归还。', ...(!JSON.stringify(body.messages.filter(message => message.role === 'system')).includes('Reply options are disabled.') ? { extensions: { 'rp.reply-options': { options: ['沿海岸走向灯塔。', '留在码头检查旧船。'] } } } : {}) } }
     else if (performed.includes('bash')) call = { name: 'rp_write_turn', args: { action: 'write' } }
     else call = { name: 'bash', args: { command: 'printf "VPS 工作文件\\n" > vps.txt; id -u; test ! -e /data/app.sqlite && test ! -e /run/secrets/session_key && test ! -e /var/run/docker.sock && printf "private-files-absent\\n"; printf "%s\\n" "${RP_MODEL_API_KEY-unset}"; (printf bad > /inputs/forbidden) 2>/dev/null || printf "inputs-read-only\\n"; cat vps.txt' } }
-  } else text = narrative
+  } else if (names.includes('writer_display')) call = { name: 'writer_display', args: { display_stream: narrative } }
+  else text = narrative
   const delta = { role: 'assistant', content: text, ...(call ? { tool_calls: [{ index: 0, id: randomUUID(), type: 'function', function: { name: call.name, arguments: JSON.stringify(call.args) } }] } : {}) }
   response.writeHead(200, { 'content-type': 'text/event-stream' })
   response.end(`data: ${JSON.stringify({ id: randomUUID(), choices: [{ index: 0, delta, finish_reason: call ? 'tool_calls' : 'stop' }] })}\n\ndata: [DONE]\n\n`)
@@ -122,7 +124,7 @@ try {
   const savedPreferences = await source.api('/settings', 'PUT', { expectedRevision: settings.revision, preferences: { ...settings.preferences, quickRepliesEnabled: false, replyOptionsEnabled: false, subagentsEnabled: false, reading: { ...settings.preferences.reading, showAvatars: false, showStateCard: false, dialogueColor: 'purple', theme: 'dark' } } })
   const initialHistory = await source.api('/settings/writer-history')
   assert.equal(initialHistory.config.enabled, false)
-  const savedHistory = await source.api('/settings/writer-history', 'PUT', { expectedRevision: initialHistory.revision, config: historyConfig() })
+  const savedHistory = await source.api('/settings/writer-history', 'PUT', { expectedRevision: initialHistory.revision, config: { ...historyConfig(), delivery: defaultWriterDelivery() } })
   const workspace = (await source.api('/workspaces', 'POST', { name: 'VPS 工作区', access: 'read-write' }, 201)).workspace
   assert.equal(workspace.directory, `workspace-${workspace.id}`)
   const story = (await source.api('/stories', 'POST', { title: 'VPS 原创验收', workspaceId: workspace.id, profile: { runtime: { executionMode: 'agent', reasoningEffort: 'high', writerRoute: { kind: 'inherit', reasoningEffort: 'low' } }, variables: { enabled: false, mvu: false } } }, 201)).story
@@ -134,6 +136,7 @@ try {
   assert.equal(snapshot.messages.at(-1).text, narrative)
   const writerRequest = requests.find(request => JSON.stringify(request.messages).includes('900719925474099312345'))
   assert(writerRequest)
+  assert(writerRequest.tools.some(tool => tool.function.name === 'writer_display' && tool.function.description.includes('<writer_context>')))
   assert.equal(writerRequest.reasoning_effort, 'low')
   assert(requests.filter(request => request.tools?.some(tool => tool.function.name === 'rp_write_turn')).every(request => request.reasoning_effort === 'high'))
   // The actual Pi adapter uses the developer role for this reasoning model's leading instruction.
@@ -143,7 +146,7 @@ try {
   const records = await source.api(`/runs/${sent.run.id}/tools`)
   assert.match(JSON.stringify(records), /10001.*private-files-absent.*unset.*inputs-read-only/s)
   assert(!JSON.stringify(records).includes('read_log'))
-  passed.push('Writer-only native preset history: leading developer instruction for a reasoning model, paired serial calls, lossless numbers, no historical tool execution')
+  passed.push('Writer-only native preset history and tool-argument delivery: leading developer instruction, paired history, lossless numbers, no historical execution, live context in output tool metadata and extracted prose committed')
   assert.equal((await source.api(`/stories/${story.id}/files/preview?path=vps.txt`)).text, 'VPS 工作文件\n')
   const branch = (await source.api(`/stories/${story.id}/messages/${snapshot.messages.at(-1).id}/fork`, 'POST', { expectedRevision: snapshot.revision }, 201)).story
   assert.equal((await source.api(`/stories/${branch.id}/files/preview?path=vps.txt`)).text, 'VPS 工作文件\n')
@@ -249,7 +252,7 @@ try {
   passed.push('Per-page enable switches, message display preferences, and per-story variables/MVU survive backup and restore')
   passed.push('Dialogue color, highlight switch and versioned reading preferences survive cold backup and restore')
   assert.deepEqual(await restored.api('/settings/writer-history'), savedHistory)
-  passed.push('Writer preset history revision, enabled switch and lossless JSON survive cold backup and empty-directory restore')
+  passed.push('Writer preset history revision, enabled switch, lossless JSON and tool-delivery configuration survive cold backup and empty-directory restore')
   assert.deepEqual((await restored.api('/settings/sidebar')).pinnedStoryIds, [story.id])
   assert.equal((await restored.api(`/stories/${deletedStory.id}`, 'GET', undefined, 404)).error.code, 'STORY_NOT_FOUND')
   assert.equal((await restored.api('/stories', 'POST', deletedRequest, 409)).error.code, 'STORY_DELETED')

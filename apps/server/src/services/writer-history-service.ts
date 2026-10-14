@@ -35,8 +35,9 @@ export class WriterHistoryService {
     const { revision, config } = this.snapshot()
     if (!config.enabled) return undefined
     const messages = compileWriterHistory(config)
-    return { metadata: { revision, digest: createHash('sha256').update(JSON.stringify(messages)).digest('hex'),
-      messageCount: messages.length, toolCallCount: config.rounds.reduce((sum, round) => sum + round.steps.length, 0) }, messages }
+    const delivery = config.delivery?.mode === 'tool' ? structuredClone(config.delivery) : undefined
+    return { metadata: { revision, digest: createHash('sha256').update(JSON.stringify(delivery ? { messages, delivery } : messages)).digest('hex'),
+      messageCount: messages.length, toolCallCount: config.rounds.reduce((sum, round) => sum + round.steps.length, 0), ...(delivery ? { guideMessageCount: 2 } : {}) }, messages, ...(delivery ? { delivery } : {}) }
   }
   private save(value: WriterHistorySettings) { this.assets.setSetting(storageKey, JSON.parse(JSON.stringify(value)) as JsonValue) }
 }

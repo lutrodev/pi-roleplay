@@ -26,7 +26,7 @@
     "start:tools": "node apps/tools/dist/main.js",
     "admin": "tsx apps/server/src/cli.ts",
     "verify": "pnpm typecheck && pnpm test && pnpm build",
-    "test:deployment": "node scripts/test-deployment.mjs",
+    "test:deployment": "node --import tsx scripts/test-deployment.mjs",
     "test:backup": "python3 scripts/test-deploy.py",
     "test:entrypoints": "node --import tsx scripts/test-entrypoints.ts",
     "release:check": "node scripts/release.ts check",

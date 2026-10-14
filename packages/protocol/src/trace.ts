@@ -16,7 +16,7 @@ export type TrajectoryStatus = ModelRequestSummary['status'] | 'waiting_user' | 
 export interface TrajectoryEntry {
   id: string; seq: number; kind: TrajectoryKind; agentId: string; title: string; preview: string; resultPreview?: string
   startedAt: string; elapsedMs?: number; status?: TrajectoryStatus; model?: string
-  history?: { round: number }
+  history?: { round: number; guide?: boolean }
   detail: { type: 'request'; requestId: string; messageIndex?: number } | { type: 'tool'; callId: string } | { type: 'event'; seq: number }
 }
 export interface TrajectoryAgent {

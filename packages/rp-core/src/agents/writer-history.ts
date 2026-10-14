@@ -1,17 +1,18 @@
 import { requireValue } from '../errors.ts'
+import { normalizeWriterDelivery, writerDeliveryIssues, writerDeliveryTemplate, type WriterDelivery } from './writer-delivery.ts'
 
 export const WRITER_HISTORY_LIMITS = { rounds: 2, steps: 16, characters: 20_000, bytes: 262_144 } as const
 export interface WriterHistoryStep { name: string; argumentsJson: string; resultJson: string; isError: boolean }
 export interface WriterHistoryRound { user: string; steps: WriterHistoryStep[]; assistant: string }
-export interface WriterHistoryConfig { enabled: boolean; rounds: WriterHistoryRound[] }
+export interface WriterHistoryConfig { enabled: boolean; rounds: WriterHistoryRound[]; delivery?: WriterDelivery }
 export interface WriterHistorySettings { version: 1; revision: number; config: WriterHistoryConfig }
-export interface WriterHistoryMetadata { revision: number; digest: string; messageCount: number; toolCallCount: number }
+export interface WriterHistoryMetadata { revision: number; digest: string; messageCount: number; toolCallCount: number; guideMessageCount?: number }
 type Text = { type: 'text'; text: string }
 export type WriterHistoryMessage =
   | { role: 'user'; content: Text[] }
   | { role: 'assistant'; content: [Text] | [{ type: 'toolCall'; id: string; name: string; argumentsJson: string }] }
   | { role: 'toolResult'; toolCallId: string; toolName: string; content: Text[]; isError: boolean }
-export interface FrozenWriterHistory { metadata: WriterHistoryMetadata; messages: WriterHistoryMessage[] }
+export interface FrozenWriterHistory { metadata: WriterHistoryMetadata; messages: WriterHistoryMessage[]; delivery?: WriterDelivery }
 
 export const blankWriterHistoryStep = (): WriterHistoryStep => ({ name: '', argumentsJson: '{}', resultJson: '{}', isError: false })
 export const blankWriterHistory = (): WriterHistoryConfig => ({ enabled: false,
@@ -24,7 +25,8 @@ function keys(value: unknown, names: string): asserts value is Record<string, un
 
 /** Keep JSON source strings intact: parsing and reserializing here would round large numbers. */
 export function normalizeWriterHistory(input: unknown): WriterHistoryConfig {
-  keys(input, 'enabled,rounds')
+  keys(input, input && typeof input === 'object' && 'delivery' in input ? 'delivery,enabled,rounds' : 'enabled,rounds')
+  if ('delivery' in input) normalizeWriterDelivery(input.delivery)
   requireValue(typeof input.enabled === 'boolean' && Array.isArray(input.rounds) && input.rounds.length === 2,
     'INVALID_WRITER_HISTORY', 'Writer 预置历史必须包含两轮。')
   for (const round of input.rounds) {
@@ -48,7 +50,7 @@ export function normalizeWriterHistory(input: unknown): WriterHistoryConfig {
 }
 
 export function writerHistoryIssues(config: WriterHistoryConfig): string[] {
-  const issues: string[] = []
+  const issues: string[] = writerDeliveryIssues(config.delivery)
   config.rounds.forEach((round, r) => {
     const prefix = `第 ${r + 1} 轮`
     if (!round.user.trim()) issues.push(`${prefix}：用户消息不能为空。`)
@@ -72,7 +74,7 @@ export function writerHistoryIssues(config: WriterHistoryConfig): string[] {
 
 /** Pure history compilation; no tool registry or execution is involved. IDs are not editable. */
 export function compileWriterHistory(config: WriterHistoryConfig): WriterHistoryMessage[] {
-  return config.rounds.flatMap((round, r) => {
+  const history = config.rounds.flatMap((round, r) => {
     const messages: WriterHistoryMessage[] = [{ role: 'user', content: [{ type: 'text', text: round.user }] }]
     round.steps.forEach((step, s) => {
       const id = `wh_r${r + 1}_s${s + 1}`
@@ -82,6 +84,11 @@ export function compileWriterHistory(config: WriterHistoryConfig): WriterHistory
     messages.push({ role: 'assistant', content: [{ type: 'text', text: round.assistant }] })
     return messages
   })
+  if (config.delivery?.mode === 'tool') {
+    history.push({ role: 'user', content: [{ type: 'text', text: writerDeliveryTemplate(config.delivery.dispatch, config.delivery) }] },
+      { role: 'assistant', content: [{ type: 'text', text: writerDeliveryTemplate(config.delivery.acknowledgement, config.delivery) }] })
+  }
+  return history
 }
 
 /** Render native Pi message content without passing arbitrary-precision numbers through JS numbers. */

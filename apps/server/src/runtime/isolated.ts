@@ -8,6 +8,7 @@ import { contextPruner } from './tool-pruner.ts'
 import { boundedTools } from './tool-concurrency.ts'
 import type { FrozenWriterHistory } from '../../../../packages/rp-core/src/agents/writer-history.ts'
 import { nativeWriterHistory } from './writer-history.ts'
+import { WriterDeliverySession } from './writer-delivery.ts'
 
 export interface IsolatedRequest {
   route: ModelRoute
@@ -37,30 +38,34 @@ export async function runIsolated(models: ModelRegistry, request: IsolatedReques
   let macro = createRoleplayMacroStream(request.identities)
   const parallel = request.maxParallelToolCalls ?? 1
   const history = nativeWriterHistory(request.initialHistory, model), historyCount = history.length
+  const delivery = request.initialHistory?.delivery?.mode === 'tool'
+    ? new WriterDeliverySession(request.initialHistory.delivery, request.onText, request.identities) : undefined
   const prune = contextPruner(value => request.onMessage?.({ role: 'context:pruned', ...value }))
   const agent = new Agent({
-    initialState: { model, thinkingLevel, systemPrompt: request.systemPrompt, tools: boundedTools(request.tools, parallel), messages: history },
+    initialState: { model, thinkingLevel, systemPrompt: delivery?.system(request.systemPrompt) ?? request.systemPrompt,
+      tools: boundedTools(delivery?.tools(request.tools, request.prompt) ?? request.tools, parallel), messages: history },
     streamFn: models.bindReasoning(request.route, request.streamFn), toolExecution: parallel > 1 ? 'parallel' : 'sequential',
     transformContext: async messages => [...messages.slice(0, historyCount), ...await prune(messages.slice(historyCount))],
-    shouldStopAfterTurn: () => request.signal.aborted || ++steps >= request.maxSteps,
+    shouldStopAfterTurn: () => request.signal.aborted || !!delivery?.attempted || ++steps >= request.maxSteps,
   })
   const cancel = () => agent.abort()
   request.signal.addEventListener('abort', cancel, { once: true })
   agent.subscribe(event => {
     request.onEvent?.(event)
-    if (event.type === 'message_start' && event.message.role === 'assistant') { text = ''; macro = createRoleplayMacroStream(request.identities) }
-    if (event.type === 'message_update' && event.assistantMessageEvent.type === 'text_delta') {
+    delivery?.observe(event)
+    if (!delivery && event.type === 'message_start' && event.message.role === 'assistant') { text = ''; macro = createRoleplayMacroStream(request.identities) }
+    if (!delivery && event.type === 'message_update' && event.assistantMessageEvent.type === 'text_delta') {
       text += macro.push(event.assistantMessageEvent.delta)
       requireValue([...text].length <= 200_000, 'MODEL_OUTPUT_TOO_LARGE', '模型输出超过长度限制。')
       request.onText?.(text, false)
     }
     if (event.type === 'message_end') {
-      if (event.message.role === 'assistant') { text += macro.finish(); request.onText?.(text, true) }
+      if (!delivery && event.message.role === 'assistant') { text += macro.finish(); request.onText?.(text, true) }
       request.onMessage?.(JSON.parse(JSON.stringify(event.message)))
     }
   })
   try {
-    await agent.prompt(request.prompt, request.images)
+    await agent.prompt(delivery?.invocation ?? request.prompt, request.images)
     request.signal.throwIfAborted()
     let last = agent.state.messages.slice(historyCount + 1).findLast(message => message.role === 'assistant')
     if (last?.role === 'assistant' && isContextOverflow(last, model.contextWindow) && request.recoverOverflow) {
@@ -69,8 +74,9 @@ export async function runIsolated(models: ModelRegistry, request: IsolatedReques
       const messages = agent.state.messages
       const input = messages[historyCount]
       requireValue(messages.at(-1) === last && input?.role === 'user', 'CONTEXT_RECOVERY_INVALID', '当前模型记录不支持安全续接。', 502)
-      agent.state.systemPrompt = replacement.systemPrompt
-      agent.state.messages = [...messages.slice(0, historyCount), { ...input, content: [{ type: 'text', text: replacement.prompt }, ...request.images] }, ...messages.slice(historyCount + 1, -1)]
+      agent.state.systemPrompt = delivery?.system(replacement.systemPrompt) ?? replacement.systemPrompt
+      if (delivery) agent.state.tools = boundedTools(delivery.tools(request.tools, replacement.prompt), parallel)
+      agent.state.messages = [...messages.slice(0, historyCount), { ...input, content: [{ type: 'text', text: delivery?.invocation ?? replacement.prompt }, ...request.images] }, ...messages.slice(historyCount + 1, -1)]
       steps = Math.max(0, steps - 1)
       await agent.continue()
       request.signal.throwIfAborted()
@@ -81,7 +87,8 @@ export async function runIsolated(models: ModelRegistry, request: IsolatedReques
     requireValue(!providerError.includes('Provider finish_reason: content_filter'), 'MODEL_CONTENT_FILTER', '模型提供商中止了本轮生成，尚未提交正文。已有草稿和工具记录已保留。', 502)
     if (last?.role !== 'assistant' || last.stopReason === 'error' || agent.state.errorMessage) throw new RpError('MODEL_REQUEST_FAILED', '模型调用失败，请检查提供商配置与服务状态。', 502)
     requireValue(last.stopReason !== 'length', 'MODEL_OUTPUT_TRUNCATED', '模型输出达到长度上限，本次内容未提交。')
-    requireValue(last.stopReason === 'stop' && text.trim().length > 0, 'MODEL_OUTPUT_INCOMPLETE', '模型未完成正文，请检查工具或生成步数限制。')
+    if (delivery) text = delivery.result()
+    else requireValue(last.stopReason === 'stop' && text.trim().length > 0, 'MODEL_OUTPUT_INCOMPLETE', '模型未完成正文，请检查工具或生成步数限制。')
     return { text, usage: last.usage }
   } finally { request.signal.removeEventListener('abort', cancel) }
 }

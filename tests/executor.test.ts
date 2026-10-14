@@ -13,6 +13,7 @@ import { streamingTextResponse } from './streaming-response.ts'
 import { WriterHistoryService } from '../apps/server/src/services/writer-history-service.ts'
 import { TraceService } from '../apps/server/src/services/trace-service.ts'
 import { historyConfig } from './writer-history-fixture.ts'
+import { terminalWriterHistory } from '../packages/rp-core/src/agents/writer-history-example.ts'
 import { readingView, storyNotice } from '../packages/protocol/src/reading.ts'
 import { ModelHistoryService } from '../apps/server/src/services/model-history-service.ts'
 
@@ -53,6 +54,54 @@ const writerReply = { name: 'rp_reply', args: { useWriterResult: true } }
 const unchangedState = (): StoryState => ({ namespaces: { story: createNamespaceSnapshot({ initialValue: { minute: 5 }, definition: {
   title: '场景时间', updateMode: 'schema-only', rules: [], schema: { type: 'object', properties: { minute: { type: 'integer' } }, required: ['minute'], additionalProperties: false },
 } }) } })
+
+it.each(['chat', 'agent'] as const)('commits newly delivered tool-argument prose atomically in %s and audits the real delivery', async mode => {
+  const prose = '灯塔的门开了，海风跟着旅人走进屋里。'
+  const x = setup([{ calls: [write] }, { calls: [{ name: 'writer_display', args: { display_stream: prose } }] },
+    { calls: [{ name: 'rp_commit_turn', args: mode === 'agent' ? { narrative: prose } : {} }] }], mode)
+  const history = new WriterHistoryService(x.assets), config = terminalWriterHistory(); config.enabled = true
+  history.update(1, config); x.resources.writerHistory = history.capture()
+  x.queue.wake(); await x.queue.idle()
+  expect(x.stories.run(x.run.id).status).toBe('completed')
+  expect(x.stories.snapshot(x.story.id).messages.at(-1)!.text).toBe(prose)
+  const events = x.stories.eventLog(x.story.id)
+  expect(events.filter(event => event.type === 'turn.committed')).toHaveLength(1)
+  expect(events.filter(event => event.type === 'tool.started').map(event => event.data.name)).toEqual(['rp_write_turn', 'writer_display', 'rp_commit_turn'])
+  expect(events.find(event => event.type === 'writer.completed')).toMatchObject({ data: { text: prose, writerHistory: { guideMessageCount: 2 } } })
+  const trajectory = new TraceService(x.stories).trajectory(x.run.id)
+  expect(trajectory.entries.filter(entry => entry.history?.guide)).toHaveLength(2)
+  expect(trajectory.entries.filter(entry => entry.history && !entry.history.guide)).toHaveLength(8)
+  expect(trajectory.agents).toHaveLength(1)
+  expect(trajectory.agents[0]!.errorCount).toBe(0)
+  for (const index of [0, 2]) expect(JSON.stringify(x.requests[index]!.tools)).not.toContain('writer_display')
+  expect(x.requests).toHaveLength(3)
+  expect(x.faults).toEqual([])
+  await x.queue.close()
+})
+
+it('routes a tool-delivered clarification as an ordinary reply without committing story state', async () => {
+  const text = '请说明接下来应采用谁的视角。', state = unchangedState()
+  const x = setup([{ calls: [write] }, { calls: [{ name: 'writer_display', args: { display_stream: text } }] }, { calls: [writerReply] }], 'chat', state)
+  const history = new WriterHistoryService(x.assets), config = terminalWriterHistory(); config.enabled = true
+  history.update(1, config); x.resources.writerHistory = history.capture()
+  x.queue.wake(); await x.queue.idle()
+  const story = x.stories.snapshot(x.story.id)
+  expect(story.messages.at(-1)).toMatchObject({ kind: 'message', text })
+  expect(story.state).toEqual(state)
+  expect(x.stories.eventsOfTypes(story.id, ['turn.committed'])).toHaveLength(0)
+  await x.queue.close()
+})
+
+it.each(['length', 'content_filter'] as const)('never commits a tool-delivered draft after provider %s', async finish => {
+  const x = setup([{ calls: [write] }, { calls: [{ name: 'writer_display', args: { display_stream: '不能提交的草稿' } }], finish },
+    { calls: [commit] }, { text: '流程未完成。' }])
+  const history = new WriterHistoryService(x.assets), config = terminalWriterHistory(); config.enabled = true
+  history.update(1, config); x.resources.writerHistory = history.capture()
+  x.queue.wake(); await x.queue.idle()
+  expect(x.stories.eventsOfTypes(x.story.id, ['writer.completed', 'turn.committed'])).toHaveLength(0)
+  expect(x.stories.run(x.run.id).status).toBe('failed')
+  await x.queue.close()
+})
 
 describe('Writer result routing', () => {
   it.each(['chat', 'agent'] as const)('delivers the saved non-narrative %s response exactly once without effects or generated options', async mode => {

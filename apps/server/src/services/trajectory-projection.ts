@@ -57,6 +57,7 @@ export function projectTrajectory(trace: RunTrace, events: Iterable<StoryEvent>,
       const exact = Array.isArray(message.historyMessagesJson) ? message.historyMessagesJson : []
       const messages = Array.isArray(message.messages) ? message.messages.map((item, index) => typeof exact[index] === 'string' ? losslessObject(exact[index]) : item) : []
       const historyCount = Number(object(message.writerHistory).messageCount)
+      const guideCount = object(message.writerHistory).guideMessageCount === 2 ? 2 : 0
       if (request.scope.startsWith('writer:') && !histories.has(agentId) && Number.isInteger(historyCount) && historyCount > 0 && historyCount <= messages.length) {
         histories.add(agentId)
         let round = 0
@@ -68,7 +69,7 @@ export function projectTrajectory(trace: RunTrace, events: Iterable<StoryEvent>,
           add({ id: `history:${requestId}:${index}`, seq: seq - .8 + index / historyCount * .6, kind, agentId,
             title: tool ? text(item.toolName) : role === 'assistant' ? '预置助手消息' : '预置用户消息',
             preview: tool ? excerpt(call.arguments) : excerpt(item.content), ...(tool ? { resultPreview: excerpt(item.content), status: item.isError === true ? 'failed' as const : 'completed' as const } : {}),
-            history: { round }, startedAt: createdAt, detail: { ...detail, messageIndex: index } }, raw)
+            history: { round, ...(guideCount && index >= historyCount - guideCount ? { guide: true } : {}) }, startedAt: createdAt, detail: { ...detail, messageIndex: index } }, raw)
         })
       }
       const lastInput = messages.findLast(item => object(item).role === 'user')

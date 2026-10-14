@@ -52,7 +52,7 @@ const app = await createServer({ dataDirectory: join(root, 'data'), publicOrigin
     await appendFile(join(root, 'clinepass-requests.jsonl'), JSON.stringify({ time: new Date().toISOString(), model: request.model, status: response.status }) + '\n', { mode: 0o600 })
     return response
   }
-  const body = JSON.parse(String(init?.body)) as { messages: { role: string; content?: unknown; name?: string; tool_calls?: unknown[] }[]; tools?: { function: { name: string; parameters?: { anyOf?: { required?: string[] }[] } } }[] }
+  const body = JSON.parse(String(init?.body)) as { messages: { role: string; content?: unknown; name?: string; tool_calls?: unknown[] }[]; tools?: { function: { name: string; description?: string; parameters?: { required?: string[]; anyOf?: { required?: string[] }[] } } }[] }
   if (process.env.RP_BROWSER_SUBAGENT_SCENARIO === '1') {
     const response = await subagentResponse(body, init?.signal)
     if (response) return response
@@ -91,6 +91,9 @@ const app = await createServer({ dataDirectory: join(root, 'data'), publicOrigin
       call.args = { ...call.args, effects: [{ kind: 'state.update', namespace: 'story', expectedRevision: scenario.stateRevision(), payload: { changes: [{ op: 'increment', path: '/energy', by: -1, reason: '调查灯塔消耗精力' }] } }] }
     }
     if (call.name === 'rp_commit_turn' && body.tools?.find(tool => tool.function.name === 'rp_commit_turn')?.function.parameters?.anyOf?.some(schema => schema.required?.includes('narrative'))) call.args = { ...call.args, narrative }
+  } else if (body.tools?.some(tool => tool.function.description?.includes('<writer_context>'))) {
+    const tool = body.tools.find(tool => tool.function.description?.includes('<writer_context>'))!.function
+    call = { name: tool.name, args: { [tool.parameters!.required![0]!]: tool.description!.includes('BROWSER_WRITER_RESPONSE_TEST') ? writerResponse : narrative } }
   } else text = last?.content === 'Reply with OK.' ? 'OK'
     : browserScenario(body.messages).has('BROWSER_WRITER_RESPONSE_TEST') ? writerResponse : narrative
   const draftVisibility = browserScenario(body.messages).has('BROWSER_DRAFT_VISIBILITY_TEST')
