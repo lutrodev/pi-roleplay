@@ -3,6 +3,7 @@ import { AppDatabase } from '../apps/server/src/storage/database.ts'
 import { AssetRepository } from '../apps/server/src/storage/asset-repository.ts'
 import { parseCharacterCardFile } from '../packages/rp-core/src/character/character-card.js'
 import { DEFAULT_PRESET } from '../packages/rp-core/src/seeds/preset.js'
+import { SIMPLE_PRESET } from '../packages/rp-core/src/seeds/simple-preset.ts'
 import { DEFAULT_WRITING_STYLE } from '../packages/rp-core/src/seeds/writing-style.js'
 import { fixture, profile } from './helpers.ts'
 
@@ -25,6 +26,9 @@ describe('shared assets and first-use defaults', () => {
     expect(assets.list('persona')).toHaveLength(1)
     expect(assets.get(defaults.persona).name).toBe('用户角色')
     expect(assets.get(defaults.preset).data.fields).toEqual(DEFAULT_PRESET.fields.map(field => expect.objectContaining(field)))
+    const simple = assets.list('preset').find(item => item.name === SIMPLE_PRESET.name)!
+    expect(simple.id).not.toBe(defaults.preset)
+    expect(simple.data.fields).toEqual(SIMPLE_PRESET.fields.map(field => expect.objectContaining(field)))
     expect(assets.get(defaults.writingStyle).data).toEqual(DEFAULT_WRITING_STYLE)
     const edited = assets.update(defaults.writingStyle, 1, { name: '我的文风', description: '', content: '保持我的修改。' })
     expect(assets.ensureDefaults()).toEqual(defaults)
@@ -34,8 +38,45 @@ describe('shared assets and first-use defaults', () => {
       const restored = new AssetRepository(reopened)
       expect(restored.ensureDefaults()).toEqual(defaults)
       expect(restored.get(defaults.writingStyle)).toEqual(edited)
-      expect(restored.list('preset')).toHaveLength(1)
+      expect(restored.list('preset')).toHaveLength(2)
+      expect(restored.get(simple.id)).toEqual(simple)
     } finally { reopened.close() }
+  })
+
+  it('adds the optional preset to existing libraries without changing their defaults or same-name user content', () => {
+    const { assets } = setup()
+    const existing = assets.create('preset', { name: SIMPLE_PRESET.name, fields: [{ name: '我的要求', content: '保留用户自建内容。', position: 'top' }] })
+    assets.setDefault('preset', existing.id)
+    expect(assets.ensureDefaults().preset).toBe(existing.id)
+    expect(assets.get(existing.id)).toEqual(existing)
+    const added = assets.list('preset').find(item => item.id !== existing.id)!
+    expect(added.data.fields).toEqual(SIMPLE_PRESET.fields.map(field => expect.objectContaining(field)))
+    expect(assets.ensureDefaults().preset).toBe(existing.id)
+    expect(assets.list('preset')).toHaveLength(2)
+  })
+
+  it('preserves optional preset edits, selection and deletion across restarts', () => {
+    const { database, assets, filename } = setup()
+    assets.ensureDefaults()
+    const simple = assets.list('preset').find(item => item.name === SIMPLE_PRESET.name)!
+    const edited = assets.update(simple.id, simple.revision, { ...simple.data, name: '我的简洁预设' })
+    assets.setDefault('preset', simple.id)
+    database.close()
+    const reopened = new AppDatabase(filename)
+    try {
+      const restored = new AssetRepository(reopened)
+      expect(restored.ensureDefaults().preset).toBe(simple.id)
+      expect(restored.get(simple.id)).toEqual(edited)
+      restored.remove(simple.id, edited.revision)
+    } finally { reopened.close() }
+    const afterDeletion = new AppDatabase(filename)
+    try {
+      const restored = new AssetRepository(afterDeletion)
+      const defaults = restored.ensureDefaults()
+      expect(restored.get(defaults.preset).name).toBe(DEFAULT_PRESET.name)
+      expect(restored.resolve(simple.id, 'preset')).toBeNull()
+      expect(restored.list('preset')).toHaveLength(1)
+    } finally { afterDeletion.close() }
   })
 
   it('repairs a removed default using an existing asset before creating another seed', () => {

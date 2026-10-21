@@ -5,6 +5,7 @@ import { RpError, requireValue } from '../../../../packages/rp-core/src/errors.t
 import { normalizeLoreBook } from '../../../../packages/rp-core/src/lore/activation.js'
 import { convertMvuImport } from '../../../../packages/rp-core/src/mvu/convert.js'
 import { DEFAULT_PRESET } from '../../../../packages/rp-core/src/seeds/preset.js'
+import { SIMPLE_PRESET } from '../../../../packages/rp-core/src/seeds/simple-preset.ts'
 import { DEFAULT_WRITING_STYLE } from '../../../../packages/rp-core/src/seeds/writing-style.js'
 import { DEFAULT_PERSONA } from '../../../../packages/rp-core/src/seeds/persona.ts'
 import type { parseCharacterCardFile } from '../../../../packages/rp-core/src/character/character-card.js'
@@ -155,6 +156,11 @@ export class AssetRepository {
         if (!selected) selected = this.create(kind, kind === 'persona' ? DEFAULT_PERSONA : kind === 'preset' ? DEFAULT_PRESET : DEFAULT_WRITING_STYLE)
         this.setSetting(key, selected.id)
         result[kind] = selected.id
+      }
+      // Add this optional preset once, including on upgrades; preserve user edits and deletion.
+      if (this.getSetting('seed.preset.simple') === undefined) {
+        const preset = this.create('preset', SIMPLE_PRESET)
+        this.setSetting('seed.preset.simple', preset.id)
       }
       return result
     })
