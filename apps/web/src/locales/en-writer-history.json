@@ -21,9 +21,7 @@
   "失败结果（isError）": "Error result (isError)",
   "关闭表示成功；开启表示工具返回错误。": "Off means success; on means the tool returned an error.",
   "校验与原生消息预览": "Validation and native message preview",
-  "参数和结果必须是对象型 JSON；数字原文无损保留。最多 20,000 个编译字符、262,144 字节配置。": "Arguments and results must be JSON objects; numeric source text is preserved losslessly. Maximum: 20,000 compiled characters and 262,144 configuration bytes.",
   "配置大小：%{bytes} 字节": "Configuration size: %{bytes} bytes",
-  "编译字符：%{count}": "Compiled characters: %{count}",
   "配置超过大小限制。": "The configuration exceeds the size limit.",
   "还有 %{count} 项待完成": "%{count} items need attention",
   "关闭注入后可以保存草稿；启用前必须完成全部校验。": "Turn off injection to save a draft. All validation must pass before enabling.",
@@ -93,10 +91,14 @@
   "终端系统声明": "Terminal system declaration",
   "作为本轮 Writer 系统消息发送；原 Writer 规则保留在工具说明的 writer_rules.txt 中。": "Sent as the Writer system message. Original Writer rules are archived as writer_rules.txt in the tool description.",
   "终端归档将示例和真实上下文移入工具说明，用户输入逐条包装为文件预览。返回的输出字段完整解包为 Writer 回复，虚构命令不会执行。": "Terminal archive moves examples and real context into tool metadata and wraps each user input as a file preview. The output field becomes the Writer reply. Fictional commands are never executed.",
-  "山城电台案例演示完整的目录读取与章节交付。两轮案例、系统声明和调度内容均可编辑。": "The Mountain Radio example shows the full directory-reading and chapter-delivery sequence. Both examples, the system declaration and dispatch messages are editable.",
   "校验与请求结构预览": "Validation and request structure preview",
   "预览中的会话标识和本轮资料为占位内容。实际发送的消息、工具说明和原始响应可在 Writer 运行轨迹中查看。": "The preview uses placeholder session and context data. Inspect the actual messages, tool definitions and raw response in the Writer trace.",
   "查看请求结构（只读）": "View request structure (read-only)",
   "终端归档工具名前缀不能超过 47 字符；每次运行会添加独立标识。": "Terminal tool prefixes must not exceed 47 characters. Each run appends a unique suffix.",
-  "终端归档模式需要填写系统声明。": "Terminal archive mode requires a system declaration."
+  "终端归档模式需要填写系统声明。": "Terminal archive mode requires a system declaration.",
+  "《常来做客的她》使用原创成年人物，两轮分别有 12 和 10 个工具步骤，演示连续的 Linux 档案读取与完整章节交付。所有内容均可编辑。": "The Visiting Days example uses original adult characters and 12/10 tool steps across two rounds, showing a continuous Linux archive session and full chapter delivery. All content is editable.",
+  "参数和结果必须是对象型 JSON；数字原文无损保留。历史编译上限 %{limit} 字符，配置上限 262,144 字节。": "Arguments and results must be JSON objects; numeric source text is preserved losslessly. Compiled history limit: %{limit} characters. Configuration limit: 262,144 bytes.",
+  "历史编译字符：%{count} / %{limit}": "Compiled history characters: %{count} / %{limit}",
+  "工具说明中的案例字符：%{count}（不含本轮真实资料）": "Example characters in tool metadata: %{count} (excluding current context)",
+  "编译后的终端预置历史不能超过 40,000 字符。": "Compiled terminal preset history must not exceed 40,000 characters."
 }

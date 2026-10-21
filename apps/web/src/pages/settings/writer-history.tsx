@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useBlocker } from '@tanstack/react-router'
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react'
-import { blankWriterHistory, blankWriterHistoryStep, compileWriterHistory, writerHistoryIssues, writerHistoryPreview, WRITER_HISTORY_LIMITS,
+import { blankWriterHistory, blankWriterHistoryStep, compileWriterHistory, writerHistoryIssues, writerHistoryPreview, writerHistorySize, WRITER_HISTORY_LIMITS,
   type WriterHistoryConfig, type WriterHistoryRound, type WriterHistorySettings, type WriterHistoryStep } from '../../../../../packages/rp-core/src/agents/writer-history.ts'
 import { exampleWriterHistory, terminalWriterHistory, writerHistoryEditorDraft } from '../../../../../packages/rp-core/src/agents/writer-history-example.ts'
 import { WriterDeliveryFields } from './writer-delivery.tsx'
@@ -36,9 +36,9 @@ function HistoryEditor({ initial, onDirtyChange }: { initial: WriterHistorySetti
   const issues = useMemo(() => writerHistoryIssues(value), [value])
   const terminal = value.delivery?.mode === 'terminal'
   const preview = useMemo(() => issues.length ? '' : value.delivery?.mode === 'terminal'
-    ? terminalRequestPreview({ ...value.delivery, toolName: `${value.delivery.toolName}_0123456789abcdef` }, terminalExamples(value.rounds))
+    ? terminalRequestPreview({ ...value.delivery, toolName: `${value.delivery.toolName}_0123456789abcdef` }, terminalExamples(value.rounds, value.delivery.fieldName))
     : writerHistoryPreview(compileWriterHistory(value)), [value, issues])
-  const bytes = new TextEncoder().encode(JSON.stringify(value)).length
+  const { bytes, characters, characterLimit, archiveCharacters } = useMemo(() => writerHistorySize(value), [value])
   const blocked = bytes > WRITER_HISTORY_LIMITS.bytes || value.enabled && issues.length > 0
   useEffect(() => { onDirtyChange(dirty); return () => onDirtyChange(false) }, [dirty, onDirtyChange])
   const blocker = useBlocker({ shouldBlockFn: ({ next }) => dirty && next.pathname !== '/settings', enableBeforeUnload: dirty, withResolver: true })
@@ -58,7 +58,7 @@ function HistoryEditor({ initial, onDirtyChange }: { initial: WriterHistorySetti
     <SettingsGroup layout="form" title={uiT('注入设置')}>
       <SettingToggle label={uiT('启用 Writer 预置历史')} checked={value.enabled} onChange={event => patch({ enabled: event.target.checked })}
         help={uiT('仅作用于新开始运行中的 Writer；当前运行、主模型和任务子代理不受影响。关闭时可以保存未完成草稿。')} />
-      <details className="writer-history-help"><summary>{uiT('示例对话如何使用')}</summary><p className="muted">{uiT(terminal ? '终端归档将示例和真实上下文移入工具说明，用户输入逐条包装为文件预览。返回的输出字段完整解包为 Writer 回复，虚构命令不会执行。' : '消息顺序：系统提示词 → 两轮预置历史 → 本次写作上下文。历史工具不会执行，也不会增加 Writer 的真实工具权限。')}</p><p className="muted">{uiT(terminal ? '山城电台案例演示完整的目录读取与章节交付。两轮案例、系统声明和调度内容均可编辑。' : '内置案例演示两轮写作交流，题材和生成内容留空供手动填写。所有消息与工具步骤都可以自由编辑。')}</p></details>
+      <details className="writer-history-help"><summary>{uiT('示例对话如何使用')}</summary><p className="muted">{uiT(terminal ? '终端归档将示例和真实上下文移入工具说明，用户输入逐条包装为文件预览。返回的输出字段完整解包为 Writer 回复，虚构命令不会执行。' : '消息顺序：系统提示词 → 两轮预置历史 → 本次写作上下文。历史工具不会执行，也不会增加 Writer 的真实工具权限。')}</p><p className="muted">{uiT(terminal ? '《常来做客的她》使用原创成年人物，两轮分别有 12 和 10 个工具步骤，演示连续的 Linux 档案读取与完整章节交付。所有内容均可编辑。' : '内置案例演示两轮写作交流，题材和生成内容留空供手动填写。所有消息与工具步骤都可以自由编辑。')}</p></details>
       <div className="section-heading writer-history-template-actions"><span className="muted">{uiT('已保存版本：%{revision}', { revision: baseline.revision })}</span><div className="writer-history-template-actions"><Button onClick={() => setLoadExample('reading')}>{uiT('载入内置案例')}</Button><Button onClick={() => setLoadExample('terminal')}>{uiT('载入终端交付案例')}</Button><Button onClick={() => setReset(true)}>{uiT('恢复空模板')}</Button></div></div>
     </SettingsGroup>
     <WriterDeliveryFields value={value.delivery} enabled={value.enabled} onChange={delivery => patch({ delivery })} />
@@ -81,8 +81,9 @@ function HistoryEditor({ initial, onDirtyChange }: { initial: WriterHistorySetti
       <Field label={uiT('助手最终回复')}><Textarea rows={4} value={item.assistant} onChange={event => round(r, { assistant: event.target.value })} /></Field>
     </SettingsGroup></details>)}
     <SettingsGroup layout="form" title={uiT(terminal ? '校验与请求结构预览' : '校验与原生消息预览')}>
-      <p className="muted">{uiT('参数和结果必须是对象型 JSON；数字原文无损保留。最多 20,000 个编译字符、262,144 字节配置。')}</p>
-      <p className="muted">{uiT('配置大小：%{bytes} 字节', { bytes })}{preview && ` · ${uiT('编译字符：%{count}', { count: preview.length })}`}</p>
+      <p className="muted">{uiT('参数和结果必须是对象型 JSON；数字原文无损保留。历史编译上限 %{limit} 字符，配置上限 262,144 字节。', { limit: characterLimit.toLocaleString('en-US') })}</p>
+      <p className="muted">{uiT('配置大小：%{bytes} 字节', { bytes })} · {uiT('历史编译字符：%{count} / %{limit}', { count: characters, limit: characterLimit })}</p>
+      {archiveCharacters !== undefined && <p className="muted">{uiT('工具说明中的案例字符：%{count}（不含本轮真实资料）', { count: archiveCharacters })}</p>}
       {terminal && <p className="muted">{uiT('预览中的会话标识和本轮资料为占位内容。实际发送的消息、工具说明和原始响应可在 Writer 运行轨迹中查看。')}</p>}
       {bytes > WRITER_HISTORY_LIMITS.bytes && <StatusNotice compact tone="error" title={uiT('配置超过大小限制。')} />}
       {issues.length > 0 ? <details className="writer-history-validation" open={value.enabled || undefined}><summary>{uiT('还有 %{count} 项待完成', { count: issues.length })}</summary><ul>{issues.map((issue, index) => <li key={index}>{issueText(issue)}</li>)}</ul><p>{uiT('关闭注入后可以保存草稿；启用前必须完成全部校验。')}</p></details>

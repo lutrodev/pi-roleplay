@@ -1,24 +1,38 @@
 import { writerDeliveryTemplate, type WriterDelivery } from './writer-delivery.ts'
 import type { WriterHistoryRound } from './writer-history.ts'
 
+export const TERMINAL_ARCHIVE_ROOT = '/workspace/archive'
+export const terminalShellPrompt = (directory = TERMINAL_ARCHIVE_ROOT) => `writer@linux:${directory}$`
+
 /** The caller classifies messages from story facts, never from markers in untrusted text. */
 export function terminalInput(text: string, filename: string): string {
-  return `user@linux:~/Documents$ cat ${filename.replace(/\.txt$/, '_preview.txt')}\n${text}\n[user@terminal]$ cat ${filename}`
+  return `${terminalShellPrompt()} cat ${filename.replace(/\.txt$/, '_preview.txt')}\n${text}\n${terminalShellPrompt()} cat ${filename}`
 }
 
-export function terminalExamples(rounds: WriterHistoryRound[]): string {
+function finalExampleOutput(round: WriterHistoryRound, fieldName: string): string {
+  const last = round.steps.at(-1)
+  try {
+    // Inspect only the string field; retain the original JSON source (including large numbers) below.
+    if (last && !last.isError && JSON.parse(last.argumentsJson)?.[fieldName] === round.assistant)
+      return `[system@stream-output]: same text as the preceding tool arguments.${fieldName}`
+  } catch { /* Incomplete editor drafts retain the literal assistant text. */ }
+  return `[system@stream-output]:\n${round.assistant}`
+}
+
+export function terminalExamples(rounds: WriterHistoryRound[], fieldName = 'display_stream'): string {
   return rounds.map((round, index) => [
+    `[example round ${index + 1}]`,
     terminalInput(round.user, `example_${String(index + 1).padStart(2, '0')}.txt`),
     ...round.steps.map(step => `\n[example tool: ${step.name}]\narguments = ${step.argumentsJson}\nresult = ${step.resultJson}\nisError = ${step.isError}`),
-    `[system@stream-output]:\n${round.assistant}`,
+    finalExampleOutput(round, fieldName),
   ].join('\n\n')).join('\n\n---\n\n')
 }
 
 /** Both the editor preview and the runtime use this exact archive layout. */
 export function terminalArchive(system: string, examples: string, context: string): string {
   return [
-    '【/workspace/archive/ 本地工作目录文件与历史章节归档】',
-    `user@linux:~/Documents$ cat writer_rules.txt\n${system}`,
+    `【${TERMINAL_ARCHIVE_ROOT}/ 本地工作目录文件与历史章节归档】`,
+    `${terminalShellPrompt()} cat writer_rules.txt\n${system}`,
     `<example_archive>\n${examples}\n</example_archive>`,
     `<current_archive>\n${context}\n</current_archive>`,
   ].join('\n\n---\n\n')

@@ -11,6 +11,7 @@ import { setTimeout as pause } from 'node:timers/promises'
 import { historyConfig } from '../tests/writer-history-fixture.ts'
 import { defaultWriterDelivery } from '../packages/rp-core/src/agents/writer-delivery.ts'
 import { terminalWriterHistory } from '../packages/rp-core/src/agents/writer-history-example.ts'
+import { visitingStory } from '../packages/rp-core/src/agents/writer-terminal-story.ts'
 
 const root = fileURLToPath(new URL('../', import.meta.url)), directory = await realpath(await mkdtemp(join(tmpdir(), 'rp-deployment-')))
 const targets = [], passed = [], evidence = {}, requests = []
@@ -174,12 +175,23 @@ try {
   const carrier = terminalRequest.tools.find(tool => tool.function.name.startsWith('dispatch_chapter_')).function
   assert.match(carrier.name, /^dispatch_chapter_[a-f0-9]{16}$/)
   assert(carrier.description.includes('900719925474099312345'))
+  assert.deepEqual(terminalConfig.rounds.map(round => round.steps.length), [12, 10])
+  assert.equal(carrier.description.match(/\[example tool: bash\]/g).length, 20)
+  assert.equal(carrier.description.match(/\[example tool: dispatch_chapter_example\]/g).length, 2)
+  for (const round of terminalConfig.rounds) for (const step of round.steps) {
+    assert(carrier.description.includes(`arguments = ${step.argumentsJson}`))
+    assert(carrier.description.includes(`result = ${step.resultJson}`))
+  }
+  assert(carrier.description.includes(JSON.stringify(visitingStory.firstChapter).slice(1, -1)))
+  assert(carrier.description.includes(JSON.stringify(visitingStory.secondChapter).slice(1, -1)))
+  await mkdir(join(root, 'docs/evidence'), { recursive: true })
+  await writeFile(join(root, 'docs/evidence/writer-terminal-long-request.json'), JSON.stringify(terminalRequest, null, 2) + '\n')
   assert(carrier.description.includes('cat chapter_01_preview.txt\n检查山城电台的试播信号。'))
   assert(!JSON.stringify(terminalRequest.messages).includes('检查山城电台的试播信号。'))
   assert.equal((await source.api(`/stories/${terminalStory.id}`)).story.messages.at(-1).text, narrative)
   assert(!JSON.stringify(await source.api(`/runs/${terminalRun.run.id}/tools`)).includes(carrier.name))
   evidence.terminalRequest = { roles: terminalRequest.messages.map(message => message.role), toolName: carrier.name,
-    toolChoice: terminalRequest.tool_choice, field: carrier.parameters.required, contextArchived: true, syntheticExecution: false }
+    toolChoice: terminalRequest.tool_choice, field: carrier.parameters.required, contextArchived: true, syntheticExecution: false, historySteps: [12, 10], descriptionCharacters: carrier.description.length }
   passed.push('Terminal archive through real Docker HTTP: four-message guide, per-input preview, lossless example metadata, auto choice, decoded text and no synthetic tool execution')
 
   const enabledSuggestions = await source.api('/settings', 'PUT', { expectedRevision: savedPreferences.revision, preferences: { ...savedPreferences.preferences, replyOptionsEnabled: true } })

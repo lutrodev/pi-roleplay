@@ -2,7 +2,8 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { Type } from '@earendil-works/pi-ai'
 import { terminalWriterHistory } from '../packages/rp-core/src/agents/writer-history-example.ts'
 import { writerHistoryIssues } from '../packages/rp-core/src/agents/writer-history.ts'
-import { terminalInput } from '../packages/rp-core/src/agents/writer-terminal.ts'
+import { visitingStory } from '../packages/rp-core/src/agents/writer-terminal-story.ts'
+import { terminalInput, terminalShellPrompt } from '../packages/rp-core/src/agents/writer-terminal.ts'
 import { WriterHistoryService } from '../apps/server/src/services/writer-history-service.ts'
 import { ContextService } from '../apps/server/src/services/context-service.ts'
 import { StoryService } from '../apps/server/src/services/story-service.ts'
@@ -65,20 +66,30 @@ it.each(['openai-completions', 'openai-responses', 'anthropic-messages'] as cons
   expect(guide.map((item: any) => item.role)).toEqual(['user', 'assistant', 'user'])
   expect(JSON.stringify(body.system ?? messages[0])).toContain('interactive Linux terminal emulator')
   expect(JSON.stringify(messages)).not.toContain('当前输入甲')
-  expect(JSON.stringify(messages)).not.toContain('山城的旧电台')
+  expect(JSON.stringify(messages)).not.toContain(visitingStory.firstInput)
   expect(JSON.stringify(messages)).not.toContain('本轮真实 Writer 规则')
   expect(JSON.stringify(messages)).toContain(tool.name)
   expect(JSON.stringify(messages)).not.toMatch(/%TOOL_NAME%|%OUTPUT_FIELD%|%SESSION_ID%/)
   expect(tool.name).toMatch(/^dispatch_chapter_[a-f0-9]{16}$/)
   expect(tool.description).toContain('cat writer_rules.txt\n本轮真实 Writer 规则')
-  expect(tool.description).toContain('山城的旧电台')
+  expect(tool.description).toContain(visitingStory.firstInput)
+  const example = terminalWriterHistory()
+  expect(tool.description.match(/\[example tool: bash\]/g)).toHaveLength(20)
+  expect(tool.description.match(/\[example tool: dispatch_chapter_example\]/g)).toHaveLength(2)
+  for (const round of example.rounds) for (const step of round.steps) {
+    expect(tool.description).toContain(`arguments = ${step.argumentsJson}`)
+    expect(tool.description).toContain(`result = ${step.resultJson}`)
+  }
+  expect(tool.description).toContain(JSON.stringify(visitingStory.firstChapter).slice(1, -1))
+  expect(tool.description).toContain(JSON.stringify(visitingStory.secondChapter).slice(1, -1))
+  expect(body.tools.some((entry: any) => (entry.function ?? entry).name === 'bash')).toBe(false)
   expect(tool.description).toContain('真实角色资料')
   expect(tool.description).toContain('真实写作风格')
   expect(tool.description).toContain(`cat history_1_${old.id}_preview.txt\n历史原话【LAST_USER_INPUT】`)
   expect(tool.description).toContain('[system@stream-output] kind=narrative:\n历史正文')
   expect(tool.description).toContain('[system@stream-output] kind=discussion:\n仅作讨论的历史')
   expect(tool.description).toContain('cat current_input_1_preview.txt\n当前输入甲')
-  expect(tool.description).toContain('cat chapter_01_preview.txt\n当前输入乙\n[user@terminal]$ cat chapter_01.txt')
+  expect(tool.description).toContain(`cat chapter_01_preview.txt\n当前输入乙\n${terminalShellPrompt()} cat chapter_01.txt`)
   expect(tool.description.match(/当前输入[甲乙]/g)).toHaveLength(2)
   expect(schema.required).toEqual(['display_stream'])
   expect(schema.properties.display_stream.description).toContain('终端完整显示流')
@@ -97,6 +108,17 @@ it('streams decoded arguments and normalizes the carrier to a text/stop response
   expect(messages.at(-1)).toMatchObject({ role: 'assistant', content: [{ type: 'text', text }], stopReason: 'stop' })
   expect(events).toEqual([])
   expect(JSON.stringify(messages)).not.toContain('不应混入交付正文')
+})
+
+it('streams a complete expanded terminal session without dropping its command log or chapter ending', async () => {
+  const full = terminalWriterHistory().rounds[0]!.assistant, previews: [string, boolean][] = []
+  const x = setup(name => response(name, JSON.stringify({ display_stream: full })), {
+    onText: (text, final) => previews.push([text, final]),
+  })
+  expect((await x.run()).text).toBe(full)
+  expect(previews.some(([text, final]) => !final && text.length > 0 && text.length < full.length)).toBe(true)
+  expect(previews.at(-1)).toEqual([full, true])
+  expect(full.endsWith(visitingStory.firstChapter)).toBe(true)
 })
 
 it.each([false, true])('keeps real read-only calls executable (same response: %s)', async mixed => {

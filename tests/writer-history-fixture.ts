@@ -1,10 +1,13 @@
 import type { WriterHistoryConfig } from '../packages/rp-core/src/agents/writer-history.ts'
-import { terminalWriterHistory } from '../packages/rp-core/src/agents/writer-history-example.ts'
 import { defaultWriterDelivery } from '../packages/rp-core/src/agents/writer-delivery.ts'
 
 /** Existing generic tool-delivery settings remain supported independently of terminal mode. */
 export function toolHistoryConfig(): WriterHistoryConfig {
-  return { ...terminalWriterHistory(), delivery: defaultWriterDelivery() }
+  return { enabled: false, delivery: defaultWriterDelivery(), rounds: [
+    { user: '核对灯塔来信并交付正文。', text: '门边的来信已经拆开。' },
+    { user: '接着读信，让守塔人回应。', text: '守塔人将信放在桌上，点了点头。' },
+  ].map(({ user, text }) => ({ user, assistant: text, steps: [{ name: 'writer_display',
+    argumentsJson: JSON.stringify({ display_stream: text }), resultJson: '{"accepted":true}', isError: false }] })) }
 }
 
 /** Authored benign fixture, never installed as user configuration. */

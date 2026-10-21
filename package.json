@@ -20,7 +20,7 @@
     "build": "node scripts/build.mjs",
     "build:tools": "node scripts/build-tools.mjs",
     "build:server": "node scripts/build-server.mjs",
-    "test:tools-container": "node scripts/test-tools-container.mjs",
+    "test:tools-container": "node --import tsx scripts/test-tools-container.mjs",
     "test:server-package": "node scripts/test-server-package.mjs",
     "start": "node apps/server/dist/main.js",
     "start:tools": "node apps/tools/dist/main.js",

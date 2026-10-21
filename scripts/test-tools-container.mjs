@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
+import { verifyWriterTerminalExample } from '../tests/writer-terminal-linux.ts'
 
 const exec = promisify(execFile), image = process.env.RP_TOOLS_TEST_IMAGE ?? 'pi-roleplay-tools:dev'
 const docker = async (...args) => (await exec('docker', args, { maxBuffer: 2 * 1024 * 1024 })).stdout.trim()
@@ -128,6 +129,8 @@ try {
   assert.equal((await request({ kind: 'read', path: 'retained.txt' }, readonly)).text, '只读保留文件')
   assert.equal(await readFile(join(directory, 'private', 'model-key'), 'utf8'), 'synthetic-unmounted-model-key')
   passed.push('Container restart preserves workspace files and does not modify unmounted private fixtures')
+  passed.push(await verifyWriterTerminalExample(request, `/workspaces/${storyId}`))
+
   const imageDetails = JSON.parse(await docker('image', 'inspect', image))[0]
   const evidence = { testedAt: new Date().toISOString(), image: imageDetails.Id, platform: `${imageDetails.Os}/${imageDetails.Architecture}`, passed }
   const output = fileURLToPath(new URL('../docs/evidence/', import.meta.url))

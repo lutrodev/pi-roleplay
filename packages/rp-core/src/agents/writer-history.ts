@@ -2,7 +2,7 @@ import { requireValue } from '../errors.ts'
 import { normalizeWriterDelivery, writerDeliveryIssues, writerDeliveryTemplate, type WriterDelivery } from './writer-delivery.ts'
 import { terminalExamples } from './writer-terminal.ts'
 
-export const WRITER_HISTORY_LIMITS = { rounds: 2, steps: 16, characters: 20_000, bytes: 262_144 } as const
+export const WRITER_HISTORY_LIMITS = { rounds: 2, steps: 16, characters: 20_000, terminalCharacters: 40_000, bytes: 262_144 } as const
 export interface WriterHistoryStep { name: string; argumentsJson: string; resultJson: string; isError: boolean }
 export interface WriterHistoryRound { user: string; steps: WriterHistoryStep[]; assistant: string }
 export interface WriterHistoryConfig { enabled: boolean; rounds: WriterHistoryRound[]; delivery?: WriterDelivery }
@@ -68,9 +68,23 @@ export function writerHistoryIssues(config: WriterHistoryConfig): string[] {
       }
     })
   })
-  if (!issues.length && writerHistoryPreview(config.delivery?.mode === 'terminal' ? compileWriterHistoryRounds(config) : compileWriterHistory(config)).length > WRITER_HISTORY_LIMITS.characters)
-    issues.push('编译后的 Writer 预置历史不能超过 20,000 字符。')
+  if (!issues.length) {
+    const size = writerHistorySize(config)
+    if (size.characters > size.characterLimit) issues.push(config.delivery?.mode === 'terminal'
+      ? '编译后的终端预置历史不能超过 40,000 字符。' : '编译后的 Writer 预置历史不能超过 20,000 字符。')
+  }
   return issues
+}
+
+/** Shared by validation and the editor: request-preview placeholders do not count as stored history. */
+export function writerHistorySize(config: WriterHistoryConfig) {
+  const terminal = config.delivery?.mode === 'terminal'
+  return {
+    characters: writerHistoryPreview(terminal ? compileWriterHistoryRounds(config) : compileWriterHistory(config)).length,
+    characterLimit: terminal ? WRITER_HISTORY_LIMITS.terminalCharacters : WRITER_HISTORY_LIMITS.characters,
+    bytes: new TextEncoder().encode(JSON.stringify(config)).length,
+    archiveCharacters: terminal ? writerHistoryArchive(config)!.length : undefined,
+  }
 }
 
 /** Pure history compilation; no tool registry or execution is involved. IDs are not editable. */
@@ -97,7 +111,7 @@ export function compileWriterHistoryRounds(config: WriterHistoryConfig): WriterH
 }
 
 export function writerHistoryArchive(config: WriterHistoryConfig): string | undefined {
-  return config.delivery?.mode === 'terminal' ? terminalExamples(config.rounds) : undefined
+  return config.delivery?.mode === 'terminal' ? terminalExamples(config.rounds, config.delivery.fieldName) : undefined
 }
 
 /** Render native Pi message content without passing arbitrary-precision numbers through JS numbers. */
