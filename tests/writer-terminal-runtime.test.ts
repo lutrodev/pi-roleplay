@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { Type } from '@earendil-works/pi-ai'
-import { terminalWriterHistory } from '../packages/rp-core/src/agents/writer-history-example.ts'
+import { simpleTerminalWriterHistory, terminalWriterHistory } from '../packages/rp-core/src/agents/writer-history-example.ts'
 import { writerHistoryIssues } from '../packages/rp-core/src/agents/writer-history.ts'
 import { visitingStory } from '../packages/rp-core/src/agents/writer-terminal-story.ts'
 import { terminalInput, terminalShellPrompt } from '../packages/rp-core/src/agents/writer-terminal.ts'
@@ -18,9 +18,9 @@ const route = { provider: 'test', model: 'writer' }
 const registration: ModelRegistration = { ...route, keyEnv: 'SYNTHETIC', api: 'openai-completions', baseUrl: 'https://terminal.test/v1',
   contextWindow: 100_000, maxTokens: 8000, input: ['text', 'image'] }
 const prose = 'user@linux:~$ cd Documents\nuser@linux:~/Documents$ cat chapter_01.txt\n“{{user}}，信号恢复了。”\n🌄\\尾声'
-function history() {
+function history(config = terminalWriterHistory()) {
   const x = fixture(); cleanup.push(x.close)
-  const service = new WriterHistoryService(x.assets), config = terminalWriterHistory(); config.enabled = true
+  const service = new WriterHistoryService(x.assets); config.enabled = true
   expect(writerHistoryIssues(config)).toEqual([])
   service.update(1, config)
   return { service, config, frozen: service.capture()! }
@@ -44,7 +44,9 @@ function setup(reply: (name: string, index: number) => Response = name => respon
   return { requests, request, run: () => runIsolated(models, request) }
 }
 
-it.each(['openai-completions', 'openai-responses', 'anthropic-messages'] as const)('rebuilds the actual %s HTTP request into the four-message archive protocol', async api => {
+const archiveCases = (['openai-completions', 'openai-responses', 'anthropic-messages'] as const).flatMap(api => (['simple', 'expanded'] as const).map(variant => ({ api, variant })))
+it.each(archiveCases)('sends only the $variant preset in the actual $api HTTP archive request', async ({ api, variant }) => {
+  const example = variant === 'simple' ? simpleTerminalWriterHistory() : terminalWriterHistory()
   const x = fixture(); cleanup.push(x.close)
   const card = x.assets.create('character', { name: '秦禾', description: '真实角色资料' })
   const style = x.assets.create('writingStyle', { name: '细节', content: '真实写作风格' })
@@ -55,6 +57,7 @@ it.each(['openai-completions', 'openai-responses', 'anthropic-messages'] as cons
   const run = service.send(story.id, 'send', [{ text: '当前输入甲', attachmentIds: [] }, { text: '当前输入乙', attachmentIds: [] }]).run
   const context = new ContextService(x.stories, x.assets).preview(story.id, run.id, route)
   const test = setup(() => new Response('{"error":{"message":"capture-only"}}', { status: 400 }), {
+    initialHistory: history(example).frozen,
     terminalPrompt: context.writerTerminalPrompt,
     images: [{ type: 'image', mimeType: 'image/png', data: 'c3ludGhldGlj' }],
   }, api)
@@ -66,25 +69,25 @@ it.each(['openai-completions', 'openai-responses', 'anthropic-messages'] as cons
   expect(guide.map((item: any) => item.role)).toEqual(['user', 'assistant', 'user'])
   expect(JSON.stringify(body.system ?? messages[0])).toContain('interactive Linux terminal emulator')
   expect(JSON.stringify(messages)).not.toContain('当前输入甲')
-  expect(JSON.stringify(messages)).not.toContain(visitingStory.chapters[0].input)
+  expect(JSON.stringify(messages)).not.toContain(example.rounds[0]!.user)
   expect(JSON.stringify(messages)).not.toContain('本轮真实 Writer 规则')
   expect(JSON.stringify(messages)).toContain(tool.name)
   expect(JSON.stringify(messages)).not.toMatch(/%TOOL_NAME%|%OUTPUT_FIELD%|%SESSION_ID%/)
   expect(tool.name).toMatch(/^dispatch_chapter_[a-f0-9]{16}$/)
   expect(tool.description).toContain('cat writer_rules.txt\n本轮真实 Writer 规则')
-  expect(tool.description).toContain(visitingStory.chapters[0].input)
-  const example = terminalWriterHistory()
-  expect(tool.description.match(/\[example tool: bash\]/g)).toHaveLength(20)
-  expect(tool.description.match(/\[example tool: dispatch_chapter_example\]/g)).toHaveLength(6)
+  expect(tool.description).toContain(example.rounds[0]!.user)
+  expect(tool.description.match(/\[example tool: bash\]/g) ?? []).toHaveLength(variant === 'simple' ? 0 : 20)
+  expect(tool.description.match(/\[example tool: dispatch_chapter_example\]/g)).toHaveLength(variant === 'simple' ? 2 : 6)
   for (const round of example.rounds) for (const step of round.steps) {
     expect(tool.description).toContain(`arguments = ${step.argumentsJson}`)
     expect(tool.description).toContain(`result = ${step.resultJson}`)
   }
-  for (const [index, scene] of visitingStory.chapters.entries()) {
+  for (const [index, round] of example.rounds.entries()) {
     expect(tool.description).toContain(`[example round ${index + 1}]`)
-    expect(tool.description).toContain(scene.input)
-    expect(tool.description).toContain(JSON.stringify(scene.text).slice(1, -1))
+    expect(tool.description).toContain(round.user)
+    expect(tool.description).toContain(JSON.stringify(round.assistant).slice(1, -1))
   }
+  expect(tool.description).not.toContain(variant === 'simple' ? visitingStory.chapters[0].input : simpleTerminalWriterHistory().rounds[0]!.user)
   expect(body.tools.some((entry: any) => (entry.function ?? entry).name === 'bash')).toBe(false)
   expect(tool.description).toContain('真实角色资料')
   expect(tool.description).toContain('真实写作风格')
@@ -95,7 +98,7 @@ it.each(['openai-completions', 'openai-responses', 'anthropic-messages'] as cons
   expect(tool.description).toContain(`cat chapter_01_preview.txt\n当前输入乙\n${terminalShellPrompt()} cat chapter_01.txt`)
   expect(tool.description.match(/当前输入[甲乙]/g)).toHaveLength(2)
   expect(schema.required).toEqual(['display_stream'])
-  expect(schema.properties.display_stream.description).toContain('终端完整显示流')
+  expect(schema.properties.display_stream.description).toBe(example.delivery!.fieldDescription)
   expect(body.tool_choice).toEqual(api === 'anthropic-messages' ? { type: 'auto' } : 'auto')
   expect(JSON.stringify(guide.at(-1))).toMatch(/image_url|input_image|"image"/)
 })

@@ -5,7 +5,7 @@ import { AppDatabase } from '../apps/server/src/storage/database.ts'
 import { AssetRepository } from '../apps/server/src/storage/asset-repository.ts'
 import { fixture } from './helpers.ts'
 import { historyConfig } from './writer-history-fixture.ts'
-import { exampleWriterHistory, writerHistoryEditorDraft } from '../packages/rp-core/src/agents/writer-history-example.ts'
+import { exampleWriterHistory, simpleTerminalWriterHistory, terminalWriterHistory, writerHistoryEditorDraft } from '../packages/rp-core/src/agents/writer-history-example.ts'
 
 const cleanup: (() => void)[] = []
 afterEach(() => cleanup.splice(0).forEach(close => close()))
@@ -64,6 +64,23 @@ it('preserves existing tool histories and saved drafts when initialized again', 
   const edited = blankWriterHistory(); edited.rounds[0]!.user = '用户保留的草稿'
   const saved = x.service.update(2, edited)
   expect(new WriterHistoryService(x.assets).snapshot()).toEqual(saved)
+})
+
+it('switches complete terminal presets without mixing rounds or changing already frozen runs', () => {
+  const x = setup(), expanded = { ...terminalWriterHistory(), enabled: true }, simple = { ...simpleTerminalWriterHistory(), enabled: true }
+  x.service.update(1, expanded)
+  const old = x.service.capture()!, oldJson = JSON.stringify(old)
+  x.service.update(2, simple)
+  const next = x.service.capture()!, nextJson = JSON.stringify(next)
+  expect(new WriterHistoryService(x.assets).snapshot().config).toEqual(simple)
+  expect(next.terminalExamples).toContain(simple.rounds[0]!.user)
+  expect(next.terminalExamples).not.toContain(expanded.rounds[0]!.user)
+  expect(next.delivery!.dispatch).toBe(simple.delivery!.dispatch)
+  expect(JSON.stringify(old)).toBe(oldJson)
+  x.service.update(3, expanded)
+  expect(x.service.snapshot().config).toEqual(expanded)
+  expect(x.service.capture()!.terminalExamples).not.toContain(simple.rounds[0]!.user)
+  expect(JSON.stringify(next)).toBe(nextJson)
 })
 
 it('prefills only the untouched initial blank editor while preserving saved drafts', () => {

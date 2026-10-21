@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 import { setTimeout as pause } from 'node:timers/promises'
 import { historyConfig } from '../tests/writer-history-fixture.ts'
 import { defaultWriterDelivery } from '../packages/rp-core/src/agents/writer-delivery.ts'
-import { terminalWriterHistory } from '../packages/rp-core/src/agents/writer-history-example.ts'
+import { simpleTerminalWriterHistory, terminalWriterHistory } from '../packages/rp-core/src/agents/writer-history-example.ts'
 import { visitingStory } from '../packages/rp-core/src/agents/writer-terminal-story.ts'
 
 const root = fileURLToPath(new URL('../', import.meta.url)), directory = await realpath(await mkdtemp(join(tmpdir(), 'rp-deployment-')))
@@ -196,6 +196,30 @@ try {
   evidence.terminalRequest = { roles: terminalRequest.messages.map(message => message.role), toolName: carrier.name,
     toolChoice: terminalRequest.tool_choice, field: carrier.parameters.required, contextArchived: true, syntheticExecution: false, historySteps: [6, 4, 4, 4, 4, 4], descriptionCharacters: carrier.description.length }
   passed.push('Terminal archive through real Docker HTTP: four-message guide, per-input preview, lossless example metadata, auto choice, decoded text and no synthetic tool execution')
+
+  const simpleConfig = { ...simpleTerminalWriterHistory(), enabled: true }
+  savedHistory = await source.api('/settings/writer-history', 'PUT', { expectedRevision: savedHistory.revision, config: simpleConfig })
+  const simpleRun = await source.api(`/stories/${terminalStory.id}/messages`, 'POST', { requestId: randomUUID(), inputs: [{ text: '切换简单版后继续核对试播安排。', attachmentIds: [] }] }, 202)
+  await until(async () => {
+    const run = (await source.api(`/runs/${simpleRun.run.id}`)).run
+    assert.notEqual(run.status, 'failed', JSON.stringify(run.error))
+    return run.status === 'completed'
+  }, 'Simple terminal archive commit')
+  const simpleRequest = requests.findLast(request => request.tools?.some(tool => tool.function.name.startsWith('dispatch_chapter_')))
+  const simpleCarrier = simpleRequest.tools.find(tool => tool.function.name.startsWith('dispatch_chapter_')).function
+  assert.equal(simpleCarrier.description.match(/\[example tool: dispatch_chapter_example\]/g).length, 2)
+  assert(!simpleCarrier.description.includes('[example tool: bash]'))
+  assert(!simpleCarrier.description.includes(terminalConfig.rounds[0].user))
+  assert(JSON.stringify(simpleRequest.messages[0]).includes('mount = Documents'))
+  for (const round of simpleConfig.rounds) {
+    assert(simpleCarrier.description.includes(round.user))
+    assert(simpleCarrier.description.includes(`arguments = ${round.steps[0].argumentsJson}`))
+  }
+  assert.deepEqual((await source.api('/settings/writer-history')).config, simpleConfig)
+  assert.equal((await source.api(`/stories/${terminalStory.id}`)).story.messages.at(-1).text, narrative)
+  await writeFile(join(root, 'docs/evidence/writer-terminal-simple-request.json'), JSON.stringify(simpleRequest, null, 2) + '\n')
+  evidence.simpleTerminalRequest = { historySteps: [1, 1], descriptionCharacters: simpleCarrier.description.length, previousPresetAbsent: true }
+  passed.push('Switch from six-round terminal preset to the original two-round radio example: only selected preset reaches the real model HTTP request and the complete configuration is saved')
 
   const enabledSuggestions = await source.api('/settings', 'PUT', { expectedRevision: savedPreferences.revision, preferences: { ...savedPreferences.preferences, replyOptionsEnabled: true } })
   const suggestionStory = (await source.api('/stories', 'POST', { title: '回复建议原子提交恢复', profile: { runtime: { executionMode: 'agent' } } }, 201)).story

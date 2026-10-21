@@ -1,9 +1,26 @@
+import { createHash } from 'node:crypto'
 import { expect, it } from 'vitest'
-import { terminalWriterHistory } from '../packages/rp-core/src/agents/writer-history-example.ts'
+import { simpleTerminalWriterHistory, terminalWriterHistory } from '../packages/rp-core/src/agents/writer-history-example.ts'
 import { terminalExampleFiles } from '../packages/rp-core/src/agents/writer-terminal-example.ts'
 import { visitingStory } from '../packages/rp-core/src/agents/writer-terminal-story.ts'
 import { compileWriterHistory, normalizeWriterHistory, writerHistoryArchive, writerHistoryIssues, writerHistorySize } from '../packages/rp-core/src/agents/writer-history.ts'
 import { terminalExamples, terminalRequestPreview } from '../packages/rp-core/src/agents/writer-terminal.ts'
+
+it('preserves the complete original two-round radio-station preset independently of the expanded version', () => {
+  const simple = simpleTerminalWriterHistory(), expanded = terminalWriterHistory()
+  // The serialized preset at c0c5e71, including its original dispatch and output-field instructions.
+  expect(createHash('sha256').update(JSON.stringify(simple)).digest('hex')).toBe('580362346ed5bfd495971ba80e8b890043f68519c2a266b7360d8d0a6a5beee6')
+  expect(simple.rounds.map(round => round.steps.length)).toEqual([1, 1])
+  expect(simple.delivery?.mode).toBe('terminal')
+  expect(normalizeWriterHistory({ ...simple, enabled: true }).rounds).toEqual(simple.rounds)
+  expect(writerHistorySize(simple).characters).toBe(2778)
+  for (const round of simple.rounds) expect(JSON.parse(round.steps[0]!.argumentsJson).display_stream).toBe(round.assistant)
+  simple.rounds[0]!.user = '改写简单版'
+  simple.delivery!.dispatch = '改写调度'
+  expect(simpleTerminalWriterHistory().rounds[0]!.user).not.toBe(simple.rounds[0]!.user)
+  expect(simpleTerminalWriterHistory().delivery!.dispatch).not.toBe(simple.delivery!.dispatch)
+  expect(terminalWriterHistory()).toEqual(expanded)
+})
 
 it('ships six linked scenes with fewer steps, modestly longer text and lossless output records', () => {
   const config = terminalWriterHistory()

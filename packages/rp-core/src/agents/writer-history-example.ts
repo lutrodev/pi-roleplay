@@ -1,6 +1,7 @@
 import { blankWriterHistory, type WriterHistoryConfig, type WriterHistorySettings } from './writer-history.ts'
 import initialCase from './writer-history-example.json'
 export { terminalWriterHistory } from './writer-terminal-example.ts'
+export { simpleTerminalWriterHistory } from './writer-terminal-simple.ts'
 
 /** Two writing conversations, with the topic and generated text left for the user to fill. */
 export function exampleWriterHistory(): WriterHistoryConfig {

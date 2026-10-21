@@ -97,12 +97,17 @@
   "编译后的终端预置历史不能超过 40,000 字符。": "Compiled terminal preset history must not exceed 40,000 characters.",
   "消息顺序：系统提示词 → 预置历史 → 本次写作上下文。历史工具不会执行，也不会增加 Writer 的真实工具权限。": "Order: system prompt → preset history → current writing context. Historical tools are not executed and do not grant real Writer tool permissions.",
   "将用所选案例替换全部预置历史和正文交付设置，并关闭注入。点击保存后才会生效。": "Replace all preset history and delivery settings with the selected example and turn off injection. Changes take effect only after saving.",
-  "《常来做客的她》使用原创成年人物，六轮分别有 6、4、4、4、4、4 个工具步骤，演示连续的 Linux 档案读取与完整场景交付。所有内容均可编辑。": "The Visiting Days example uses original adult characters across six rounds with 6/4/4/4/4/4 tool steps, showing a continuous Linux archive session and complete scenes. All content is editable.",
   "全部案例、真实历史和本轮输入归档到工具说明。发送的消息重建为：系统声明 → 用户调度 → 助手确认 → 执行请求。": "Archive all examples, real history and current input in the tool description. Rebuild messages as: system declaration → dispatch → acknowledgement → invocation.",
   "预置轮数：%{count} / %{limit}。每轮包含用户消息、工具步骤和助手回复。": "Preset rounds: %{count} / %{limit}. Each round contains a user message, tool steps and an assistant reply.",
   "上移第 %{round} 轮": "Move round %{round} up",
   "下移第 %{round} 轮": "Move round %{round} down",
   "删除第 %{round} 轮": "Delete round %{round}",
   "添加预置轮次": "Add preset round",
-  "Writer 预置历史需要 1–8 轮。": "Writer preset history requires 1–8 rounds."
+  "Writer 预置历史需要 1–8 轮。": "Writer preset history requires 1–8 rounds.",
+  "终端案例保留旧电台简单版（两轮，每轮 1 步）和《常来做客的她》六轮版。点击“载入终端交付案例”选择版本；所有内容均可编辑。": "Both the original radio-station example (two rounds, one step each) and the six-round Visiting Days example are available. Choose a version under “Load terminal delivery example”. All content is editable.",
+  "终端案例版本": "Terminal example version",
+  "保留扩写前的旧电台故事、两轮消息和原始调度文本，每轮 1 个交付步骤。": "Preserves the original radio-station story, two rounds and original dispatch text, with one delivery step per round.",
+  "原创成年人物的连续日常故事，六轮分别有 6、4、4、4、4、4 个工具步骤。": "A continuous slice-of-life story with original adult characters, with 6/4/4/4/4/4 tool steps across six rounds.",
+  "简单版 · 旧电台（2 轮）": "Simple · Radio station (2 rounds)",
+  "六轮版 · 常来做客的她（6 轮）": "Expanded · Visiting Days (6 rounds)"
 }
