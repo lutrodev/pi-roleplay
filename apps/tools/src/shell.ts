@@ -88,6 +88,8 @@ export class PersistentShell {
             }
             let safe = pending.length - end.length - 16
             if (safe > 0 && /[\uD800-\uDBFF]/.test(pending[safe - 1]!)) safe--
+            // Keep CR with a possible following LF so normalization is independent of PTY chunk boundaries.
+            if (safe > 0 && pending[safe - 1] === '\r') safe--
             if (safe > 0) { emit(pending.slice(0, safe)); pending = pending.slice(safe) }
           } catch { finish(new RpError('TOOL_OUTPUT_FAILED', '无法交付工具输出，命令已停止，Bash 已重置。')) }
         }

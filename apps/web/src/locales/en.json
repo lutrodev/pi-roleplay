@@ -1923,7 +1923,7 @@
   "实时进展暂时无法读取，可查看本轮轨迹": "Live progress is unavailable; view this round’s trace for details",
   "主模型会在提交正文和变量时生成回复建议。关闭后不再要求生成，已有配置会保留。": "The main model generates reply suggestions when submitting the narrative and variables. Turning this off stops requesting suggestions and keeps your configuration.",
   "所有设置": "All settings",
-  "设置 Writer 开始写作前读取的两轮示例对话。保存后用于新的生成。": "Set two example exchanges for Writer to read before writing. Saved changes apply to new generations.",
+  "设置 Writer 开始写作前读取的多轮示例对话。保存后用于新的生成。": "Set multiple example exchanges for Writer to read before writing. Saved changes apply to new generations.",
   "应用于所有会话，开关修改后立即保存。": "Applies to all conversations. Toggles save immediately.",
   "应用于所有会话，保存后从下一次正文生成起生效。": "Applies to all conversations, starting with the next generation after saving.",
   "回复选项 · 全局设置": "Reply suggestions · Global settings",

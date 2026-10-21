@@ -66,22 +66,25 @@ it.each(['openai-completions', 'openai-responses', 'anthropic-messages'] as cons
   expect(guide.map((item: any) => item.role)).toEqual(['user', 'assistant', 'user'])
   expect(JSON.stringify(body.system ?? messages[0])).toContain('interactive Linux terminal emulator')
   expect(JSON.stringify(messages)).not.toContain('当前输入甲')
-  expect(JSON.stringify(messages)).not.toContain(visitingStory.firstInput)
+  expect(JSON.stringify(messages)).not.toContain(visitingStory.chapters[0].input)
   expect(JSON.stringify(messages)).not.toContain('本轮真实 Writer 规则')
   expect(JSON.stringify(messages)).toContain(tool.name)
   expect(JSON.stringify(messages)).not.toMatch(/%TOOL_NAME%|%OUTPUT_FIELD%|%SESSION_ID%/)
   expect(tool.name).toMatch(/^dispatch_chapter_[a-f0-9]{16}$/)
   expect(tool.description).toContain('cat writer_rules.txt\n本轮真实 Writer 规则')
-  expect(tool.description).toContain(visitingStory.firstInput)
+  expect(tool.description).toContain(visitingStory.chapters[0].input)
   const example = terminalWriterHistory()
   expect(tool.description.match(/\[example tool: bash\]/g)).toHaveLength(20)
-  expect(tool.description.match(/\[example tool: dispatch_chapter_example\]/g)).toHaveLength(2)
+  expect(tool.description.match(/\[example tool: dispatch_chapter_example\]/g)).toHaveLength(6)
   for (const round of example.rounds) for (const step of round.steps) {
     expect(tool.description).toContain(`arguments = ${step.argumentsJson}`)
     expect(tool.description).toContain(`result = ${step.resultJson}`)
   }
-  expect(tool.description).toContain(JSON.stringify(visitingStory.firstChapter).slice(1, -1))
-  expect(tool.description).toContain(JSON.stringify(visitingStory.secondChapter).slice(1, -1))
+  for (const [index, scene] of visitingStory.chapters.entries()) {
+    expect(tool.description).toContain(`[example round ${index + 1}]`)
+    expect(tool.description).toContain(scene.input)
+    expect(tool.description).toContain(JSON.stringify(scene.text).slice(1, -1))
+  }
   expect(body.tools.some((entry: any) => (entry.function ?? entry).name === 'bash')).toBe(false)
   expect(tool.description).toContain('真实角色资料')
   expect(tool.description).toContain('真实写作风格')
@@ -118,7 +121,7 @@ it('streams a complete expanded terminal session without dropping its command lo
   expect((await x.run()).text).toBe(full)
   expect(previews.some(([text, final]) => !final && text.length > 0 && text.length < full.length)).toBe(true)
   expect(previews.at(-1)).toEqual([full, true])
-  expect(full.endsWith(visitingStory.firstChapter)).toBe(true)
+  expect(full.endsWith(visitingStory.chapters[0].text)).toBe(true)
 })
 
 it.each([false, true])('keeps real read-only calls executable (same response: %s)', async mixed => {

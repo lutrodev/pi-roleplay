@@ -71,7 +71,7 @@ function SettingsForm({ initial, onDirtyChange }: { initial: Settings; onDirtyCh
     { value: 'prompts', label: uiT('系统提示词'), icon: <ScrollText size={16} />, description: uiT('统一身份提示与各模型接收的系统规则。') },
     { value: 'skills', label: 'Skills', icon: <BookOpen size={16} />, description: uiT('管理可由模型按需读取的指导。') },
     { value: 'subagents', label: uiT('子代理'), icon: <Bot size={16} />, description: uiT('Writer 负责生成正文。任务子代理按你的调用说明参与规划、核对或润色，主模型决定何时使用。') },
-    { value: 'writer-history', label: uiT('Writer 预置历史'), icon: <ScrollText size={16} />, description: uiT('设置 Writer 开始写作前读取的两轮示例对话。保存后用于新的生成。') },
+    { value: 'writer-history', label: uiT('Writer 预置历史'), icon: <ScrollText size={16} />, description: uiT('设置 Writer 开始写作前读取的多轮示例对话。保存后用于新的生成。') },
     { value: 'tools', label: uiT('工具'), icon: <Wrench size={16} />, description: uiT('保存后从下一次开始的生成生效；当前运行保留原来的参数。') },
     { value: 'status', label: uiT('服务状态'), icon: <Activity size={16} />, description: uiT('查看服务连接、备份与运行状态。') },
   ] as const

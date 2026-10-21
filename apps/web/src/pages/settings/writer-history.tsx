@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useBlocker } from '@tanstack/react-router'
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react'
-import { blankWriterHistory, blankWriterHistoryStep, compileWriterHistory, writerHistoryIssues, writerHistoryPreview, writerHistorySize, WRITER_HISTORY_LIMITS,
+import { blankWriterHistory, blankWriterHistoryRound, blankWriterHistoryStep, compileWriterHistory, writerHistoryIssues, writerHistoryPreview, writerHistorySize, WRITER_HISTORY_LIMITS,
   type WriterHistoryConfig, type WriterHistoryRound, type WriterHistorySettings, type WriterHistoryStep } from '../../../../../packages/rp-core/src/agents/writer-history.ts'
 import { exampleWriterHistory, terminalWriterHistory, writerHistoryEditorDraft } from '../../../../../packages/rp-core/src/agents/writer-history-example.ts'
 import { WriterDeliveryFields } from './writer-delivery.tsx'
@@ -51,6 +51,12 @@ function HistoryEditor({ initial, onDirtyChange }: { initial: WriterHistorySetti
     ;[steps[index], steps[target]] = [steps[target]!, steps[index]!]
     round(r, { steps })
   }
+  const moveRound = (index: number, delta: number) => {
+    const rounds = [...value.rounds], target = index + delta
+    if (target < 0 || target >= rounds.length) return
+    ;[rounds[index], rounds[target]] = [rounds[target]!, rounds[index]!]
+    patch({ rounds })
+  }
   const accept = (result: WriterHistorySettings) => { setBaseline(result); setValue(structuredClone(result.config)); queryClient.setQueryData(['writer-history'], result) }
   return <><EditorForm className="stack" dirty={dirty} busy={action.busy} onSubmit={event => { event.preventDefault(); if (blocked) return; void action.run(async () => {
     accept(await api<WriterHistorySettings>('/settings/writer-history', 'PUT', { expectedRevision: baseline.revision, config: value })); setSaved(true)
@@ -58,11 +64,17 @@ function HistoryEditor({ initial, onDirtyChange }: { initial: WriterHistorySetti
     <SettingsGroup layout="form" title={uiT('注入设置')}>
       <SettingToggle label={uiT('启用 Writer 预置历史')} checked={value.enabled} onChange={event => patch({ enabled: event.target.checked })}
         help={uiT('仅作用于新开始运行中的 Writer；当前运行、主模型和任务子代理不受影响。关闭时可以保存未完成草稿。')} />
-      <details className="writer-history-help"><summary>{uiT('示例对话如何使用')}</summary><p className="muted">{uiT(terminal ? '终端归档将示例和真实上下文移入工具说明，用户输入逐条包装为文件预览。返回的输出字段完整解包为 Writer 回复，虚构命令不会执行。' : '消息顺序：系统提示词 → 两轮预置历史 → 本次写作上下文。历史工具不会执行，也不会增加 Writer 的真实工具权限。')}</p><p className="muted">{uiT(terminal ? '《常来做客的她》使用原创成年人物，两轮分别有 12 和 10 个工具步骤，演示连续的 Linux 档案读取与完整章节交付。所有内容均可编辑。' : '内置案例演示两轮写作交流，题材和生成内容留空供手动填写。所有消息与工具步骤都可以自由编辑。')}</p></details>
+      <details className="writer-history-help"><summary>{uiT('示例对话如何使用')}</summary><p className="muted">{uiT(terminal ? '终端归档将示例和真实上下文移入工具说明，用户输入逐条包装为文件预览。返回的输出字段完整解包为 Writer 回复，虚构命令不会执行。' : '消息顺序：系统提示词 → 预置历史 → 本次写作上下文。历史工具不会执行，也不会增加 Writer 的真实工具权限。')}</p><p className="muted">{uiT(terminal ? '《常来做客的她》使用原创成年人物，六轮分别有 6、4、4、4、4、4 个工具步骤，演示连续的 Linux 档案读取与完整场景交付。所有内容均可编辑。' : '内置案例演示两轮写作交流，题材和生成内容留空供手动填写。所有消息与工具步骤都可以自由编辑。')}</p></details>
       <div className="section-heading writer-history-template-actions"><span className="muted">{uiT('已保存版本：%{revision}', { revision: baseline.revision })}</span><div className="writer-history-template-actions"><Button onClick={() => setLoadExample('reading')}>{uiT('载入内置案例')}</Button><Button onClick={() => setLoadExample('terminal')}>{uiT('载入终端交付案例')}</Button><Button onClick={() => setReset(true)}>{uiT('恢复空模板')}</Button></div></div>
     </SettingsGroup>
     <WriterDeliveryFields value={value.delivery} enabled={value.enabled} onChange={delivery => patch({ delivery })} />
+    <p className="muted">{uiT('预置轮数：%{count} / %{limit}。每轮包含用户消息、工具步骤和助手回复。', { count: value.rounds.length, limit: WRITER_HISTORY_LIMITS.rounds })}</p>
     {value.rounds.map((item, r) => <details key={r} className="writer-history-round" open={r === 0 || undefined}><summary><strong>{uiT('第 %{round} 轮', { round: r + 1 })}</strong><span>{item.user.trim().slice(0, 60) || uiT('尚未填写用户消息')}</span></summary><SettingsGroup layout="form">
+      <div className="writer-history-step-actions">
+        <IconButton label={uiT('上移第 %{round} 轮', { round: r + 1 })} disabled={r === 0} onClick={() => moveRound(r, -1)}><ArrowUp size={16} /></IconButton>
+        <IconButton label={uiT('下移第 %{round} 轮', { round: r + 1 })} disabled={r === value.rounds.length - 1} onClick={() => moveRound(r, 1)}><ArrowDown size={16} /></IconButton>
+        <IconButton label={uiT('删除第 %{round} 轮', { round: r + 1 })} disabled={value.rounds.length === 1} onClick={() => patch({ rounds: value.rounds.filter((_, index) => index !== r) })}><Trash2 size={16} /></IconButton>
+      </div>
       <Field label={uiT('用户消息')}><Textarea rows={4} value={item.user} onChange={event => round(r, { user: event.target.value })} /></Field>
       <details className="writer-history-tools"><summary>{uiT('工具步骤')} · {item.steps.length}</summary><div className="writer-history-steps">
         {item.steps.map((tool, s) => <fieldset key={s} className="writer-history-step"><legend>{uiT('工具步骤 %{step}', { step: s + 1 })}</legend>
@@ -80,6 +92,7 @@ function HistoryEditor({ initial, onDirtyChange }: { initial: WriterHistorySetti
       </div></details>
       <Field label={uiT('助手最终回复')}><Textarea rows={4} value={item.assistant} onChange={event => round(r, { assistant: event.target.value })} /></Field>
     </SettingsGroup></details>)}
+    <div><Button disabled={value.rounds.length >= WRITER_HISTORY_LIMITS.rounds} onClick={() => patch({ rounds: [...value.rounds, blankWriterHistoryRound()] })}><Plus size={16} />{uiT('添加预置轮次')}</Button></div>
     <SettingsGroup layout="form" title={uiT(terminal ? '校验与请求结构预览' : '校验与原生消息预览')}>
       <p className="muted">{uiT('参数和结果必须是对象型 JSON；数字原文无损保留。历史编译上限 %{limit} 字符，配置上限 262,144 字节。', { limit: characterLimit.toLocaleString('en-US') })}</p>
       <p className="muted">{uiT('配置大小：%{bytes} 字节', { bytes })} · {uiT('历史编译字符：%{count} / %{limit}', { count: characters, limit: characterLimit })}</p>
@@ -93,7 +106,7 @@ function HistoryEditor({ initial, onDirtyChange }: { initial: WriterHistorySetti
       <Button disabled={action.busy} onClick={() => void action.run(async () => { accept(await api<WriterHistorySettings>('/settings/writer-history')); setSaved(false) })}>{uiT('放弃修改并重新读取')}</Button>
       <Button tone="primary" type="submit" disabled={action.busy || !dirty || blocked}>{action.busy ? uiT('正在保存…') : uiT('保存预置历史')}</Button></EditorFooter>
   </EditorForm>
-    <Modal size="compact" open={!!loadExample} onOpenChange={open => { if (!open) setLoadExample(undefined) }} title={uiT(loadExample === 'terminal' ? '载入终端交付案例' : '载入内置案例')}><p>{uiT('将用所选案例替换两轮历史和正文交付设置，并关闭注入。点击保存后才会生效。')}</p><div className="form-actions"><Button onClick={() => setLoadExample(undefined)}>{uiT('取消')}</Button><Button tone="primary" onClick={() => { setValue(loadExample === 'terminal' ? terminalWriterHistory() : exampleWriterHistory()); setSaved(false); setLoadExample(undefined) }}>{uiT('使用内置案例')}</Button></div></Modal>
+    <Modal size="compact" open={!!loadExample} onOpenChange={open => { if (!open) setLoadExample(undefined) }} title={uiT(loadExample === 'terminal' ? '载入终端交付案例' : '载入内置案例')}><p>{uiT('将用所选案例替换全部预置历史和正文交付设置，并关闭注入。点击保存后才会生效。')}</p><div className="form-actions"><Button onClick={() => setLoadExample(undefined)}>{uiT('取消')}</Button><Button tone="primary" onClick={() => { setValue(loadExample === 'terminal' ? terminalWriterHistory() : exampleWriterHistory()); setSaved(false); setLoadExample(undefined) }}>{uiT('使用内置案例')}</Button></div></Modal>
     <Modal size="compact" open={reset} onOpenChange={setReset} title={uiT('恢复空模板')}><p>{uiT('将清空当前编辑内容并关闭注入。点击保存后才会替换已保存的配置。')}</p><div className="form-actions"><Button onClick={() => setReset(false)}>{uiT('取消')}</Button><Button tone="danger" onClick={() => { setValue(blankWriterHistory()); setSaved(false); setReset(false) }}>{uiT('清空当前草稿')}</Button></div></Modal>
     <Modal size="compact" open={blocker.status === 'blocked'} onOpenChange={open => { if (!open) blocker.reset?.() }} title={uiT('预置历史还未保存')}><p>{uiT('离开页面会丢失刚才的修改。')}</p><div className="form-actions"><Button onClick={() => blocker.proceed?.()}>{uiT('放弃修改并离开')}</Button><Button tone="primary" onClick={() => blocker.reset?.()}>{uiT('继续编辑')}</Button></div></Modal>
   </>

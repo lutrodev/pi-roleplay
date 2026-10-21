@@ -7,7 +7,7 @@ export async function verifyWriterTerminalExample(request: (command: ToolCommand
   const actualDirectory = `${workspace}/archive/visiting-days`, config = terminalWriterHistory()
   await request({ kind: 'bash', command: 'mkdir -p archive/visiting-days/{chapters,characters,config,requests,state}', reset: true })
   let previous: Record<string, string> = {}, checked = 0
-  for (const index of [0, 1] as const) {
+  for (const index of config.rounds.keys()) {
     const files = terminalExampleFiles(index)
     for (const [path, fileText] of Object.entries(files)) if (previous[path] !== fileText)
       await request({ kind: 'edit', command: 'write', path: `archive/visiting-days/${path}`, fileText })
@@ -26,5 +26,5 @@ export async function verifyWriterTerminalExample(request: (command: ToolCommand
     }
   }
   assert.equal(checked, 20)
-  return 'Writer terminal example: 12/10 history steps, all 20 Linux commands verified against isolated persistent Bash, including UTF-8 statistics and cross-round excerpts'
+  return 'Writer terminal example: six rounds with 6/4/4/4/4/4 history steps, all 20 Linux commands verified against isolated persistent Bash, including UTF-8 statistics and cross-round excerpts'
 }

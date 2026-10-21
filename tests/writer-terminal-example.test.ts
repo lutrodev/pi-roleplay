@@ -5,18 +5,27 @@ import { visitingStory } from '../packages/rp-core/src/agents/writer-terminal-st
 import { compileWriterHistory, normalizeWriterHistory, writerHistoryArchive, writerHistoryIssues, writerHistorySize } from '../packages/rp-core/src/agents/writer-history.ts'
 import { terminalExamples, terminalRequestPreview } from '../packages/rp-core/src/agents/writer-terminal.ts'
 
-it('ships two complete linked adult stories with 12/10 editable steps and lossless output records', () => {
+it('ships six linked scenes with fewer steps, modestly longer text and lossless output records', () => {
   const config = terminalWriterHistory()
   expect(config.enabled).toBe(false)
-  expect(config.rounds.map(round => round.steps.length)).toEqual([12, 10])
+  expect(config.rounds.map(round => round.steps.length)).toEqual([6, 4, 4, 4, 4, 4])
   expect(writerHistoryIssues(config)).toEqual([])
   expect(normalizeWriterHistory({ ...config, enabled: true }).rounds).toEqual(config.rounds)
   expect(compileWriterHistory(config).map(message => message.role)).toEqual(['user', 'assistant'])
   for (const [index, round] of config.rounds.entries()) {
-    const files = terminalExampleFiles(index as 0 | 1), chapter = files[`chapters/chapter_0${index + 1}.txt`]!
-    expect(chapter.length).toBeGreaterThanOrEqual(1000)
-    expect(chapter.length).toBeLessThanOrEqual(1400)
-    expect(JSON.parse(round.steps.at(-2)!.resultJson).output).toBe(chapter)
+    const files = terminalExampleFiles(index), chapter = files[`chapters/chapter_0${index + 1}.txt`]!
+    for (let earlier = 0; earlier <= index; earlier++) {
+      const path = `chapters/chapter_0${earlier + 1}.txt`
+      expect(files[path]).toBe(visitingStory.chapters[earlier]!.text)
+    }
+    if (index > 0) for (const [path, text] of Object.entries(terminalExampleFiles(index - 1))) expect(files[path]).toBe(text)
+    if (index < 5) {
+      expect(files[`chapters/chapter_0${index + 2}.txt`]).toBeUndefined()
+      expect(files[`state/before_0${index + 2}.tsv`]).toBeUndefined()
+    }
+    expect(chapter.length).toBeGreaterThanOrEqual(400)
+    expect(chapter.length).toBeLessThanOrEqual(800)
+    expect(JSON.parse(round.steps.at(-2)!.resultJson).output.endsWith(chapter)).toBe(true)
     expect(round.steps.slice(0, -1).every(step => step.name === 'bash')).toBe(true)
     for (const step of round.steps.slice(0, -1)) {
       const result = JSON.parse(step.resultJson)
@@ -28,9 +37,9 @@ it('ships two complete linked adult stories with 12/10 editable steps and lossle
     expect(delivered).toBe(round.assistant)
     expect(delivered).toContain(chapter)
   }
-  expect(terminalExampleFiles(0)).not.toHaveProperty('state/before_02.tsv')
-  expect(terminalExampleFiles(0)).not.toHaveProperty('chapters/chapter_02.txt')
-  expect(terminalExampleFiles(1)['chapters/chapter_01.txt']).toBe(visitingStory.firstChapter)
+  expect(terminalExampleFiles(0)['state/before_02.tsv']).toBeUndefined()
+  expect(terminalExampleFiles(0)['chapters/chapter_02.txt']).toBeUndefined()
+  expect(terminalExampleFiles(1)['chapters/chapter_01.txt']).toBe(visitingStory.chapters[0].text)
   expect(config.rounds[1]!.steps.some(step => JSON.parse(step.argumentsJson).command?.startsWith('cd '))).toBe(false)
   config.rounds[0]!.steps[0]!.argumentsJson = '{}'
   expect(terminalWriterHistory().rounds[0]!.steps[0]!.argumentsJson).not.toBe('{}')
@@ -40,7 +49,9 @@ it('counts the stored history separately from archived/request text and enforces
   const config = terminalWriterHistory(); config.enabled = true
   const size = writerHistorySize(config), preview = terminalRequestPreview(config.delivery!, writerHistoryArchive(config)!)
   expect(size.characterLimit).toBe(40_000)
-  expect(size.characters).toBeGreaterThan(20_000)
+  // The previous two-round example compiled to 31,240 characters. Grow rounds, not bulk.
+  expect(size.characters).toBeGreaterThan(31_240)
+  expect(size.characters).toBeLessThan(31_240 * 1.2)
   expect(size.bytes).toBe(Buffer.byteLength(JSON.stringify(config)))
   expect(size.archiveCharacters).toBe(writerHistoryArchive(config)!.length)
   expect(size.archiveCharacters).toBeGreaterThanOrEqual(18_000)

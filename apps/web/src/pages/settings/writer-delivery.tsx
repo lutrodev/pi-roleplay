@@ -17,7 +17,7 @@ export function WriterDeliveryFields({ value, enabled, onChange }: {
       </Select>
     </Field>
     {delivery.mode !== 'text' && <>
-      <p className="muted">{uiT(terminal ? '两轮案例、真实历史和本轮输入归档到工具说明。发送的消息重建为：系统声明 → 用户调度 → 助手确认 → 执行请求。' : '本轮资料放入工具说明；消息末尾追加用户调度、助手确认和执行请求。历史中的工具仍不会执行。')}</p>
+      <p className="muted">{uiT(terminal ? '全部案例、真实历史和本轮输入归档到工具说明。发送的消息重建为：系统声明 → 用户调度 → 助手确认 → 执行请求。' : '本轮资料放入工具说明；消息末尾追加用户调度、助手确认和执行请求。历史中的工具仍不会执行。')}</p>
       <div className="form-grid">
         <Field label={uiT(terminal ? '终端交付工具名前缀' : '正文交付工具名')} help={terminal ? uiT('每次运行添加独立标识，同一运行中的重试沿用该标识。') : undefined}><Input value={delivery.toolName} required={required} maxLength={terminal ? 47 : 64} spellCheck={false} onChange={event => patch({ toolName: event.target.value })} /></Field>
         <Field label={uiT('正文字段名')}><Input value={delivery.fieldName} required={required} maxLength={64} spellCheck={false} onChange={event => patch({ fieldName: event.target.value })} /></Field>

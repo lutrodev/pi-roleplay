@@ -106,9 +106,17 @@ it.each(['[]', 'null', 'true', '42', '"text"', '{bad'])('rejects non-object or m
   }
 })
 
-it('enforces two rounds, 16 steps, exact compiled character boundary, and UTF-8 storage limit even for drafts', () => {
+it('enforces 1–8 rounds, 16 steps, exact compiled character boundary, and UTF-8 storage limit even for drafts', () => {
   const config = historyConfig()
-  expect(() => normalizeWriterHistory({ ...config, rounds: [config.rounds[0]] })).toThrow('两轮')
+  for (const count of [1, 6, 8]) {
+    const expanded = { ...config, rounds: Array.from({ length: count }, () => structuredClone(config.rounds[1]!)) }
+    expect(normalizeWriterHistory(expanded).rounds).toHaveLength(count)
+  }
+  for (const count of [0, 9]) for (const enabled of [false, true]) {
+    const invalid = { ...config, enabled, rounds: Array.from({ length: count }, () => structuredClone(config.rounds[1]!)) }
+    expect(() => normalizeWriterHistory(invalid)).toThrow('1–8')
+    expect(writerHistoryIssues(invalid)).toContain('Writer 预置历史需要 1–8 轮。')
+  }
   config.rounds[0]!.steps = Array.from({ length: 16 }, () => ({ ...config.rounds[1]!.steps[0]! }))
   expect(writerHistoryIssues(config)).toEqual([])
   config.rounds[0]!.steps.push({ ...config.rounds[1]!.steps[0]! })
@@ -122,6 +130,23 @@ it('enforces two rounds, 16 steps, exact compiled character boundary, and UTF-8 
   expect(normalizeWriterHistory(sized)).toEqual(sized)
   sized.rounds[0]!.user = '文'.repeat(90_000)
   expect(() => normalizeWriterHistory(sized)).toThrow('262,144')
+})
+
+it('persists added, reordered and removed rounds without truncation and regenerates paired IDs from their order', () => {
+  const x = setup(), config = historyConfig()
+  config.rounds = Array.from({ length: 6 }, (_, index) => ({ ...structuredClone(config.rounds[1]!), user: `独立轮次 ${index + 1}` }))
+  x.service.update(1, config)
+  expect(new WriterHistoryService(x.assets).snapshot().config).toEqual(config)
+  const captured = x.service.capture()!
+  expect(captured.metadata).toMatchObject({ messageCount: 24, toolCallCount: 6 })
+  expect(captured.messages[22]).toMatchObject({ role: 'toolResult', toolCallId: 'wh_r6_s1' })
+  config.rounds.reverse()
+  config.rounds.splice(1, 1)
+  x.service.update(2, config)
+  expect(x.service.snapshot().config.rounds.map(round => round.user)).toEqual(['独立轮次 6', '独立轮次 4', '独立轮次 3', '独立轮次 2', '独立轮次 1'])
+  expect(x.service.capture()!.messages[0]!.content[0]).toMatchObject({ text: '独立轮次 6' })
+  expect(x.service.capture()!.messages[18]).toMatchObject({ toolCallId: 'wh_r5_s1' })
+  expect(captured.messages[0]!.content[0]).toMatchObject({ text: '独立轮次 1' })
 })
 
 it('atomically rejects revision conflicts, freezes independent snapshots, survives database restart and fails visibly on corruption', () => {

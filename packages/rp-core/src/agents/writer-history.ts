@@ -2,7 +2,7 @@ import { requireValue } from '../errors.ts'
 import { normalizeWriterDelivery, writerDeliveryIssues, writerDeliveryTemplate, type WriterDelivery } from './writer-delivery.ts'
 import { terminalExamples } from './writer-terminal.ts'
 
-export const WRITER_HISTORY_LIMITS = { rounds: 2, steps: 16, characters: 20_000, terminalCharacters: 40_000, bytes: 262_144 } as const
+export const WRITER_HISTORY_LIMITS = { rounds: 8, steps: 16, characters: 20_000, terminalCharacters: 40_000, bytes: 262_144 } as const
 export interface WriterHistoryStep { name: string; argumentsJson: string; resultJson: string; isError: boolean }
 export interface WriterHistoryRound { user: string; steps: WriterHistoryStep[]; assistant: string }
 export interface WriterHistoryConfig { enabled: boolean; rounds: WriterHistoryRound[]; delivery?: WriterDelivery }
@@ -16,8 +16,9 @@ export type WriterHistoryMessage =
 export interface FrozenWriterHistory { metadata: WriterHistoryMetadata; messages: WriterHistoryMessage[]; delivery?: WriterDelivery; terminalExamples?: string }
 
 export const blankWriterHistoryStep = (): WriterHistoryStep => ({ name: '', argumentsJson: '{}', resultJson: '{}', isError: false })
+export const blankWriterHistoryRound = (): WriterHistoryRound => ({ user: '', steps: [blankWriterHistoryStep()], assistant: '' })
 export const blankWriterHistory = (): WriterHistoryConfig => ({ enabled: false,
-  rounds: Array.from({ length: 2 }, () => ({ user: '', steps: [blankWriterHistoryStep()], assistant: '' })) })
+  rounds: Array.from({ length: 2 }, blankWriterHistoryRound) })
 
 function keys(value: unknown, names: string): asserts value is Record<string, unknown> {
   requireValue(value !== null && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).sort().join(',') === names,
@@ -28,8 +29,8 @@ function keys(value: unknown, names: string): asserts value is Record<string, un
 export function normalizeWriterHistory(input: unknown): WriterHistoryConfig {
   keys(input, input && typeof input === 'object' && 'delivery' in input ? 'delivery,enabled,rounds' : 'enabled,rounds')
   if ('delivery' in input) normalizeWriterDelivery(input.delivery)
-  requireValue(typeof input.enabled === 'boolean' && Array.isArray(input.rounds) && input.rounds.length === 2,
-    'INVALID_WRITER_HISTORY', 'Writer 预置历史必须包含两轮。')
+  requireValue(typeof input.enabled === 'boolean' && Array.isArray(input.rounds) && input.rounds.length >= 1 && input.rounds.length <= WRITER_HISTORY_LIMITS.rounds,
+    'INVALID_WRITER_HISTORY', 'Writer 预置历史需要 1–8 轮。')
   for (const round of input.rounds) {
     keys(round, 'assistant,steps,user')
     requireValue(typeof round.user === 'string' && typeof round.assistant === 'string' && Array.isArray(round.steps) && round.steps.length <= WRITER_HISTORY_LIMITS.steps,
@@ -52,6 +53,7 @@ export function normalizeWriterHistory(input: unknown): WriterHistoryConfig {
 
 export function writerHistoryIssues(config: WriterHistoryConfig): string[] {
   const issues: string[] = writerDeliveryIssues(config.delivery)
+  if (config.rounds.length < 1 || config.rounds.length > WRITER_HISTORY_LIMITS.rounds) issues.push('Writer 预置历史需要 1–8 轮。')
   config.rounds.forEach((round, r) => {
     const prefix = `第 ${r + 1} 轮`
     if (!round.user.trim()) issues.push(`${prefix}：用户消息不能为空。`)

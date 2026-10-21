@@ -6,13 +6,18 @@ import { visitingReferenceFiles, visitingStory } from './writer-terminal-story.t
 export const TERMINAL_EXAMPLE_DIRECTORY = `${TERMINAL_ARCHIVE_ROOT}/visiting-days`
 const bytes = (text: string) => new TextEncoder().encode(text).length
 const lines = (text: string) => text.replace(/\n$/, '').split('\n')
+const chapterNumber = (index: number) => String(index + 1).padStart(2, '0')
 
-/** The second chapter snapshot adds files without rewriting chapter 1. */
-export function terminalExampleFiles(round: 0 | 1): Record<string, string> {
-  const files: Record<string, string> = { ...visitingReferenceFiles,
-    'requests/chapter_01_preview.txt': visitingStory.firstInput + '\n', 'chapters/chapter_01.txt': visitingStory.firstChapter }
-  if (round === 0) delete files['state/before_02.tsv']
-  else Object.assign(files, { 'requests/chapter_02_preview.txt': visitingStory.secondInput + '\n', 'chapters/chapter_02.txt': visitingStory.secondChapter })
+/** Each scene adds only its own files; previous scenes remain byte-identical and future scenes stay absent. */
+export function terminalExampleFiles(round: number): Record<string, string> {
+  if (!Number.isInteger(round) || round < 0 || round >= visitingStory.chapters.length) throw new RangeError('Invalid terminal example round')
+  const files = Object.fromEntries(Object.entries(visitingReferenceFiles).filter(([path]) => !path.startsWith('state/')))
+  for (let index = 0; index <= round; index++) {
+    const number = chapterNumber(index), scene = visitingStory.chapters[index]!
+    files[`state/before_${number}.tsv`] = visitingReferenceFiles[`state/before_${number}.tsv`]!
+    files[`requests/chapter_${number}_preview.txt`] = scene.input + '\n'
+    files[`chapters/chapter_${number}.txt`] = scene.text
+  }
   return files
 }
 
@@ -24,32 +29,26 @@ function chapterStats(path: string, text: string): string {
 /** Authored records, not a shell interpreter. The Linux acceptance suite checks every command output. */
 export function terminalWriterHistory(): WriterHistoryConfig {
   const delivery = terminalWriterDelivery()
-  return { enabled: false, delivery, rounds: ([0, 1] as const).map(round => {
-    const files = terminalExampleFiles(round), chapter = `chapters/chapter_0${round + 1}.txt`
+  return { enabled: false, delivery, rounds: visitingStory.chapters.map((scene, round) => {
+    const files = terminalExampleFiles(round), number = chapterNumber(round), chapter = `chapters/chapter_${number}.txt`
     const read = (path: string) => files[path]!
+    const state = `state/before_${number}.tsv`, input = `requests/chapter_${number}_preview.txt`
+    const previous = `chapters/chapter_${chapterNumber(round - 1)}.txt`
+    const context: [command: string, output: string] = [`cat ${state} ${input}`, read(state) + read(input)]
+    const fullChapter: [command: string, output: string] = round === 0
+      ? [`file --mime ${chapter} && wc -l -c ${chapter} && cat ${chapter}`, chapterStats(chapter, read(chapter)) + read(chapter)]
+      : [`cat ${chapter}`, read(chapter)]
+    const continuity: [command: string, output: string] = round === 4
+      ? ["grep -n -E '杯子|九点|标签' chapters/chapter_04.txt", lines(read(previous)).flatMap((line, index) => /杯子|九点|标签/.test(line) ? [`${index + 1}:${line}\n`] : []).join('')]
+      : [`tail -n 3 ${previous}`, round ? lines(read(previous)).slice(-3).join('\n') + '\n' : '']
     const commands: [command: string, output: string][] = round === 0 ? [
-      [`cd ${TERMINAL_EXAMPLE_DIRECTORY}`, ''],
-      ['pwd', TERMINAL_EXAMPLE_DIRECTORY + '\n'],
+      [`cd ${TERMINAL_EXAMPLE_DIRECTORY} && pwd`, TERMINAL_EXAMPLE_DIRECTORY + '\n'],
       ['ls -1F', 'README.md\nchapters/\ncharacters/\nconfig/\nrequests/\nstate/\n'],
-      ['find . -maxdepth 2 -type f | sort', Object.keys(files).sort().map(path => `./${path}\n`).join('')],
-      ['cat README.md config/writer_rules.txt', read('README.md') + read('config/writer_rules.txt')],
-      ["sed -n '1,100p' characters/main.md", read('characters/main.md')],
-      ['cat config/style.md', read('config/style.md')],
-      ['cat state/before_01.tsv', read('state/before_01.tsv')],
-      ['cat requests/chapter_01_preview.txt', read('requests/chapter_01_preview.txt')],
-      [`file --mime ${chapter} && wc -l -c ${chapter}`, chapterStats(chapter, read(chapter))],
-      [`cat ${chapter}`, read(chapter)],
-    ] : [
-      ['pwd', TERMINAL_EXAMPLE_DIRECTORY + '\n'],
-      ['ls -1 chapters/', 'chapter_01.txt\nchapter_02.txt\n'],
-      ['tail -n 9 chapters/chapter_01.txt', lines(read('chapters/chapter_01.txt')).slice(-9).join('\n') + '\n'],
-      ['cat state/before_02.tsv', read('state/before_02.tsv')],
-      ["grep -n -E '台灯|标签|杯垫' chapters/chapter_01.txt", lines(read('chapters/chapter_01.txt')).flatMap((line, index) => /台灯|标签|杯垫/.test(line) ? [`${index + 1}:${line}\n`] : []).join('')],
-      ['cat requests/chapter_02_preview.txt', read('requests/chapter_02_preview.txt')],
-      ["sed -n '4,8p' config/style.md", lines(read('config/style.md')).slice(3, 8).join('\n') + '\n'],
-      [`file --mime ${chapter} && wc -l -c ${chapter}`, chapterStats(chapter, read(chapter))],
-      [`cat ${chapter}`, read(chapter)],
-    ]
+      ['cat README.md config/writer_rules.txt characters/main.md config/style.md',
+        ['README.md', 'config/writer_rules.txt', 'characters/main.md', 'config/style.md'].map(read).join('')],
+      context,
+      fullChapter,
+    ] : [continuity, context, fullChapter]
     const steps: WriterHistoryStep[] = commands.map(([command, output], index) => ({ name: 'bash',
       argumentsJson: JSON.stringify({ command }, null, 2),
       resultJson: JSON.stringify({ output, exitCode: 0, truncated: false, shellState: round === 0 && index === 0 ? 'new' : 'retained', outputBytes: bytes(output) }, null, 2),
@@ -61,6 +60,6 @@ export function terminalWriterHistory(): WriterHistoryConfig {
     }).join('')
     steps.push({ name: 'dispatch_chapter_example', argumentsJson: JSON.stringify({ [delivery.fieldName]: display }, null, 2),
       resultJson: JSON.stringify({ channel: delivery.fieldName, chapter, characters: display.length }, null, 2), isError: false })
-    return { user: round === 0 ? visitingStory.firstInput : visitingStory.secondInput, steps, assistant: display }
+    return { user: scene.input, steps, assistant: display }
   }) }
 }
