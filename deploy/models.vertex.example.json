@@ -1,0 +1,13 @@
+{
+  "models": [
+    {
+      "provider": "vertex",
+      "model": "google/gemini-2.5-flash",
+      "keyEnv": "RP_VERTEX_SERVICE_ACCOUNT_JSON",
+      "auth": "google-service-account",
+      "api": "openai-completions",
+      "baseUrl": "https://aiplatform.googleapis.com/v1/projects/your-project-id/locations/global/endpoints/openapi"
+    }
+  ],
+  "main": { "provider": "vertex", "model": "google/gemini-2.5-flash" }
+}

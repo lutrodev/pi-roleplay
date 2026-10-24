@@ -2,14 +2,15 @@ import type { FastifyInstance } from 'fastify'
 import { Type } from '@sinclair/typebox'
 import type { ModelCatalogService } from '../services/model-catalog-service.ts'
 import { dataObject, id, revision, strict } from './schemas.ts'
+import { SERVICE_ACCOUNT_MAX_LENGTH } from '../../../../packages/protocol/src/model-auth.ts'
 
 export function registerModelCatalog(app: FastifyInstance, catalog: ModelCatalogService) {
   app.get('/api/settings/providers', async () => catalog.snapshot())
   app.post<{ Body: Parameters<ModelCatalogService['previewMetadata']>[0] }>('/api/settings/models/metadata', {
     schema: { body: Type.Object({ provider: id, model: Type.String({ minLength: 1, maxLength: 200 }), connection: dataObject, discoveryId: Type.Optional(Type.String({ maxLength: 100 })), reasoningContext: Type.Optional(dataObject) }, strict) },
   }, async request => catalog.previewMetadata(request.body))
-  app.post<{ Body: { connection: unknown; provider?: string; apiKey?: string } }>('/api/settings/providers/discover', {
-    schema: { body: Type.Object({ connection: dataObject, provider: Type.Optional(id), apiKey: Type.Optional(Type.String({ maxLength: 8192 })) }, strict) },
+  app.post<{ Body: { connection: unknown; provider?: string; apiKey?: string; serviceAccountJson?: string } }>('/api/settings/providers/discover', {
+    schema: { body: Type.Object({ connection: dataObject, provider: Type.Optional(id), apiKey: Type.Optional(Type.String({ maxLength: 8192 })), serviceAccountJson: Type.Optional(Type.String({ maxLength: SERVICE_ACCOUNT_MAX_LENGTH })) }, strict) },
   }, async request => catalog.discover(request.body))
   app.post<{ Params: { provider: string }; Body: { expectedRevision: number; model: string } }>('/api/settings/providers/:provider/test', {
     schema: { params: Type.Object({ provider: id }, strict), body: Type.Object({ expectedRevision: revision, model: Type.String({ minLength: 1, maxLength: 200 }) }, strict) },

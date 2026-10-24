@@ -15,6 +15,8 @@ import { ModelRequestQueue } from './model-request-queue.ts'
 import { modelBaseUrl } from './model-endpoint.ts'
 import { prepareReasoningRequest } from './reasoning-request.ts'
 import { requireReasoningBudget, thinkingBudget } from './reasoning-budget.ts'
+import { parseVertexBaseUrl, type ModelAuth } from '../../../../packages/protocol/src/model-auth.ts'
+import { ModelCredentials, parseServiceAccount } from './model-credentials.ts'
 
 export interface ModelRegistration {
   provider: string
@@ -23,6 +25,7 @@ export interface ModelRegistration {
   keyEnv: string
   api?: 'openai-completions' | 'openai-responses' | 'anthropic-messages'
   baseUrl?: string
+  auth?: ModelAuth
   contextWindow?: number
   maxTokens?: number
   input?: ('text' | 'image')[]
@@ -46,6 +49,7 @@ interface RegisteredModel { registration: ModelRegistration; model: Model<Api>; 
 export class ModelRegistry {
   private entries = new Map<string, RegisteredModel>()
   private readonly requests: ModelRequestQueue
+  private readonly credentials: ModelCredentials
   constructor(registrations: ModelRegistration[], readonly options: {
     env?: (key: string) => string | undefined
     fetch?: SimpleStreamOptions['fetch']
@@ -54,6 +58,7 @@ export class ModelRegistry {
     requests?: ModelRequestQueue
   } = {}) {
     this.requests = options.requests ?? new ModelRequestQueue()
+    this.credentials = new ModelCredentials(options.fetch as typeof fetch | undefined)
     requireValue(Array.isArray(registrations) && registrations.length <= 64, 'MODEL_CONFIG_INVALID', '最多配置 64 个模型。')
     const builtins = builtinModels()
     const customApis: Record<string, ProviderStreams> = {
@@ -83,6 +88,12 @@ export class ModelRegistry {
       requireValue(url && ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password && !url.search && !url.hash,
         'MODEL_CONFIG_INVALID', '模型地址必须为 HTTP(S) 地址，不能携带凭据或查询参数。')
       model.baseUrl = modelBaseUrl(model.api, model.baseUrl)
+      requireValue(registration.auth === undefined || registration.auth === 'google-service-account', 'MODEL_CONFIG_INVALID', '模型认证方式不受支持。')
+      if (registration.auth === 'google-service-account') {
+        requireValue(model.api === 'openai-completions' && parseVertexBaseUrl(model.baseUrl), 'MODEL_CONFIG_INVALID', 'Vertex AI 需要匹配项目和区域的 Google Cloud 官方地址及 Chat Completions 协议。')
+        requireValue(/^(?:google\/)?[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(model.id), 'MODEL_CONFIG_INVALID', 'Vertex AI 模型 ID 格式不正确，请填写 Google 模型 ID。')
+        model.compat = { supportsStore: false, supportsDeveloperRole: false, supportsStrictMode: false, maxTokensField: 'max_tokens', ...model.compat }
+      }
       requireValue(Number.isSafeInteger(model.contextWindow) && model.contextWindow >= 1024 && Number.isSafeInteger(model.maxTokens) && model.maxTokens > 0 && model.maxTokens <= model.contextWindow,
         'MODEL_CONFIG_INVALID', '上下文窗口或输出上限不正确。')
       requireValue(Array.isArray(model.input) && model.input.includes('text') && model.input.every(type => type === 'text' || type === 'image'), 'MODEL_CONFIG_INVALID', '模型输入能力不正确。')
@@ -111,6 +122,7 @@ export class ModelRegistry {
   replace(registrations: ModelRegistration[], options = this.options) {
     const replacement = new ModelRegistry(registrations, options)
     this.entries = replacement.entries
+    this.credentials.clear()
   }
 
   registrations(): ModelRegistration[] {
@@ -123,6 +135,7 @@ export class ModelRegistry {
     const entry = this.entries.get(routeKey(route))
     requireValue(entry, 'MODEL_NOT_CONFIGURED', '这个模型尚未在服务端配置，请检查模型设置。')
     requireValue(this.key(entry.registration.keyEnv), 'MODEL_KEY_MISSING', '所选模型的 API 密钥尚未配置。')
+    if (entry.registration.auth) parseServiceAccount(this.key(entry.registration.keyEnv))
     requireValue(images.length === 0 || entry.model.input.includes('image'), 'MODEL_VISION_REQUIRED', '所选模型不支持图片；请更换支持图片的模型或移除图片。')
     const reasoning = resolveReasoning(entry.reasoning, route.reasoningEffort)
     requireReasoningBudget(entry.reasoning.control, reasoning, this.outputBudget(route))
@@ -163,13 +176,14 @@ export class ModelRegistry {
     requireValue(options.maxTokens === undefined || Number.isSafeInteger(options.maxTokens) && options.maxTokens > 0, 'MODEL_OUTPUT_BUDGET_INVALID', '调用输出上限必须是正整数。')
     const outputCap = Math.min(options.maxTokens ?? Infinity, this.outputBudget({ provider: model.provider, model: model.id }))
     const request = prepareReasoningRequest(model, entry.reasoning.control, reasoning, outputCap)
-    return this.requests.stream(model, signal => entry.streams.streamSimple(request.model, context, {
+    return this.requests.stream(model, async signal => entry.streams.streamSimple(request.model, context, {
       timeoutMs: 120_000, maxRetries: 1, maxRetryDelayMs: 10_000,
       ...(entry.registration.temperature === undefined ? {} : { temperature: entry.registration.temperature }),
-      ...streamOptions, ...request.options, signal, apiKey: key, ...(this.options.fetch ? { fetch: this.options.fetch } : {}),
+      ...streamOptions, ...request.options, signal, apiKey: await this.credentials.resolve(entry.registration.auth, key, signal), ...(this.options.fetch ? { fetch: this.options.fetch } : {}),
       onPayload: async (payload, sentModel) => {
         const supplied = await onPayload?.(payload, sentModel)
         const final = applyReasoningPayload(supplied ?? payload, request.model, entry.reasoning.control, reasoning, outputCap)
+        if (entry.registration.auth === 'google-service-account') final.model = model.id.startsWith('google/') ? model.id : `google/${model.id}`
         onRequestParameters?.(reasoningParameters(final))
         return final
       },

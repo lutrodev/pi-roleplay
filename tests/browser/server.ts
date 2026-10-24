@@ -16,6 +16,7 @@ import { seedConversationBoundaries } from './boundary-fixture.ts'
 import { subagentResponse, seedSubagentProgress } from './subagent-response.ts'
 import { activityResponse } from './activity-response.ts'
 import { browserModelMetadata } from './model-metadata-fixture.ts'
+import { vertexConnection, vertexResponse } from '../vertex-fixture.ts'
 
 const persistentRoot = process.env.RP_BROWSER_FIXTURE_ROOT
 const root = persistentRoot ? resolve(persistentRoot) : await mkdtemp(join(tmpdir(), 'rp-browser-fixture-')), inputs = join(root, 'data/inputs'), skills = join(root, 'skills'), workspaces = join(root, 'workspaces')
@@ -40,6 +41,15 @@ const app = await createServer({ dataDirectory: join(root, 'data'), publicOrigin
   models: [route, { provider: route.provider, model: 'test-vision-model' }].map(model => ({ ...model, keyEnv: 'SYNTHETIC_BROWSER_KEY', api: 'openai-completions' as const, baseUrl: 'https://synthetic.invalid/v1', contextWindow: 128000, maxTokens: 8192, input: model.model.includes('vision') ? ['text', 'image'] : ['text'] })), defaultMain: route,
   skillRoots: [{ path: resolve('skills/builtin'), virtualPath: '/skills/builtin' }, { path: skills, virtualPath: '/skills/custom' }], webDirectory: resolve(process.env.RP_BROWSER_WEB_DIRECTORY ?? 'apps/web/dist'),
 }, { modelOptions: { env: name => name === 'SYNTHETIC_BROWSER_KEY' ? 'browser-fixture-secret' : undefined, fetch: async (url, init) => {
+  if (process.env.RP_BROWSER_VERTEX_TEST === '1') {
+    if (String(url) === 'https://oauth2.googleapis.com/token') return Response.json({ access_token: 'browser-vertex-token', expires_in: 3600, token_type: 'Bearer' })
+    if (String(url) === vertexConnection.baseUrl + '/chat/completions') {
+      if (new Headers(init?.headers).get('authorization') !== 'Bearer browser-vertex-token') throw new Error('Unexpected synthetic Vertex authorization')
+      const body = JSON.parse(String(init?.body)) as { model?: string }
+      if (body.model !== 'google/gemini-2.5-flash') throw new Error('Unexpected synthetic Vertex model')
+      return vertexResponse()
+    }
+  }
   if (String(url).startsWith('https://synthetic.invalid/')) {
     const auth = new Headers(init?.headers).get('authorization')
     if (auth === 'Bearer browser-invalid-key') return Response.json({ error: { message: 'Invalid API key' } }, { status: 401 })

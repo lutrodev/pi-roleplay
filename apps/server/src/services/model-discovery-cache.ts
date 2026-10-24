@@ -7,7 +7,7 @@ type Discovery = { connection: ModelConnection; credential: string; models: Disc
 export interface StoredModelMetadata { connection: ModelConnection; value: ModelMetadata }
 export type StoredMetadata = Record<string, StoredModelMetadata>
 export const metadataKey = (route: Pick<ModelIdentity, 'provider' | 'model'>) => JSON.stringify([route.provider, route.model])
-export const sameConnection = (a: Pick<ModelIdentity, 'api' | 'baseUrl'>, b: Pick<ModelIdentity, 'api' | 'baseUrl'>) => a.api === b.api && a.baseUrl?.replace(/\/+$/, '') === b.baseUrl?.replace(/\/+$/, '')
+export const sameConnection = (a: Pick<ModelIdentity, 'api' | 'baseUrl' | 'auth'>, b: Pick<ModelIdentity, 'api' | 'baseUrl' | 'auth'>) => a.api === b.api && a.auth === b.auth && a.baseUrl?.replace(/\/+$/, '') === b.baseUrl?.replace(/\/+$/, '')
 export function storedMetadata(metadata: StoredMetadata, route: ModelIdentity) {
   const entry = metadata[metadataKey(route)]
   return entry && sameConnection(entry.connection, route) ? entry.value : undefined

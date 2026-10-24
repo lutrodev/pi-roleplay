@@ -23,6 +23,9 @@ export const servicePresets: ServicePreset[] = [
     connection: { api: 'anthropic-messages', baseUrl: 'https://api.anthropic.com' }, docsUrl: 'https://platform.claude.com/docs/en/api/overview' },
   { id: 'google', label: 'Google Gemini', description: 'Gemini · Google AI Studio', aliases: ['谷歌'], common: true,
     connection: { api: 'openai-completions', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai' }, docsUrl: 'https://ai.google.dev/gemini-api/docs/openai', compat: compatible },
+  { id: 'google-vertex', label: 'Google Cloud Vertex AI', description: 'Google Cloud · 服务账号 JSON', aliases: ['谷歌云', 'GCP', 'service account', 'Gemini'],
+    connection: { api: 'openai-completions', auth: 'google-service-account', baseUrl: '' }, docsUrl: 'https://cloud.google.com/vertex-ai/generative-ai/docs/start/openai', compat: compatible,
+    note: '请为项目启用 Vertex AI API，并授予服务账号相应的模型调用权限。' },
   { id: 'openrouter', label: 'OpenRouter', description: '一个连接，使用多家模型', aliases: ['聚合', 'router'], common: true,
     connection: { api: 'openai-completions', baseUrl: 'https://openrouter.ai/api/v1' }, docsUrl: 'https://openrouter.ai/docs/quickstart' },
   { id: 'moonshot', label: 'Kimi · Moonshot AI', description: 'Kimi 系列模型', aliases: ['月之暗面', 'moonshotai'], common: true,
@@ -58,6 +61,7 @@ export function matchingServices(query: string) {
 }
 
 export function serviceForConnection(connection: ModelConnection) {
+  if (connection.auth === 'google-service-account') return servicePresets.find(service => service.id === 'google-vertex')
   const baseUrl = connection.baseUrl.trim().replace(/\/+$/, '')
   return servicePresets.find(service => service.connection.api === connection.api && service.connection.baseUrl === baseUrl)
 }

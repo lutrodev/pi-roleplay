@@ -9,11 +9,12 @@ import { CredentialCipher } from '../storage/credential-cipher.ts'
 import { checkModel, discoverModels, inspectionError, validateConnection, type ModelCheck, type ModelConnection } from './model-inspection.ts'
 import { ModelDiscoveryCache, metadataKey, sameConnection, storedMetadata, type StoredMetadata } from './model-discovery-cache.ts'
 import { resolveMetadata, type ModelIdentity } from '../runtime/model-metadata.ts'
+import { credentialInput, parseServiceAccount } from '../runtime/model-credentials.ts'
 
 const storageKey = 'models.catalog'
 interface Catalog { version: 3; revision: number; registrations: ModelRegistration[]; labels: Record<string, string>; secrets: Record<string, string>; connections: Record<string, ModelConnection & { keyEnv: string }>; metadata: StoredMetadata }
 interface StoredCheck extends ModelCheck { fingerprint: string }
-export interface ProviderInput { id: string; label: string; apiKey?: string; clearKey?: boolean; connection?: ModelConnection; discoveryId?: string; models: Omit<ModelRegistration, 'keyEnv' | 'provider'>[] }
+export interface ProviderInput { id: string; label: string; apiKey?: string; serviceAccountJson?: string; clearKey?: boolean; connection?: ModelConnection; discoveryId?: string; models: Omit<ModelRegistration, 'keyEnv' | 'provider'>[] }
 
 /** Authenticated Web management; database backups contain authenticated ciphertext, never raw API keys. */
 export class ModelCatalogService {
@@ -38,7 +39,7 @@ export class ModelCatalogService {
     const catalog = this.read(), registrations = this.models.registrations(), configured = this.models.list(), checks = this.checks()
     return { revision: catalog.revision, providers: Object.keys(catalog.labels).map(id => ({
       id, label: catalog.labels[id] ?? id, keyStored: Boolean(catalog.secrets[id]),
-      connection: { api: catalog.connections[id]!.api, baseUrl: catalog.connections[id]!.baseUrl },
+      connection: publicConnection(catalog.connections[id]!),
       credentialConfigured: Boolean(this.key(catalog.connections[id]!.keyEnv)),
       models: registrations.filter(model => model.provider === id).map(({ provider: _provider, keyEnv: _key, ...model }) => ({ ...model,
         configured: configured.find(item => item.provider === id && item.model === model.model)?.configured ?? false,
@@ -71,14 +72,13 @@ export class ModelCatalogService {
   }
   update(expectedRevision: number, input: unknown, create = false) {
     objectInput(input)
-    requireValue(Object.keys(input).every(key => ['id', 'label', 'models', 'apiKey', 'clearKey', 'connection', 'discoveryId'].includes(key)) && typeof input.id === 'string' && /^[a-z0-9][a-z0-9._-]{0,63}$/.test(input.id), 'MODEL_CONFIG_INVALID', '提供方标识需要小写字母、数字、点、下划线或连字符。')
+    requireValue(Object.keys(input).every(key => ['id', 'label', 'models', 'apiKey', 'serviceAccountJson', 'clearKey', 'connection', 'discoveryId'].includes(key)) && typeof input.id === 'string' && /^[a-z0-9][a-z0-9._-]{0,63}$/.test(input.id), 'MODEL_CONFIG_INVALID', '提供方标识需要小写字母、数字、点、下划线或连字符。')
     requireValue(input.discoveryId === undefined || typeof input.discoveryId === 'string' && input.discoveryId.length <= 100, 'MODEL_CONFIG_INVALID', '模型识别记录不正确。')
     requireValue(typeof input.label === 'string' && input.label.trim().length > 0 && input.label.length <= 200, 'MODEL_CONFIG_INVALID', '提供方名称不能为空，最多 200 字符。')
     requireValue(Array.isArray(input.models) && input.models.length <= 64, 'MODEL_CONFIG_INVALID', '每个连接最多添加 64 个模型。')
-    requireValue(input.apiKey === undefined || typeof input.apiKey === 'string' && input.apiKey.trim().length > 0 && input.apiKey.length <= 8192 && !/[\r\n\0]/.test(input.apiKey), 'MODEL_CONFIG_INVALID', 'API 密钥格式不正确。')
     requireValue(input.clearKey === undefined || typeof input.clearKey === 'boolean', 'MODEL_CONFIG_INVALID', '移除密钥选项不正确。')
-    requireValue(!input.clearKey || input.apiKey === undefined, 'MODEL_CONFIG_INVALID', '不能同时替换和移除密钥。')
-    const id = input.id, label = input.label.trim(), values = input.models, apiKey = input.apiKey as string | undefined
+    requireValue(!input.clearKey || input.apiKey === undefined && input.serviceAccountJson === undefined, 'MODEL_CONFIG_INVALID', '不能同时替换和移除密钥。')
+    const id = input.id, label = input.label.trim(), values = input.models
     return this.mutate(expectedRevision, current => {
       const managedKey = envName(id), old = current.registrations.filter(model => model.provider === id)
       requireValue(create ? !Object.hasOwn(current.labels, id) : Object.hasOwn(current.labels, id), create ? 'PROVIDER_EXISTS' : 'PROVIDER_NOT_FOUND', create ? '这个提供方标识已存在，请使用编辑或换一个标识。' : '这个提供方不存在，请刷新页面。', 409)
@@ -86,16 +86,19 @@ export class ModelCatalogService {
       let connection: ModelConnection | undefined = current.connections[id]
       if (input.connection !== undefined) {
         objectInput(input.connection)
-        const unchanged = connection && input.connection.api === connection.api && input.connection.baseUrl === connection.baseUrl && Object.keys(input.connection).every(key => ['api', 'baseUrl'].includes(key))
-        connection = unchanged ? { api: connection!.api, baseUrl: connection!.baseUrl } : validateConnection(input.connection)
+        const unchanged = connection && input.connection.api === connection.api && input.connection.baseUrl === connection.baseUrl && input.connection.auth === connection.auth && Object.keys(input.connection).every(key => ['api', 'baseUrl', 'auth'].includes(key))
+        connection = unchanged ? publicConnection(connection!) : validateConnection(input.connection)
       }
       requireValue(values.length > 0 || connection, 'MODEL_CONFIG_INVALID', '请先填写连接协议和地址。')
+      const apiKey = credentialInput(input, connection?.auth)
+      requireValue(connection?.auth === current.connections[id]?.auth || !this.key(current.connections[id]?.keyEnv ?? '') || apiKey || input.clearKey, 'MODEL_CREDENTIAL_INVALID', '切换认证方式时需要重新填写凭证或移除当前密钥。')
       const sharedKey = apiKey || input.clearKey || current.secrets[id] ? managedKey : current.connections[id]?.keyEnv ?? old[0]?.keyEnv ?? managedKey
       const registrations = values.map(value => {
         objectInput(value)
         requireValue(!('keyEnv' in value) && !('provider' in value) && !('configured' in value) && !('check' in value), 'MODEL_CONFIG_INVALID', '模型字段包含不支持的配置。')
         const keyEnv = apiKey || input.clearKey || current.secrets[id] ? managedKey : old.find(item => item.model === value.model)?.keyEnv ?? sharedKey
-        return { ...value, api: value.api ?? connection?.api, baseUrl: value.baseUrl ?? connection?.baseUrl, provider: id, keyEnv }
+        requireValue(value.auth === undefined || value.auth === connection?.auth, 'MODEL_CONFIG_INVALID', '模型认证方式必须与服务连接一致。')
+        return { ...value, api: value.api ?? connection?.api, baseUrl: value.baseUrl ?? connection?.baseUrl, ...(connection?.auth ? { auth: connection.auth } : {}), provider: id, keyEnv }
       })
       const parsed = parseModelConfig({ models: [...current.registrations.filter(model => model.provider !== id), ...registrations] })
       const secrets = { ...current.secrets }
@@ -103,7 +106,9 @@ export class ModelCatalogService {
       else if (input.clearKey) delete secrets[id]
       const first = parsed.models.find(model => model.provider === id)
       const resolved = connection ?? (first?.baseUrl ? first : new ModelRegistry(parsed.models, this.registryOptions(current)).registrations().find(model => model.provider === id))
-      const defaults = { api: resolved?.api, baseUrl: resolved!.baseUrl! }
+      const defaults = publicConnection(resolved as ModelConnection)
+      const activeCredential = apiKey ?? (!input.clearKey ? this.key(sharedKey) : undefined)
+      if (defaults.auth && activeCredential) parseServiceAccount(activeCredential)
       const changedKey = input.clearKey || apiKey && apiKey.trim() !== this.key(current.connections[id]?.keyEnv ?? '')
       const metadata = Object.fromEntries(Object.entries(current.metadata).filter(([key, entry]) => parsed.models.some(model => metadataKey(model) === key && sameConnection(model, entry.connection) && !(changedKey && model.provider === id))))
       if (input.discoveryId) {
@@ -116,7 +121,7 @@ export class ModelCatalogService {
         }
       }
       return { ...current, registrations: parsed.models, labels: { ...current.labels, [id]: label }, secrets,
-        metadata, connections: { ...current.connections, [id]: { api: defaults.api, baseUrl: defaults.baseUrl, keyEnv: sharedKey } } }
+        metadata, connections: { ...current.connections, [id]: { ...defaults, keyEnv: sharedKey } } }
     })
   }
   remove(expectedRevision: number, provider: string) {
@@ -160,13 +165,14 @@ export class ModelCatalogService {
         requireValue(typeof raw.keyEnv === 'string' && /^[A-Z][A-Z0-9_]{0,99}$/.test(raw.keyEnv), 'MODEL_CATALOG_CORRUPT', '连接密钥引用不正确。')
         // Stored v1 URLs must survive migration byte-for-byte. New edits use stricter input validation.
         requireValue(typeof raw.baseUrl === 'string' && (raw.api === undefined || ['openai-completions', 'openai-responses', 'anthropic-messages'].includes(String(raw.api))), 'MODEL_CATALOG_CORRUPT', '连接配置不正确。')
-        connections[id] = { api: raw.api as ModelConnection['api'], baseUrl: raw.baseUrl, keyEnv: raw.keyEnv }
+        requireValue(raw.auth === undefined || raw.auth === 'google-service-account', 'MODEL_CATALOG_CORRUPT', '模型认证方式不受支持。')
+        connections[id] = { ...(raw.auth ? validateConnection(publicConnection(raw as unknown as ModelConnection)) : { api: raw.api as ModelConnection['api'], baseUrl: raw.baseUrl }), keyEnv: raw.keyEnv }
       }
       requireValue(Object.keys(labels).every(id => connections[id]) && registrations.every(item => Object.hasOwn(labels, item.provider)), 'MODEL_CATALOG_CORRUPT', '模型与连接记录不一致。')
     } else {
       for (const model of new ModelRegistry(registrations, this.options).registrations()) {
         labels[model.provider] ??= model.provider
-        connections[model.provider] ??= { api: model.api, baseUrl: model.baseUrl!, keyEnv: model.keyEnv }
+        connections[model.provider] ??= { ...publicConnection(model as ModelConnection), keyEnv: model.keyEnv }
       }
     }
     const metadata = value.version === 3 ? value.metadata : {}
@@ -194,11 +200,13 @@ export class ModelCatalogService {
   }
   async discover(input: unknown) {
     objectInput(input)
-    requireValue(Object.keys(input).every(key => ['provider', 'apiKey', 'connection'].includes(key)), 'MODEL_CONFIG_INVALID', '连接字段包含不支持的配置。')
+    requireValue(Object.keys(input).every(key => ['provider', 'apiKey', 'serviceAccountJson', 'connection'].includes(key)), 'MODEL_CONFIG_INVALID', '连接字段包含不支持的配置。')
     const connection = validateConnection(input.connection), provider = input.provider
     requireValue(provider === undefined || typeof provider === 'string' && Object.hasOwn(this.read().labels, provider), 'PROVIDER_NOT_FOUND', '这个提供方不存在，请刷新页面。', 404)
-    requireValue(input.apiKey === undefined || typeof input.apiKey === 'string' && input.apiKey.trim().length > 0 && input.apiKey.length <= 8192 && !/[\r\n\0]/.test(input.apiKey), 'MODEL_CONFIG_INVALID', 'API 密钥格式不正确。')
-    const key = typeof input.apiKey === 'string' ? input.apiKey.trim() : typeof provider === 'string' ? this.key(this.read().connections[provider]!.keyEnv) : undefined
+    const supplied = credentialInput(input, connection.auth)
+    const saved = typeof provider === 'string' ? this.read().connections[provider] : undefined
+    requireValue(!saved || saved.auth === connection.auth, 'MODEL_CREDENTIAL_INVALID', '模型认证方式必须与服务连接一致。')
+    const key = supplied ?? (saved ? this.key(saved.keyEnv) : undefined)
     requireValue(key, 'MODEL_KEY_MISSING', '请先填写 API 密钥。')
     return this.inspection(async signal => { try {
       const result = await discoverModels(connection, key, (this.options.fetch ?? fetch) as typeof fetch, signal)
@@ -243,3 +251,4 @@ export class ModelCatalogService {
 }
 function envName(provider: string) { return 'RP_WEB_KEY_' + createHash('sha256').update(provider).digest('hex').slice(0, 24).toUpperCase() }
 function routeKey(provider: string, model: string) { return JSON.stringify([provider, model]) }
+function publicConnection(value: ModelConnection): ModelConnection { return { api: value.api, baseUrl: value.baseUrl, ...(value.auth ? { auth: value.auth } : {}) } }

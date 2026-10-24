@@ -29,7 +29,7 @@ function boundText(element: HTMLInputElement | HTMLTextAreaElement, maximum?: nu
 }
 export function Input({ maxLength, onChange, onCompositionEnd, onInvalid, ...props }: ComponentProps<'input'>) {
   useUiLanguage()
-  const validation = useFieldValidation()
+  const validation = useFieldValidation(props.value)
   return <><input {...props} aria-invalid={validation.error ? true : props['aria-invalid']} aria-describedby={validation.describedBy(props['aria-describedby'])} onInvalid={event => { onInvalid?.(event); validation.invalid(event) }} data-autofocus={props.autoFocus || undefined} data-max-characters={maxLength} className={clsx('input', props.className)} onChange={event => { if (!(event.nativeEvent as InputEvent).isComposing) boundText(event.currentTarget, maxLength); onChange?.(event); validation.changed(event.currentTarget) }} onCompositionEnd={event => { boundText(event.currentTarget, maxLength); onChange?.(event as unknown as ChangeEvent<HTMLInputElement>); onCompositionEnd?.(event); validation.changed(event.currentTarget) }} />{validation.feedback}</>
 }
 export function TextListInput({ value, onChange }: { value: string[]; onChange: (value: string[]) => void }) {
@@ -40,12 +40,12 @@ export function TextListInput({ value, onChange }: { value: string[]; onChange: 
 // Embedded writing surfaces own their frame and focus treatment instead of inheriting form styles.
 export function Textarea({ appearance = 'field', maxLength, onChange, onCompositionEnd, onInvalid, ...props }: ComponentProps<'textarea'> & { appearance?: 'field' | 'plain' }) {
   useUiLanguage()
-  const validation = useFieldValidation()
+  const validation = useFieldValidation(props.value)
   return <><textarea rows={4} {...props} aria-invalid={validation.error ? true : props['aria-invalid']} aria-describedby={validation.describedBy(props['aria-describedby'])} onInvalid={event => { onInvalid?.(event); validation.invalid(event) }} data-autofocus={props.autoFocus || undefined} data-max-characters={maxLength} className={clsx(appearance === 'field' && 'input textarea', props.className)} onChange={event => { if (!(event.nativeEvent as InputEvent).isComposing) boundText(event.currentTarget, maxLength); onChange?.(event); validation.changed(event.currentTarget) }} onCompositionEnd={event => { boundText(event.currentTarget, maxLength); onChange?.(event as unknown as ChangeEvent<HTMLTextAreaElement>); onCompositionEnd?.(event); validation.changed(event.currentTarget) }} />{validation.feedback}</>
 }
 export function Select({ onInvalid, onChange, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
   useUiLanguage()
-  const validation = useFieldValidation()
+  const validation = useFieldValidation(props.value)
   return <><select {...props} className={clsx('input select', props.className)} aria-invalid={validation.error ? true : props['aria-invalid']} aria-describedby={validation.describedBy(props['aria-describedby'])} onInvalid={event => { onInvalid?.(event); validation.invalid(event) }} onChange={event => { onChange?.(event); validation.changed(event.currentTarget) }} />{validation.feedback}</>
 }
 export function Check({ label, help, indeterminate = false, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string; help?: ReactNode; indeterminate?: boolean }) {

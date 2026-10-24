@@ -11,7 +11,7 @@ Self-hosted, single-user roleplay and story writing with character cards, world 
 - **生成与状态**：Chat / Agent、Writer、任务子代理、变量 / MVU、剧情总结、回复建议和快捷回复。子代理协作进展显示各次调用的阶段、耗时、输出片段和工具活动，可直接进入对应轨迹。
 - **Writer 预置历史**：在设置页编辑两轮原生消息与串行工具记录，默认关闭，按运行冻结；详见 [使用说明](docs/writer-history.md)。
 - **工作文件**：命名工作区、文件预览与下载、附件和 Skills；Bash 与文件操作在独立工具容器中执行。
-- **模型连接**：在网页配置提供方、模型与密钥，支持项目中的 OpenAI 兼容及 Anthropic 协议适配。
+- **模型连接**：在网页配置提供方、模型与密钥，支持项目中的 OpenAI 兼容及 Anthropic 协议适配，以及 [Google Cloud Vertex AI 服务账号 JSON](docs/vertex-ai.md) 接入。
 
 资料库提供「示例预设」和「简洁预设」。简洁预设只约定互动边界、剧情连续性与正文格式，可在会话设置的「角色与资料」中选用。升级后会补充一次，保留已有默认选择和用户对预设的编辑、删除。
 

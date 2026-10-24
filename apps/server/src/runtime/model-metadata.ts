@@ -5,7 +5,7 @@ import { catalogCandidates, catalogReasoning } from './model-reasoning.ts'
 export type MetadataSource = 'provider' | 'catalog' | 'manual' | 'unknown'
 export type ModelMetadata = Pick<ModelRegistration, 'label' | 'input' | 'reasoning' | 'reasoningControl' | 'contextWindow' | 'maxTokens'> & Pick<Model<Api>, 'thinkingLevelMap' | 'compat'>
 export type MetadataSources = Record<'label' | 'input' | 'reasoning' | 'contextWindow' | 'maxTokens', MetadataSource>
-export type ModelIdentity = Pick<ModelRegistration, 'provider' | 'model' | 'api' | 'baseUrl'>
+export type ModelIdentity = Pick<ModelRegistration, 'provider' | 'model' | 'api' | 'baseUrl' | 'auth'>
 
 /** Exact identities only. Conflicting catalog entries cannot establish a specification. */
 export function catalogMetadata(route: ModelIdentity): ModelMetadata {

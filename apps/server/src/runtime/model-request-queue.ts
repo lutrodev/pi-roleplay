@@ -20,7 +20,7 @@ export class ModelRequestQueue {
     }
   }
   close() { this.stop.abort(new RpError('PROCESS_INTERRUPTED', '服务停止中断了模型请求。')) }
-  stream(model: Model<Api>, start: (signal: AbortSignal) => AssistantMessageEventStream, signal?: AbortSignal, onQueued?: (queued: boolean) => void) {
+  stream(model: Model<Api>, start: (signal: AbortSignal) => AssistantMessageEventStream | Promise<AssistantMessageEventStream>, signal?: AbortSignal, onQueued?: (queued: boolean) => void) {
     const combined = signal ? AbortSignal.any([signal, this.stop.signal]) : this.stop.signal
     const output = createAssistantMessageEventStream()
     void (async () => {
@@ -29,7 +29,7 @@ export class ModelRequestQueue {
         release = await this.acquire(model.provider, combined, onQueued)
         combined.throwIfAborted()
         let complete = false
-        for await (const event of start(combined)) {
+        for await (const event of await start(combined)) {
           if (event.type === 'done' || event.type === 'error') complete = true
           output.push(event)
         }

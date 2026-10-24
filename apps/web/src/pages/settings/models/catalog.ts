@@ -9,6 +9,7 @@ export interface Provider { id: string; label: string; keyStored: boolean; crede
 export interface Catalog { revision: number; providers: Provider[] }
 export interface Discovery { discoveryId: string; truncated?: boolean; models: { model: string; label: string; effective: Pick<ModelInfo, 'label' | 'input' | 'reasoning' | 'contextWindow' | 'maxTokens' | 'sources'> }[] }
 export const fields = ({ configured: _configured, check: _check, effective: _effective, ...model }: CatalogModel): ModelFields => model
+export const credentialPayload = (connection: ModelConnection, value: string) => value.trim() ? connection.auth === 'google-service-account' ? { serviceAccountJson: value.trim() } : { apiKey: value.trim() } : {}
 export const freshModel = (connection: ModelConnection, model = '', label = ''): ModelFields => {
   const compat = serviceForConnection(connection)?.compat
   return { model, ...(label ? { label } : {}), ...connection, ...(compat ? { compat: { ...compat } } : {}) }

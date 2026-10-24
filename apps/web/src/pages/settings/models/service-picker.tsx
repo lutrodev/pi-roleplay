@@ -29,7 +29,7 @@ export function ServicePicker({ search, onSearch, onSelect }: { search: string; 
     buttons[next]?.scrollIntoView({ block: 'nearest' })
   }
   return <div className="service-picker" ref={root} onKeyDown={navigate}>
-    <p className="muted">{uiT('选择你要使用的服务，下一步填写 API 密钥。')}</p>
+    <p className="muted">{uiT('选择你要使用的服务，下一步填写连接凭证。')}</p>
     <div className="search-field"><Search size={16} aria-hidden="true" /><Input ref={input} type="search" autoFocus={autoFocusSearch} aria-label={uiT('搜索模型服务')} placeholder={uiT('搜索服务或模型')} value={search} onChange={event => { onSearch(event.target.value); root.current?.querySelector('.service-results')?.scrollTo(0, 0) }} /></div>
     <div className="service-results" aria-label={uiT('可连接的模型服务')}>
       {groups.map(group => group.items.length > 0 && <section className="service-group" key={group.label} aria-label={uiT(group.label)}><h3 aria-live="polite" aria-atomic="true">{uiT(group.label)}<span>{group.items.length}</span></h3>{group.items.map(service => <ServiceOption key={service.id} service={service} onSelect={onSelect} />)}</section>)}

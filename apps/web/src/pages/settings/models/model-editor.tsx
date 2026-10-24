@@ -10,6 +10,7 @@ import { uiT } from '../../../lib/i18n.ts'
 import { fields, freshModel, saveModels, type Discovery, type ModelFields, type Provider } from './catalog.ts'
 import { ModelCapabilityFields, useModelMetadata } from './model-capability-fields.tsx'
 import { ModelDefaultThinking, ModelReasoningFields } from './model-reasoning-fields.tsx'
+import { VertexProjectFields } from './vertex-connection.tsx'
 
 export function ProtocolSelect({ value, onChange }: { value: ModelFields['api']; onChange: (value: ModelFields['api']) => void }) {
   return <Select value={value ?? ''} onChange={event => onChange(event.target.value as ModelFields['api'] || undefined)}><option value="">{uiT('Pi 内置提供方默认协议')}</option><option value="openai-completions">OpenAI Chat Completions</option><option value="openai-responses">OpenAI Responses</option><option value="anthropic-messages">Anthropic Messages</option></Select>
@@ -37,10 +38,10 @@ export function ModelEditor({ provider, modelId, revision, done }: { provider: P
     <ErrorNotice source="read" error={discovery.error ?? metadata.error} retry={() => { if (discovery.error) void refreshMetadata(); else void metadata.refetch() }} retrying={metadata.isFetching || discovery.busy} />
     <details className="provider-advanced model-advanced"><summary>{uiT('高级设置')}<small>{uiT(customized ? '已使用自定义参数' : '自动适配，通常无需修改')}</small></summary><div className="stack">
       <ModelCapabilityFields model={model} patch={patch} auto={metadata.data} loading={metadata.isFetching} refreshing={discovery.busy}
-        onRefresh={provider.credentialConfigured ? () => void refreshMetadata() : undefined} />
+        onRefresh={provider.credentialConfigured && !model.auth ? () => void refreshMetadata() : undefined} />
       <ModelReasoningFields model={model} patch={patch} auto={metadata.data} />
       <ModelParameters model={model} onChange={setModel} />
-      <details className="provider-advanced"><summary>{uiT('连接覆盖')}<small>{override ? uiT('这个模型使用独立的协议或地址') : uiT('使用服务连接的协议、地址和密钥')}</small></summary><div className="stack"><SettingToggle label={uiT('为这个模型单独设置协议和地址')} checked={override} onChange={event => { setOverride(event.target.checked); if (!event.target.checked) { patch(provider.connection); setDiscoveryId(undefined) } }} />{override && <><Field label={uiT('API 协议')}><ProtocolSelect value={model.api} onChange={api => { patch({ api }); setDiscoveryId(undefined) }} /></Field><Field label={uiT('API 基础地址')}><Input type="url" required={!!model.api} value={model.baseUrl ?? ''} onChange={event => { patch({ baseUrl: event.target.value || undefined }); setDiscoveryId(undefined) }} /></Field></>}</div></details>
+      <details className="provider-advanced"><summary>{uiT('连接覆盖')}<small>{override ? uiT('这个模型使用独立的协议或地址') : uiT('使用服务连接的协议、地址和密钥')}</small></summary><div className="stack"><SettingToggle label={uiT('为这个模型单独设置协议和地址')} checked={override} onChange={event => { setOverride(event.target.checked); if (!event.target.checked) { patch(provider.connection); setDiscoveryId(undefined) } }} />{override && (model.auth ? <VertexProjectFields connection={{ ...model, baseUrl: model.baseUrl ?? '' }} onChange={value => { patch(value); setDiscoveryId(undefined) }} /> : <><Field label={uiT('API 协议')}><ProtocolSelect value={model.api} onChange={api => { patch({ api }); setDiscoveryId(undefined) }} /></Field><Field label={uiT('API 基础地址')}><Input type="url" required={!!model.api} value={model.baseUrl ?? ''} onChange={event => { patch({ baseUrl: event.target.value || undefined }); setDiscoveryId(undefined) }} /></Field></>)}</div></details>
     </div></details>
     <EditorFooter error={action.error}><CancelButton onCancel={done} /><Button tone="primary" type="submit" disabled={action.busy || discovery.busy || !!original && !dirty}>{action.busy ? uiT('正在保存…') : uiT('保存模型')}</Button></EditorFooter>
   </EditorForm>

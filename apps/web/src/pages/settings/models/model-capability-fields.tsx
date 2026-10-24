@@ -10,7 +10,7 @@ import type { ModelFields } from './catalog.ts'
 
 const sourceLabel = (source?: MetadataSource) => uiT(source === 'provider' ? '服务提供' : source === 'catalog' ? '模型目录' : source === 'manual' ? '手动设置' : '未识别')
 export function useModelMetadata(provider: string, model: ModelFields, discoveryId?: string) {
-  const input = { provider, model: model.model.trim(), connection: { api: model.api, baseUrl: model.baseUrl }, discoveryId, reasoningContext: { reasoning: model.reasoning, compat: model.compat } }
+  const input = { provider, model: model.model.trim(), connection: { api: model.api, baseUrl: model.baseUrl, auth: model.auth }, discoveryId, reasoningContext: { reasoning: model.reasoning, compat: model.compat } }
   const serialized = JSON.stringify(input), [debounced, setDebounced] = useState(serialized)
   useEffect(() => { const timer = setTimeout(() => setDebounced(serialized), 250); return () => clearTimeout(timer) }, [serialized])
   return useQuery({ queryKey: ['model-metadata', debounced], enabled: !!input.model && !!input.connection.baseUrl && serialized === debounced,

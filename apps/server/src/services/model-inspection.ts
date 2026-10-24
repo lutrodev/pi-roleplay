@@ -4,20 +4,23 @@ import { RpError, requireValue } from '../../../../packages/rp-core/src/errors.t
 import { discoveryMetadata } from './model-discovery-metadata.ts'
 import type { ModelMetadata } from '../runtime/model-metadata.ts'
 import { modelBaseUrl } from '../runtime/model-endpoint.ts'
+import { parseVertexBaseUrl } from '../../../../packages/protocol/src/model-auth.ts'
 
-export interface ModelConnection { api?: ModelRegistration['api']; baseUrl: string }
+export interface ModelConnection { api?: ModelRegistration['api']; baseUrl: string; auth?: ModelRegistration['auth'] }
 export interface DiscoveredModel { model: string; label: string; metadata?: ModelMetadata }
 export interface ModelCheck { status: 'passed' | 'failed'; checkedAt: string; durationMs: number; code?: string; message: string }
 
 export function validateConnection(value: unknown): ModelConnection {
   requireValue(value && typeof value === 'object' && !Array.isArray(value), 'MODEL_CONFIG_INVALID', '请填写连接协议和地址。')
   const connection = value as Record<string, unknown>
-  requireValue(Object.keys(connection).every(key => ['api', 'baseUrl'].includes(key)) && (connection.api === undefined || ['openai-completions', 'openai-responses', 'anthropic-messages'].includes(String(connection.api))), 'MODEL_CONFIG_INVALID', '请选择支持的 API 协议。')
+  requireValue(Object.keys(connection).every(key => ['api', 'baseUrl', 'auth'].includes(key)) && (connection.api === undefined || ['openai-completions', 'openai-responses', 'anthropic-messages'].includes(String(connection.api))), 'MODEL_CONFIG_INVALID', '请选择支持的 API 协议。')
+  requireValue(connection.auth === undefined || connection.auth === 'google-service-account', 'MODEL_CONFIG_INVALID', '模型认证方式不受支持。')
   let url: URL | undefined
   try { url = new URL(String(connection.baseUrl)) } catch { /* Report the authored validation below. */ }
   requireValue(url && ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password && !url.search && !url.hash && url.href.length <= 2000, 'MODEL_CONFIG_INVALID', '模型地址必须为 HTTP(S) 地址，不能携带凭据或查询参数。')
   requireValue(!/\/(chat\/completions|responses|messages|models)\/?$/.test(url.pathname), 'MODEL_CONFIG_INVALID', '请填写 API 基础地址，不包含 /chat/completions、/responses、/messages 或 /models。')
-  return { ...(connection.api ? { api: connection.api as ModelRegistration['api'] } : {}), baseUrl: url.href.replace(/\/$/, '') }
+  if (connection.auth) requireValue(connection.api === 'openai-completions' && parseVertexBaseUrl(String(connection.baseUrl)), 'MODEL_CONFIG_INVALID', 'Vertex AI 需要匹配项目和区域的 Google Cloud 官方地址及 Chat Completions 协议。')
+  return { ...(connection.api ? { api: connection.api as ModelRegistration['api'] } : {}), baseUrl: url.href.replace(/\/$/, ''), ...(connection.auth ? { auth: connection.auth } : {}) }
 }
 
 /** Keep provider response bodies, endpoints and credentials out of errors returned to the browser. */
@@ -50,6 +53,7 @@ async function responseJson(response: Response) {
 
 /** Metadata describes capabilities; receiving a list does not prove a model can generate. */
 export async function discoverModels(connection: ModelConnection, apiKey: string, fetcher: typeof fetch, signal: AbortSignal) {
+  requireValue(connection.auth !== 'google-service-account', 'MODEL_DISCOVERY_UNSUPPORTED', 'Vertex AI 请手动填写 Google 模型 ID，然后使用测试模型检查访问权限。', 422)
   requireValue(connection.api, 'MODEL_CONFIG_INVALID', '获取模型列表前请选择 API 协议。')
   const anthropic = connection.api === 'anthropic-messages'
   const url = new URL(modelBaseUrl(connection.api, connection.baseUrl) + (anthropic ? '/v1/models' : '/models'))

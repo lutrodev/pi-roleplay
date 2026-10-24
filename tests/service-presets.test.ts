@@ -8,7 +8,8 @@ import { customService, matchingServices, serviceForConnection, servicePresets }
 import { fixture } from './helpers.ts'
 
 it('finds services by Chinese names, aliases and model families without making an unmatched service a preset', () => {
-  expect(matchingServices('  google GEMINI ').map(service => service.id)).toEqual(['google'])
+  expect(matchingServices('  google GEMINI ').map(service => service.id)).toEqual(['google', 'google-vertex'])
+  expect(matchingServices('vertex json').map(service => service.id)).toEqual(['google-vertex'])
   expect(matchingServices('Claude').map(service => service.id)).toEqual(['anthropic'])
   expect(matchingServices('通义千问').map(service => service.id)).toEqual(['bailian'])
   expect(matchingServices('月之暗面').map(service => service.id)).toEqual(['moonshot'])
@@ -20,7 +21,7 @@ it('finds services by Chinese names, aliases and model families without making a
   expect(customService.connection.baseUrl).toBe('')
 })
 
-it.each(servicePresets)('routes $label discovery and generation through its declared protocol and endpoint', async service => {
+it.each(servicePresets.filter(service => !service.connection.auth))('routes $label discovery and generation through its declared protocol and endpoint', async service => {
   const connection = validateConnection(service.connection)
   const discovery = await discoverModels(connection, 'synthetic-key', async (url, options) => {
     const anthropic = connection.api === 'anthropic-messages'

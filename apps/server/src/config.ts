@@ -53,7 +53,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
 export function parseModelConfig(input: unknown): { models: ModelRegistration[]; main: ModelRoute | null; search?: SearchConfig } {
   objectInput(input)
   requireValue(Object.keys(input).every(key => ['models', 'main', 'search'].includes(key)) && Array.isArray(input.models) && input.models.length <= 64, 'INVALID_CONFIG', '模型文件需要 models 列表和可选的 main、search 配置。')
-  const fields = new Set(['provider', 'model', 'label', 'keyEnv', 'api', 'baseUrl', 'contextWindow', 'maxTokens', 'input', 'reasoning', 'reasoningControl', 'defaultReasoningEffort', 'outputTokens', 'temperature', 'compat'])
+  const fields = new Set(['provider', 'model', 'label', 'keyEnv', 'api', 'baseUrl', 'auth', 'contextWindow', 'maxTokens', 'input', 'reasoning', 'reasoningControl', 'defaultReasoningEffort', 'outputTokens', 'temperature', 'compat'])
   for (const model of input.models) {
     objectInput(model)
     requireValue(Object.keys(model).every(key => fields.has(key)), 'INVALID_CONFIG', '模型包含未知字段；API 密钥只能通过 keyEnv 引用环境变量。')
@@ -61,6 +61,7 @@ export function parseModelConfig(input: unknown): { models: ModelRegistration[];
     requireValue(model.label === undefined || typeof model.label === 'string' && model.label.length <= 200, 'INVALID_CONFIG', '模型显示名称不正确。')
     requireValue(model.api === undefined || ['openai-completions', 'openai-responses', 'anthropic-messages'].includes(String(model.api)), 'INVALID_CONFIG', '模型 API 类型不受支持。')
     requireValue(model.baseUrl === undefined || typeof model.baseUrl === 'string', 'INVALID_CONFIG', '模型地址必须是文本。')
+    requireValue(model.auth === undefined || model.auth === 'google-service-account', 'INVALID_CONFIG', '模型认证方式不受支持。')
     requireValue(model.reasoning === undefined || typeof model.reasoning === 'boolean', 'INVALID_CONFIG', '模型思考能力需要布尔值。')
     if (model.reasoningControl !== undefined) validateReasoningControl(model.reasoningControl)
     requireValue(model.defaultReasoningEffort === undefined || typeof model.defaultReasoningEffort === 'string' && model.defaultReasoningEffort.length <= 64, 'INVALID_CONFIG', '默认思考强度不正确。')

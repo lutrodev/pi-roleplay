@@ -51,6 +51,9 @@ importers:
       fastify:
         specifier: 5.12.3
         version: 5.12.3
+      google-auth-library:
+        specifier: 10.9.1
+        version: 10.9.1
       i18next:
         specifier: 26.4.2
         version: 26.4.2(typescript@6.0.3)
@@ -175,6 +178,9 @@ importers:
       fastify:
         specifier: 5.12.3
         version: 5.12.3
+      google-auth-library:
+        specifier: 10.9.1
+        version: 10.9.1
       sharp:
         specifier: 0.35.4
         version: 0.35.4(@types/node@24.13.3)

@@ -4,7 +4,7 @@ import type { ModelConnection } from '../../../../../../apps/server/src/services
 import { serviceForConnection } from './service-presets.ts'
 
 export function ServiceLogo({ id }: { id: string }) {
-  return <span className="service-symbol" aria-hidden="true">{id === 'custom' ? <Plus size={18} /> : <svg className="service-logo" focusable="false"><use href={`${logos}#${id}`} /></svg>}</span>
+  return <span className="service-symbol" aria-hidden="true">{id === 'custom' ? <Plus size={18} /> : <svg className="service-logo" focusable="false"><use href={`${logos}#${id === 'google-vertex' ? 'google' : id}`} /></svg>}</span>
 }
 
 export function ConnectionLogo({ connection, label }: { connection: ModelConnection; label: string }) {

@@ -6,7 +6,7 @@ import { sameModelEndpoint } from './model-endpoint.ts'
 const catalog = builtinModels()
 const byId = new Map<string, Model<Api>[]>()
 for (const model of catalog.getModels()) byId.set(model.id, [...(byId.get(model.id) ?? []), model])
-type Identity = Pick<ModelRegistration, 'provider' | 'model' | 'api' | 'baseUrl'>
+type Identity = Pick<ModelRegistration, 'provider' | 'model' | 'api' | 'baseUrl' | 'auth'>
 type Reasoning = Pick<Model<Api>, 'reasoning' | 'thinkingLevelMap' | 'compat'>
 
 /** An exact catalog identity is evidence; a familiar substring or arbitrary alias is not. */
@@ -25,6 +25,10 @@ export function catalogReasoning(route: Identity): Reasoning | undefined {
 }
 
 export function catalogCandidates(route: Identity): Model<Api>[] {
+  if (route.auth === 'google-service-account') {
+    const model = catalog.getModel('google-vertex', route.model.replace(/^google\//, ''))
+    return model ? [model] : []
+  }
   const matchesApi = (model: Model<Api>) => !route.api || model.api === route.api
     || model.provider === 'openai' && model.api === 'openai-responses' && route.api === 'openai-completions'
   const direct = catalog.getModel(route.provider, route.model)

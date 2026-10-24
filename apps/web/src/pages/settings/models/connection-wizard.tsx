@@ -7,7 +7,7 @@ import { CancelButton, EditorForm, useDialogFormState } from '../../../component
 import { Button, Check, Empty, ErrorNotice, Field, Input, Loading, Select, Textarea } from '../../../components/ui.tsx'
 import { api, useAction } from '../../../lib/api.ts'
 import { uiT } from '../../../lib/i18n.ts'
-import { fields, freshModel, refreshModels, type Catalog, type Discovery, type Provider } from './catalog.ts'
+import { credentialPayload, fields, freshModel, refreshModels, type Catalog, type Discovery, type Provider } from './catalog.ts'
 import { ServicePicker } from './service-picker.tsx'
 import { ServiceConnection } from './service-connection.tsx'
 import { customService, type ServicePreset } from './service-presets.ts'
@@ -20,7 +20,8 @@ export function ConnectionWizard({ revision, provider, done, onDefault }: { revi
   const [truncated, setTruncated] = useState(false), [discoveryId, setDiscoveryId] = useState<string>(), autoFetched = useRef('')
   const [finished, setFinished] = useState<{ catalog: Catalog; ids: string[] } | null>(null), discover = useAction(), save = useAction()
   const existing = new Set(provider?.models.map(model => model.model) ?? []), manualIds = [...new Set(manual.split(/[\n,，]/).map(value => value.trim()).filter(Boolean))]
-  const ids = (mode === 'manual' ? manualIds : selected).filter(model => !existing.has(model))
+  const vertex = connection.auth === 'google-service-account'
+  const ids = (vertex || mode === 'manual' ? manualIds : selected).filter(model => !existing.has(model))
   const dirty = !finished && (!!apiKey || !!manual || selected.length > 0 || !provider && (!!label || step > 0))
   function resetDiscovery() { setAvailable(null); setDiscoveryId(undefined); setSelected([]); setSearch(''); setTruncated(false); discover.clear(); save.clear() }
   function selectService(next: ServicePreset) {
@@ -35,7 +36,7 @@ export function ConnectionWizard({ revision, provider, done, onDefault }: { revi
   }
   const discoveryIdentity = JSON.stringify([connection, apiKey, provider?.id])
   useEffect(() => {
-    if (step === 2 && !finished && (apiKey.trim() || provider?.credentialConfigured) && autoFetched.current !== discoveryIdentity) {
+    if (step === 2 && !vertex && !finished && (apiKey.trim() || provider?.credentialConfigured) && autoFetched.current !== discoveryIdentity) {
       autoFetched.current = discoveryIdentity; void fetchModels()
     }
   }, [step, finished, discoveryIdentity])
@@ -44,16 +45,16 @@ export function ConnectionWizard({ revision, provider, done, onDefault }: { revi
     if (!ids.length) throw new Error(uiT('请至少选择或填写一个新模型。'))
     if (ids.some(model => model.length > 200) || ids.length + existing.size > 64) throw new Error(uiT('每个连接最多 64 个模型，模型 ID 最多 200 字符。'))
     const added = ids.map(model => freshModel(connection, model))
-    const result = await api<Catalog>('/settings/providers', provider ? 'PUT' : 'POST', { expectedRevision: revision, provider: { id: provider?.id ?? id, label, connection, discoveryId, models: [...(provider?.models.map(fields) ?? []), ...added], ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}) } })
+    const result = await api<Catalog>('/settings/providers', provider ? 'PUT' : 'POST', { expectedRevision: revision, provider: { id: provider?.id ?? id, label, connection, discoveryId, models: [...(provider?.models.map(fields) ?? []), ...added], ...credentialPayload(connection, apiKey) } })
     setKey(''); await refreshModels(); setFinished({ catalog: result, ids })
   }) }}>
     {!provider && <ol className="connection-steps" aria-label={uiT('接入步骤')}>{['选择服务', '连接信息', '选择模型'].map((name, index) => <li key={name} aria-current={index === step ? 'step' : undefined} data-complete={index < step}><span>{index < step ? <CheckIcon size={12} /> : index + 1}</span>{uiT(name)}</li>)}</ol>}
     {step === 0 && <ServicePicker search={serviceSearch} onSearch={setServiceSearch} onSelect={selectService} />}
     {step === 1 && <ServiceConnection service={service ?? customService} label={label} setLabel={setLabel} connection={connection} onConnection={value => { setConnection(value); resetDiscovery() }} apiKey={apiKey} setKey={value => { setKey(value); resetDiscovery() }} />}
-    {step === 2 && <><div className="connection-caption">{uiT('服务连接')}<strong>{label}</strong></div><div className="model-source-switch"><Button aria-pressed={mode === 'list'} onClick={() => setMode('list')}>{uiT('从服务获取')}</Button><Button aria-pressed={mode === 'manual'} onClick={() => setMode('manual')}>{uiT('手动填写 ID')}</Button></div>
-      {mode === 'list' ? <><div className="section-heading"><p className="muted">{uiT('选择要使用的模型，能力信息将一并保存。')}</p><Button disabled={discover.busy} onClick={() => void fetchModels()}>{available ? uiT('重新获取') : uiT('获取模型列表')}</Button></div><ErrorNotice error={discover.error} />{discover.error && <Button tone="quiet" onClick={() => setMode('manual')}>{uiT('改为手动填写')}</Button>}{discover.busy && <Loading label={uiT('正在获取模型…')} />}
+    {step === 2 && <><div className="connection-caption">{uiT('服务连接')}<strong>{label}</strong></div>{vertex ? <p className="muted">{uiT('Vertex AI 请填写当前项目和区域可用的 Google 模型 ID。添加后可测试访问权限。')}</p> : <div className="model-source-switch"><Button aria-pressed={mode === 'list'} onClick={() => setMode('list')}>{uiT('从服务获取')}</Button><Button aria-pressed={mode === 'manual'} onClick={() => setMode('manual')}>{uiT('手动填写 ID')}</Button></div>}
+      {!vertex && mode === 'list' ? <><div className="section-heading"><p className="muted">{uiT('选择要使用的模型，能力信息将一并保存。')}</p><Button disabled={discover.busy} onClick={() => void fetchModels()}>{available ? uiT('重新获取') : uiT('获取模型列表')}</Button></div><ErrorNotice error={discover.error} />{discover.error && <Button tone="quiet" onClick={() => setMode('manual')}>{uiT('改为手动填写')}</Button>}{discover.busy && <Loading label={uiT('正在获取模型…')} />}
         {available && <>{truncated && <p className="notice">{uiT('列表达到读取上限。未找到的模型可手动填写 ID。')}</p>}<div className="search-field"><Search size={16} /><Input aria-label={uiT('搜索可添加模型')} placeholder={uiT('搜索模型名称或 ID')} value={search} onChange={event => setSearch(event.target.value)} /></div><div className="discovered-models">{available.filter(model => (model.model + model.label).toLowerCase().includes(search.toLowerCase())).map(model => <Check key={model.model} label={model.effective.label} help={<>{existing.has(model.model) ? uiT('已添加') : model.model}<ModelCapabilities model={model.effective} /></>} disabled={existing.has(model.model) || selected.length + existing.size >= 64 && !selected.includes(model.model)} checked={existing.has(model.model) || selected.includes(model.model)} onChange={event => setSelected(current => event.target.checked ? [...current, model.model] : current.filter(id => id !== model.model))} />)}{!available.some(model => (model.model + model.label).toLowerCase().includes(search.toLowerCase())) && <Empty title={uiT('没有找到模型')} action={<Button onClick={() => setMode('manual')}>{uiT('手动填写 ID')}</Button>} />}</div></>}
-      </> : <Field label={uiT('模型 ID')} help={uiT('每行一个 ID，也可以用逗号分隔。')}><Textarea autoFocus required rows={6} value={manual} onChange={event => setManual(event.target.value)} placeholder={'model-id-1\nmodel-id-2'} /></Field>}
+      </> : <Field label={uiT('模型 ID')} help={uiT(vertex ? '每行一个 ID；可以带 google/ 前缀。' : '每行一个 ID，也可以用逗号分隔。')}><Textarea autoFocus required rows={6} value={manual} onChange={event => setManual(event.target.value)} placeholder={vertex ? 'google/gemini-2.5-flash' : 'model-id-1\nmodel-id-2'} /></Field>}
       <p className="muted">{uiT('自动识别名称、图片、思考和长度规格；未识别的项目可在添加后核对。')}</p>
     </>}
     <ErrorNotice error={save.error} /><div className="form-actions sticky-actions">{step > 0 && !provider ? <Button onClick={() => setStep(step - 1)}><ArrowLeft size={15} />{uiT('上一步')}</Button> : <CancelButton onCancel={done} />}{step === 2 && <span className="settings-save-status" role="status">{uiT('已选择 %{count} 个', { count: ids.length })}</span>}{step > 0 && <Button type="submit" tone="primary" disabled={save.busy || discover.busy || step === 2 && !ids.length}>{save.busy ? uiT('正在保存…') : step === 1 ? uiT('下一步') : uiT('添加模型')}</Button>}</div>
